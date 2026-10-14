@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C0C0C">
+<title>Garrote Academia</title>
+<link rel="icon" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app" class="device"></div>
+<script>
+/* bootfail: mostra o erro na tela se o app não iniciar (em vez de ficar em branco) */
+(function(){function show(m){var a=document.getElementById('app');if(!a||a.querySelector('.screen'))return;a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;background:#0C0C0C;min-height:100%"><b style="font-size:20px">Não foi possível iniciar o app</b><p>Confira o arquivo <code>public/js/firebase-config.js</code> e atualize a página com Ctrl+F5.</p><p style="color:#9A9AA0;word-break:break-word">Detalhe: '+String(m).replace(/</g,'&lt;')+'</p></div>';}
+addEventListener('error',function(e){show(e.message||'erro ao carregar')});addEventListener('unhandledrejection',function(e){show(e.reason&&e.reason.message||e.reason)});
+setTimeout(function(){show('o app demorou demais para responder (verifique a internet e a configuração do Firebase)')},8000);})();
+</script>
+<div id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

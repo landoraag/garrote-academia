@@ -1,0 +1,82 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function profilePath() { return /databases/$(database)/documents/users/$(request.auth.uid); }
+    function hasProfile() { return signedIn() && exists(profilePath()); }
+    function role() { return get(profilePath()).data.role; }
+    function isOwner() { return hasProfile() && role() == 'dono'; }
+    function isTrainer() { return hasProfile() && role() == 'treinador'; }
+    function isStaff() { return isOwner() || isTrainer(); }
+    function setupDone() { return exists(/databases/$(database)/documents/config/setup); }
+
+    // Primeiro acesso: só existe até a conta do dono ser criada.
+    // Planos e pagamentos: só o dono mexe. O aluno vê o próprio plano e os próprios pagamentos.
+    match /planos/{id} { allow read: if hasProfile(); allow write: if isOwner(); }
+    match /pagamentos/{id} {
+      allow read: if isOwner() || (hasProfile() && request.auth.uid in resource.data.alunoIds);
+      allow write: if isOwner();
+    }
+
+    // Foto de perfil (guardada em texto, sem precisar do Storage)
+    match /fotos/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow write: if signedIn() && request.auth.uid == uid && hasProfile();
+    }
+
+    match /config/setup {
+      allow get: if true;
+      allow create: if signedIn() && !setupDone();
+    }
+
+    match /users/{uid} {
+      allow get: if signedIn() && (request.auth.uid == uid || isStaff());
+      allow list: if isStaff();
+      allow create: if (signedIn() && request.auth.uid == uid && request.resource.data.role == 'dono' && !setupDone())
+                    || isOwner()
+                    || (isTrainer() && request.resource.data.role == 'aluno' && request.resource.data.treinadorId == request.auth.uid
+                        && !('planoId' in request.resource.data));
+      allow update: if isOwner()
+                    || (isTrainer() && resource.data.role == 'aluno' && resource.data.treinadorId == request.auth.uid
+                        && request.resource.data.role == 'aluno' && request.resource.data.treinadorId == request.auth.uid
+                        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['planoId', 'familiaId', 'vencimento', 'ultimoPagamento']))
+                    // qualquer pessoa pode mudar o próprio nome e telefone
+                    || (signedIn() && request.auth.uid == uid
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['nome', 'telefone']));
+      allow delete: if isOwner()
+                    || (isTrainer() && resource.data.role == 'aluno' && resource.data.treinadorId == request.auth.uid);
+    }
+
+    match /modalidades/{id} { allow read: if hasProfile(); allow write: if isOwner(); }
+    // Categorias, exercícios e treinos: só o treinador cria e altera. O dono não.
+    match /categorias/{id}  { allow read: if hasProfile(); allow write: if isTrainer(); }
+    match /exercicios/{id}  { allow read: if hasProfile(); allow write: if isTrainer(); }
+
+    match /treinos/{id} {
+      allow read: if isStaff() || (hasProfile() && request.auth.uid in resource.data.alunoIds);
+      allow create: if isTrainer() && request.resource.data.criadoPor == request.auth.uid;
+      allow update, delete: if isTrainer() && resource.data.criadoPor == request.auth.uid;
+    }
+
+    match /checkins/{id} {
+      allow read: if isStaff() || (hasProfile() && resource.data.uid == request.auth.uid);
+      allow create: if hasProfile() && request.resource.data.uid == request.auth.uid
+                    && id == request.auth.uid + '_' + request.resource.data.data;
+      allow delete: if isOwner();
+    }
+
+    // Estes documentos têm id começando pelo uid do aluno ("uid_...").
+    // Usar o id evita erro de permissão ao ler um documento que ainda não existe.
+    match /execucoes/{id} {
+      allow read: if isStaff() || (hasProfile() && id.matches(request.auth.uid + '_.*'));
+      allow create, update: if hasProfile() && request.resource.data.uid == request.auth.uid && id.matches(request.auth.uid + '_.*');
+    }
+
+    match /agendamentos/{id} {
+      allow read: if isStaff() || (hasProfile() && id.matches(request.auth.uid + '_.*'));
+      allow create, update: if hasProfile() && request.resource.data.uid == request.auth.uid && id.matches(request.auth.uid + '_.*');
+      allow delete: if isStaff() || (hasProfile() && id.matches(request.auth.uid + '_.*'));
+    }
+  }
+}
