@@ -71,7 +71,7 @@ body.wide .device{width:100%;box-shadow:none}
 
 /* ---------- login ---------- */
 .login-top{flex:1;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:radial-gradient(80% 70% at 50% 110%,rgba(217,30,38,.45),transparent 70%)}
-.login-top p{font:500 12px var(--b);letter-spacing:4px;color:var(--dim);text-transform:uppercase}
+.login-top p{font:500 12px var(--b);letter-spacing:4px;color:var(--dim)}
 .sheet{background:#fff;color:var(--ink);border-radius:36px 36px 0 0;padding:32px 24px 28px;display:flex;flex-direction:column;gap:14px}
 .sheet a.link{align-self:flex-end;font:600 14px var(--b);color:var(--red)}
 .sheet .small{text-align:center;font:400 13px var(--b);color:var(--muted)}
@@ -80,7 +80,7 @@ body.wide .device{width:100%;box-shadow:none}
 .hero{background:radial-gradient(70% 60% at 100% 100%,rgba(217,30,38,.4),transparent 70%),var(--ink);color:#fff;border-radius:0 0 36px 36px;padding:20px 20px 24px;display:flex;flex-direction:column;gap:18px;flex:none}
 .hero.compact{padding-bottom:20px}
 .topbar{display:flex;justify-content:space-between;align-items:center}
-.date{font:600 11px var(--b);letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+.date{font:600 11px var(--b);letter-spacing:2px;color:var(--dim)}
 .hello{font:700 38px/1 var(--d);margin:4px 0 6px}
 .hint{font:400 14px/1.35 var(--b);color:#B8B8BD;max-width:176px}
 .ringbox{position:relative;width:112px;height:112px;flex:none}
@@ -96,7 +96,7 @@ body.wide .device{width:100%;box-shadow:none}
 .stats b{font:700 30px/1.1 var(--d)}.stats b span{font-size:16px;color:var(--muted)}
 .mbar{height:6px;border-radius:3px;background:var(--line);margin-top:8px}.mbar i{display:block;height:100%;width:0;border-radius:3px;background:var(--red);transition:width 1s .2s var(--ease)}
 .tcard{display:flex;align-items:center;gap:14px;width:100%;text-align:left}
-.tcard .k{font:600 11px var(--b);letter-spacing:1.5px;color:var(--red);text-transform:uppercase}
+.tcard .k{font:600 11px var(--b);letter-spacing:1.5px;color:var(--red)}
 .tcard .t{font:700 26px/1.15 var(--d)}.tcard .m{font:400 13px var(--b);color:var(--muted)}
 .go{width:54px;height:54px;border-radius:50%;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;flex:none;transition:transform .2s}
 .tcard:active .go{transform:translateX(4px)}
@@ -104,7 +104,7 @@ body.wide .device{width:100%;box-shadow:none}
 /* ---------- lista / modo treino (escuros) ---------- */
 .wk{padding:20px;display:flex;flex-direction:column;gap:14px;min-height:100%}
 .wk-head{display:flex;align-items:center;justify-content:space-between}
-.wk-head .c{text-align:center}.wk-head small{font:600 11px var(--b);letter-spacing:2px;color:var(--dim);display:block;text-transform:uppercase}
+.wk-head .c{text-align:center}.wk-head small{font:600 11px var(--b);letter-spacing:2px;color:var(--dim);display:block}
 .wk-head b{font:700 20px var(--d)}
 .prog{background:var(--s1);border-radius:22px;padding:14px 16px;display:flex;align-items:center;gap:14px}
 .prog b{font:700 28px/1 var(--d)}.prog b span{font-size:16px;color:var(--dim)}.prog small{display:block;font:500 12px var(--b);color:var(--dim)}
@@ -124,11 +124,16 @@ body.wide .device{width:100%;box-shadow:none}
 .set .sn{width:20px;display:flex;justify-content:center;font:600 15px var(--b);color:var(--dim)}
 .set .sn i{width:8px;height:8px;border-radius:50%;background:var(--red)}
 .pill{height:48px;border-radius:24px;background:var(--s2);display:flex;align-items:center;justify-content:center;font:600 17px var(--b);flex:1}.pill.kg{flex:1.3}
+.set-head{display:flex;align-items:center;gap:10px;font:600 12px var(--b);letter-spacing:.5px;color:var(--dim)}
+.set-head .sn{width:20px}.set-head b{flex:1;text-align:center;font-weight:600}.set-head b.kg{flex:1.3}.set-head .cks{width:48px;flex:none}
+.pill{gap:4px}.pill input{width:100%;min-width:0;background:transparent;border:0;outline:0;color:inherit;font:inherit;text-align:right;padding:0}
+.pill em{font-style:normal;font-size:14px;color:var(--dim);width:22px;text-align:left}.pill:focus-within{box-shadow:0 0 0 2px var(--red)}
+.pill input::placeholder{color:var(--dim);font-size:15px}
 .ck{width:48px;height:48px;border-radius:50%;background:var(--s2);color:#6A6A70;display:flex;align-items:center;justify-content:center;flex:none;transition:background .25s,color .25s,transform .15s}
 .ck:active{transform:scale(.9)}
 .set.now .ck{background:var(--s3);color:#fff}.set.done .ck{background:var(--red);color:#fff}
 .rest{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--s1);border-radius:20px;padding:14px 18px}
-.rest small{font:600 11px var(--b);letter-spacing:2px;color:var(--dim);text-transform:uppercase}
+.rest small{font:600 11px var(--b);letter-spacing:2px;color:var(--dim)}
 .rest b{display:block;font:700 36px/1 var(--d)}
 .rest .bar{width:110px;height:6px;border-radius:3px;background:var(--s3);flex:none}.rest .bar i{display:block;height:100%;border-radius:3px;background:var(--red);transition:width 1s linear}
 .rest .more{height:40px;padding:0 14px;border-radius:20px;border:1px solid var(--s3);font:600 13px var(--b)}
@@ -154,7 +159,7 @@ body.wide .device{width:100%;box-shadow:none}
 .dhero .ph{position:absolute;top:84px;left:0;right:0;text-align:center;font:600 11px var(--b);letter-spacing:3px;color:#5A5A60}
 .dhero .back{position:absolute;top:20px;left:20px}
 .dhero .tx{position:absolute;left:20px;right:20px;bottom:20px;color:#fff}
-.dhero .tx span{display:inline-block;padding:5px 10px;border-radius:99px;background:var(--red);font:600 11px var(--b);letter-spacing:1.5px;text-transform:uppercase}
+.dhero .tx span{display:inline-block;padding:5px 10px;border-radius:99px;background:var(--red);font:600 11px var(--b);letter-spacing:1.5px}
 .dhero h1{font:700 42px/1 var(--d);margin:8px 0 2px}.dhero p{font:400 14px var(--b);color:#D0D0D4}
 .dhero.hasimg::after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 30%,rgba(12,12,12,.8))}.dhero .tx,.dhero .back{z-index:1}
 .slot{display:flex;align-items:center;gap:14px;height:62px;padding:0 14px;width:100%;text-align:left;background:#fff;border-radius:20px;box-shadow:var(--shadow);border:1.5px solid transparent;transition:border-color .2s,transform .15s}
@@ -210,7 +215,7 @@ body.wide .device{width:100%;box-shadow:none}
 .demo button{flex:1;height:38px;border-radius:12px;background:#fff;border:1px solid var(--line);font:600 13px var(--b)}
 .side{overflow-y:auto}
 .swap{margin-top:14px;padding:12px;border-radius:16px;background:var(--s1);display:flex;flex-direction:column;gap:8px}
-.swap small{font:600 11px var(--b);letter-spacing:1.5px;color:var(--dim);text-transform:uppercase}
+.swap small{font:600 11px var(--b);letter-spacing:1.5px;color:var(--dim)}
 .seg2{display:flex;gap:4px}.seg2 button{flex:1;height:34px;border-radius:10px;background:var(--s2);color:#B8B8BD;font:600 12px var(--b);transition:background .2s,color .2s}.seg2 button.on{background:var(--red);color:#fff}
 .swap select{height:38px;border-radius:10px;border:1px solid var(--s3);background:var(--s2);color:#fff;padding:0 10px;font:500 13px var(--b)}
 .tools{display:flex;gap:10px;align-items:center}
@@ -304,3 +309,52 @@ body.wide .device{width:100%;box-shadow:none}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .hist .person:first-child{border-top:0}
 .dlg .field small{font:400 12px var(--b)}
+
+/* ---------- v5: celular nas telas do dono e do treinador ---------- */
+.tblcard{padding:8px 16px;overflow-x:auto}
+.tbl .act .det{display:none}
+.det-list{display:flex;flex-direction:column}
+.det-i{padding:11px 0;border-top:1px solid var(--line)}.det-i:first-child{border-top:0;padding-top:0}
+.det-i small{display:block;font:500 12px var(--b);color:var(--muted);margin-bottom:2px}
+.det-i b{display:block;font:600 15px/1.4 var(--b);word-break:break-word;white-space:pre-line}
+.dfoot .btn.del{color:var(--red)}
+.irow .ii{display:block;min-width:0}.irow .ii span{display:none}
+@media (max-width:700px){
+  .tblcard{overflow-x:visible!important;padding:4px 14px}
+  .tbl{table-layout:fixed}
+  .tbl thead{display:none}
+  .tbl td:not(:first-child):not(.keep):not(.act){display:none}
+  .tbl td:first-child{overflow:hidden;text-overflow:ellipsis;padding-left:0}
+  .tbl td.keep{width:104px;padding-left:4px;padding-right:4px}
+  .tbl .act{width:96px;padding-right:0}
+  .tbl .act button:not(.det){display:none}
+  .tbl .act .det{display:inline-flex;align-items:center;justify-content:center;margin:0}
+  .pcell{min-width:0}.pcell>div{min-width:0}.pcell small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .main .head{align-items:stretch}.main .head>div:first-child{flex:1 1 100%}
+  .tools{flex-wrap:wrap}.tools .btn{flex:1}
+  .kpis b{font-size:28px}
+  .irow{grid-template-columns:1fr 1fr;gap:10px;padding:12px;border:1px solid var(--line);border-radius:16px}
+  .irow select{grid-column:span 2}
+  .irow .ii span{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+  .irow .ibtns{grid-column:span 2;justify-content:flex-end}.ibtns button{width:48px}
+  .dfoot .btn{min-width:0;flex:1 1 100%}
+  .dlg{max-height:calc(100dvh - 24px)}
+}
+
+/* ---------- v6: menu do celular (dono e treinador) ---------- */
+.mtop,.scrim,.mclose{display:none}
+@media (max-width:900px){
+  .admin{display:block}
+  .mtop{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;position:sticky;top:0;z-index:20;background:var(--ink);padding:10px 14px}
+  .mtop .logo{margin:0 auto;height:30px}
+  .side{position:fixed;top:0;left:0;bottom:0;width:min(300px,84vw);height:100vh;height:100dvh;z-index:31;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px;padding:20px 16px;overflow-y:auto;transform:translateX(-102%);visibility:hidden;transition:transform .28s var(--ease),visibility .28s}
+  .admin.menu-open .side{transform:none;visibility:visible}
+  .side .logo{display:none}
+  .side{padding-top:72px}
+  .side a,.side button{padding:14px;font-size:15px}
+  .side .who{display:flex;flex-basis:auto;margin-top:auto}
+  .side .who .iconbtn{padding:0}
+  .side .mclose{display:flex;position:absolute;top:14px;right:14px;padding:0}
+  .scrim{display:block;position:fixed;inset:0;background:rgba(12,12,12,.55);z-index:30;opacity:0;pointer-events:none;transition:opacity .25s}
+  .admin.menu-open .scrim{opacity:1;pointer-events:auto}
+}

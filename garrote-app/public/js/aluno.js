@@ -110,7 +110,7 @@ async function loadTreino(tid) {
   const [t, exs, cats, ex0] = await Promise.all([api.get('treinos', tid), api.list('exercicios'), api.list('categorias'), api.get('execucoes', `${uid}_${tid}_${k}`)]);
   if (!t) return null;
   const catMap = toMap(cats), exMap = Object.fromEntries(exs.map(e => [e.id, { ...e, grupo: (catMap[e.categoriaId] || {}).nome || '' }]));
-  return { t, exMap, feitos: (ex0 && ex0.feitos) || {}, eid: `${uid}_${tid}_${k}`, k };
+  return { t, exMap, feitos: (ex0 && ex0.feitos) || {}, valores: (ex0 && ex0.valores) || {}, eid: `${uid}_${tid}_${k}`, k };
 }
 export async function treino(tid) {
   const D = await loadTreino(tid); if (!D) return { depth: 3, html: `<div class="wk"><a class="iconbtn" href="#/treinos">${ic('back', 20)}</a><p class="empty">Treino não encontrado.</p></div>`, dark: true };
@@ -134,8 +134,14 @@ export async function exercicio(tid, n) {
   if (!it) return { depth: 4, dark: true, html: `<div class="wk"><a class="iconbtn" href="#/treinos">${ic('back', 20)}</a><p class="empty">Exercício não encontrado.</p></div>` };
   const ex = D.exMap[it.exId] || { nome: '(exercício removido)', grupo: '', equip: '', video: '' }, total = nSets(it);
   const sets = Array.from({ length: total }, (_, i) => !!(D.feitos[it.exId] || [])[i]);
+  /* peso e repetições de cada série: começam com o que o professor definiu e o aluno pode alterar (vale só para o dia) */
+  const salvo = D.valores[it.exId] || [];
+  const vals = Array.from({ length: total }, (_, i) => ({ kg: salvo[i] && salvo[i].kg != null ? salvo[i].kg : it.kg, reps: salvo[i] && salvo[i].reps != null ? salvo[i].reps : it.reps }));
+  const ro_ = ro() ? 'readonly' : '';
   const setsHTML = () => { const c = sets.findIndex(x => !x);
-    return sets.map((d, i) => `<div class="set ${d ? 'done' : i === c ? 'now' : ''}"><span class="sn">${i === c ? '<i></i>' : i + 1}</span><div class="pill kg">${kgTxt(it.kg)}</div><div class="pill">${it.reps}x</div>
+    return `<div class="set-head"><span class="sn"></span><b class="kg">Peso</b><b>Repetições</b><span class="cks"></span></div>` + sets.map((d, i) => `<div class="set ${d ? 'done' : i === c ? 'now' : ''}"><span class="sn">${i === c ? '<i></i>' : i + 1}</span>
+      <label class="pill kg"><input class="vin" data-i="${i}" data-f="kg" type="text" inputmode="decimal" placeholder="Corpo" value="${vals[i].kg ? esc(String(vals[i].kg).replace('.', ',')) : ''}" aria-label="Peso da série ${i + 1}" ${ro_}><em>kg</em></label>
+      <label class="pill"><input class="vin" data-i="${i}" data-f="reps" type="text" inputmode="numeric" value="${vals[i].reps}" aria-label="Repetições da série ${i + 1}" ${ro_}><em>x</em></label>
       <button class="ck" data-i="${i}" aria-label="Série ${i + 1}" aria-pressed="${d}">${ic('check', 22, 'currentColor', 2.2)}</button></div>`).join(''); };
   return { depth: 4, dark: true, html: `<div class="wk">
     <div class="wk-head"><a class="iconbtn" href="#/treino/${tid}" aria-label="Voltar">${ic('back', 20)}</a><div class="c"><small>Modo treino</small><b>${esc(D.t.nome)}</b></div><button class="iconbtn" id="pz" aria-label="Pausar descanso">${ic('pause', 20, '#D91E26', 2.6)}</button></div>
@@ -153,7 +159,7 @@ export async function exercicio(tid, n) {
     const run = () => { stop(); tick = setInterval(() => { if (paused) return; rem--; if (rem <= 0) { rem = 0; stop(); $('#rest', el).classList.add('ready'); $('#rl', el).textContent = 'Próxima série'; navigator.vibrate && navigator.vibrate(200); } draw(); }, 1000); };
     const startRest = () => { rem = tot = it.descanso; paused = false; $('#rest', el).classList.remove('ready'); $('#rl', el).textContent = 'Descanso'; draw(); run(); };
     const cta = () => { const p = sets.findIndex(x => !x); $('#cta', el).textContent = p >= 0 ? `Concluir série ${p + 1}` : idx < its.length - 1 ? `Próximo: ${(D.exMap[its[idx + 1].exId] || {}).nome || 'exercício'}` : 'Finalizar treino'; };
-    const persist = async () => { D.feitos[it.exId] = sets.slice(); try { await api.set('execucoes', D.eid, { uid: sid(), tid, data: D.k, feitos: D.feitos }); } catch (e) { toast(friendly(e)); } };
+    const persist = async () => { D.feitos[it.exId] = sets.slice(); D.valores[it.exId] = vals.map(v => ({ ...v })); try { await api.set('execucoes', D.eid, { uid: sid(), tid, data: D.k, feitos: D.feitos, valores: D.valores }); } catch (e) { toast(friendly(e)); } };
     const mark = async i => {
       if (ro()) return blocked();
       sets[i] = !sets[i]; $('#sets', el).innerHTML = setsHTML(); cta();
@@ -161,6 +167,12 @@ export async function exercicio(tid, n) {
       await persist();
     };
     $('#sets', el).onclick = e => { const b = e.target.closest('.ck'); if (b) mark(+b.dataset.i); };
+    const lerVal = inp => { const t = inp.value.trim().replace(',', '.'); if (inp.dataset.f === 'kg') { const n = t === '' ? 0 : Number(t); return isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null; }
+      const n = parseInt(t, 10); return isFinite(n) && n >= 0 ? n : null; };
+    $('#sets', el).addEventListener('input', e => { const inp = e.target.closest('.vin'); if (!inp || ro()) return; const v = lerVal(inp); if (v !== null) vals[+inp.dataset.i][inp.dataset.f] = v; });
+    $('#sets', el).addEventListener('change', e => { const inp = e.target.closest('.vin'); if (!inp) return; if (ro()) return blocked();
+      const v = lerVal(inp); if (v === null) { toast('Digite um número válido.'); inp.value = inp.dataset.f === 'kg' ? (vals[+inp.dataset.i].kg ? String(vals[+inp.dataset.i].kg).replace('.', ',') : '') : vals[+inp.dataset.i].reps; return; }
+      vals[+inp.dataset.i][inp.dataset.f] = v; persist(); });
     $('#cta', el).onclick = () => { const p = sets.findIndex(x => !x); if (p >= 0) return mark(p);
       if (idx < its.length - 1) return go(`/exercicio/${tid}/${idx + 1}`); toast('Treino concluído. Bom trabalho.'); go('/treino/' + tid); };
     $('#plus', el).onclick = () => { rem += 30; tot = Math.max(tot, rem); $('#rest', el).classList.remove('ready'); $('#rl', el).textContent = 'Descanso'; draw(); if (!tick && sets.some(Boolean) && !sets.every(Boolean)) run(); };

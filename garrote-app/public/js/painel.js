@@ -77,7 +77,8 @@ function schema(tab, D, E) {
       fields: [{ k: 'nome', l: 'Nome do treino', req: 1, full: 1, ph: 'Ex.: Peito e Tríceps' }, { k: 'modalidadeId', l: 'Modalidade', type: 'select', blank: 1, full: 1, opts: () => mods },
         { k: 'dias', l: 'Dias da semana', type: 'days', full: 1 }, { k: 'alunoIds', l: 'Alunos que fazem este treino', type: 'multi', opts: () => als.map(a => [a.id, a.nome]) },
         { k: 'itens', l: 'Exercícios do treino', type: 'items', req: 1 }],
-      cols: [['Nome', r => r.nome], ['Alunos', r => (r.alunoIds || []).map(id => nm(D.users, id).split(' ')[0]).join(', ') || '—'], ['Exercícios', r => (r.itens || []).length], ['Dias', dias]] }
+      cols: [['Nome', r => r.nome], ['Alunos', r => (r.alunoIds || []).map(id => nm(D.users, id).split(' ')[0]).join(', ') || '—'], ['Exercícios', r => (r.itens || []).length], ['Dias', dias]],
+      extra: r => [['Lista de exercícios', (r.itens || []).map((i, n) => `${n + 1}. ${nm(D.exercicios, i.exId)} · ${i.series}×${i.reps} · ${i.kg ? i.kg + ' kg' : 'Corpo'} · ${i.descanso}s`).join('\n') || '—']] }
   };
   return S[tab];
 }
@@ -85,8 +86,8 @@ function schema(tab, D, E) {
 /* ---------- formulário ---------- */
 const exLabel = (D, e) => `${(D.categorias.find(c => c.id === e.categoriaId) || {}).nome || 'Sem categoria'} · ${e.nome}`;
 const irow = (D, it = {}) => `<div class="irow"><select name="ex" aria-label="Exercício">${D.exercicios.map(e => `<option value="${esc(e.id)}" ${e.id === it.exId ? 'selected' : ''}>${esc(exLabel(D, e))}</option>`).join('')}</select>
-  <input name="series" type="number" min="1" max="12" value="${it.series ?? 3}" aria-label="Séries"><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições">
-  <input name="kg" type="number" min="0" step="0.5" value="${it.kg ?? 0}" aria-label="Carga em kg"><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos">
+  <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${it.series ?? 3}" aria-label="Séries"></label><label class="ii"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
+  <label class="ii"><span>Carga (kg)</span><input name="kg" type="number" min="0" step="0.5" value="${it.kg ?? 0}" aria-label="Carga em kg"></label><label class="ii"><span>Descanso (s)</span><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos"></label>
   <span class="ibtns"><button type="button" data-up aria-label="Subir">↑</button><button type="button" data-dn aria-label="Descer">↓</button><button type="button" data-rm aria-label="Remover">×</button></span></div>`;
 function fieldHTML(f, v, D) {
   const cls = `field ${f.full ? 'full' : ''}`;
@@ -168,8 +169,21 @@ function tableHTML(sc, D, E) {
   const head = `<div class="head"><div><h1 class="h1">${sc.title}</h1><p class="muted" style="margin-top:4px;font-size:14px">${rows.length} ${rows.length === 1 ? 'cadastro' : 'cadastros'}</p></div>
     <div class="tools"><input id="q" type="search" placeholder="Buscar" aria-label="Buscar"><button class="btn red" id="new" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ Novo ${sc.one}</button></div></div>`;
   if (!rows.length) return head + `<section class="card"><p class="empty">Nenhum ${sc.one} cadastrado. Clique em “Novo ${sc.one}” para começar.</p></section>`;
-  return head + `<section class="card" style="padding:8px 16px;overflow-x:auto"><table class="tbl"><thead><tr>${sc.cols.map(c => `<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>
-    ${rows.map(r => `<tr data-id="${esc(r.id)}">${sc.cols.map(c => `<td>${esc(c[1](r))}</td>`).join('')}<td class="act"><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`).join('')}</tbody></table></section>`;
+  return head + `<section class="card tblcard"><table class="tbl"><thead><tr>${sc.cols.map(c => `<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>
+    ${rows.map(r => `<tr data-id="${esc(r.id)}">${sc.cols.map(c => `<td>${esc(c[1](r))}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`).join('')}</tbody></table></section>`;
+}
+/* celular: a lista mostra só o nome e um botão "Detalhes" que abre um modal com tudo */
+const detHTML = items => `<div class="det-list">${items.map(([l, v]) => `<div class="det-i"><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
+function openDet(sc, D, E, row, repaint) {
+  const items = [...sc.cols.map(c => [c[0], c[1](row)]), ...(sc.extra ? sc.extra(row) : [])];
+  const m = openModal({ title: row.nome || 'Detalhes', html: detHTML(items), foot: '<button type="button" class="btn dark" data-edit>Editar</button><button type="button" class="btn ghost del" data-del>Excluir</button>' });
+  $('[data-edit]', m.form).onclick = () => { m.close(); openForm(sc, D, E, row, repaint); };
+  $('[data-del]', m.form).onclick = () => { m.close(); delRow(sc, row, repaint); };
+}
+async function delRow(sc, row, repaint) {
+  const msg = sc.user ? `Remover o acesso de ${row.nome}? A pessoa deixa de entrar no app.` : `Excluir “${row.nome}”? Esta ação não pode ser desfeita.`;
+  if (!(await confirmBox(msg))) return;
+  try { await api.del(sc.col, row.id); toast('Removido.'); await repaint(); } catch (err) { toast('Não foi possível remover.'); console.error(err); }
 }
 const parseMoney = s => { s = String(s).replace(/[^\d,.-]/g, ''); if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); return parseFloat(s); };
 function finCalc(D) {
@@ -186,13 +200,23 @@ function finHTML(D) {
   const kpi = (l, v, s) => `<div class="card"><small>${l}</small><b>${v}</b><em>${s}</em></div>`;
   const rows = C.rows.map(r => `<tr data-id="${esc(r.a.id)}" data-s="${r.st}"><td><div class="pcell">${avatar({ nome: r.a.nome, foto: fotos[r.a.id] }, 38)}<div><b>${esc(r.a.nome)}</b><small>${esc(r.a.email || '')}</small></div></div></td>
     <td>${r.p ? esc(r.p.nome) : '—'}${r.p ? `<small class="sub">${r.p.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(r.p.periodo)} · ${r.fam ? 'Família' + (r.a.familiaId ? ` · ${esc(r.a.familiaId)} (${r.n})` : '') : 'Individual'}</small>` : ''}</td>
-    <td>${brl(r.share)}</td><td><span class="st-chip ${r.st}">${r.stl}</span></td><td>${r.p && r.p.categoria === 'totalpass' ? '—' : ptDate(r.a.vencimento)}</td>
-    <td class="act"><button data-pay>Pagamento</button><button data-plan>Plano</button><button data-hist>Histórico</button></td></tr>`).join('');
+    <td>${brl(r.share)}</td><td class="keep"><span class="st-chip ${r.st}">${r.stl}</span></td><td>${r.p && r.p.categoria === 'totalpass' ? '—' : ptDate(r.a.vencimento)}</td>
+    <td class="act"><button class="det" data-det>Detalhes</button><button data-pay>Pagamento</button><button data-plan>Plano</button><button data-hist>Histórico</button></td></tr>`).join('');
   return `<div class="head"><div><h1 class="h1">Financeiro</h1><p class="muted" style="margin-top:4px;font-size:14px">Planos, pagamentos e situação de cada aluno</p></div>
     <div class="tools"><input id="q" type="search" placeholder="Buscar aluno" aria-label="Buscar"><a class="btn dark" href="#/painel/planos" style="width:auto;height:46px;padding:0 20px;border-radius:14px;font-size:14px">Gerenciar planos</a></div></div>
   <div class="kpis money">${kpi('Receita mensal prevista', brl(C.receita), 'planos ativos por mês')}${kpi('Recebido no mês', brl(recebido), 'pagamentos registrados')}${kpi('Em atraso', cnt('atrasado'), 'alunos com vencimento vencido')}${kpi('Sem plano', cnt('semplano'), 'defina um plano para cobrar')}</div>
   <div class="chips" id="fchips">${[['todos', 'Todos'], ['emdia', 'Em dia'], ['atrasado', 'Em atraso'], ['pendente', 'Pendente'], ['semplano', 'Sem plano'], ['totalpass', 'Total Pass']].map(([k, l], i) => `<button class="chip ${i ? '' : 'on'}" data-fs="${k}">${l}</button>`).join('')}</div>
-  <section class="card" style="padding:8px 16px;overflow-x:auto">${C.rows.length ? `<table class="tbl"><thead><tr><th>Aluno</th><th>Plano</th><th>Valor/mês</th><th>Situação</th><th>Vencimento</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">Nenhum aluno cadastrado ainda.</p>'}</section>`;
+  <section class="card tblcard">${C.rows.length ? `<table class="tbl"><thead><tr><th>Aluno</th><th>Plano</th><th>Valor/mês</th><th>Situação</th><th>Vencimento</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">Nenhum aluno cadastrado ainda.</p>'}</section>`;
+}
+function openFinDet(a, D, repaint) {
+  const r = finCalc(D).rows.find(x => x.a.id === a.id); if (!r) return;
+  const items = [['Aluno', a.nome], ['E-mail', a.email || '—'], ['Telefone', a.telefone || '—'], ['Plano', r.p ? r.p.nome : '—'],
+    ['Cobrança', r.p ? (r.p.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(r.p.periodo)) : '—'], ['Tipo', r.p ? (r.fam ? 'Família' + (a.familiaId ? ` · ${a.familiaId} (${r.n} pessoas)` : '') : 'Individual') : '—'],
+    ['Valor por mês', brl(r.share)], ['Situação', r.stl], ['Vencimento', r.p && r.p.categoria === 'totalpass' ? '—' : ptDate(a.vencimento)]];
+  const m = openModal({ title: a.nome, html: detHTML(items), foot: '<button type="button" class="btn dark" data-pay>Pagamento</button><button type="button" class="btn ghost" data-plan>Plano</button><button type="button" class="btn ghost" data-hist>Histórico</button>' });
+  $('[data-pay]', m.form).onclick = () => { m.close(); openPay(a, D, repaint); };
+  $('[data-plan]', m.form).onclick = () => { m.close(); openPlano(a, D, repaint); };
+  $('[data-hist]', m.form).onclick = () => { m.close(); openHist(a, D); };
 }
 function openPlano(a, D, done) {
   const opts = ['<option value="">Sem plano</option>', ...D.planos.map(p => `<option value="${esc(p.id)}" ${p.id === a.planoId ? 'selected' : ''}>${esc(p.nome)} · ${brl(p.valor)} (${p.categoria === 'totalpass' ? 'Total Pass' : perLabel(p.periodo)})</option>`)].join('');
@@ -231,22 +255,26 @@ function bindFin(el, D, repaint) {
   $('#fchips', el).onclick = e => { const b = e.target.closest('[data-fs]'); if (!b) return; fs = b.dataset.fs; $$('#fchips .chip', el).forEach(c => c.classList.toggle('on', c === b)); apply(); };
   const tb = $('tbody', el); if (!tb) return;
   tb.onclick = e => { const tr = e.target.closest('tr'), a = tr && D.users.find(u => u.id === tr.dataset.id); if (!a) return;
-    if (e.target.closest('[data-pay]')) openPay(a, D, repaint); else if (e.target.closest('[data-plan]')) openPlano(a, D, repaint); else if (e.target.closest('[data-hist]')) openHist(a, D); };
+    if (e.target.closest('[data-det]')) openFinDet(a, D, repaint); else if (e.target.closest('[data-pay]')) openPay(a, D, repaint); else if (e.target.closest('[data-plan]')) openPlano(a, D, repaint); else if (e.target.closest('[data-hist]')) openHist(a, D); };
 }
 function build(tab, D, E) {
   const me = SESSION.me;
-  const side = `<aside class="side">${logo(34)}${MENU[E.mode].map(([k, l]) => `<a class="${tab === k ? 'on' : ''}" href="#/painel/${k}">${l}</a>`).join('')}
+  const side = `<aside class="side" id="menu" aria-label="Menu">${logo(34)}<button type="button" class="iconbtn mclose" id="mx" aria-label="Fechar menu">${ic('close', 20)}</button>${MENU[E.mode].map(([k, l]) => `<a class="${tab === k ? 'on' : ''}" href="#/painel/${k}">${l}</a>`).join('')}
     <div class="who">${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
   const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D)
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
     : tableHTML(schema(tab, D, E), D, E);
-  return `<div class="admin">${side}<main class="main">${body}</main></div>`;
+  const mbar = `<header class="mtop"><button type="button" class="iconbtn" id="mn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">${ic('menu', 22)}</button>${logo(30)}<span></span></header><div class="scrim" id="scrim"></div>`;
+  return `<div class="admin">${mbar}${side}<main class="main">${body}</main></div>`;
 }
 function bind(el, tab, D, E) {
   const repaint = async () => { const E2 = eff(), D2 = await load(tab); el.innerHTML = build(tab, D2, E2); bind(el, tab, D2, E2); };
   $$('[data-n]', el).forEach(n => countUp(n, 0, +n.dataset.n, 800));
   $('#out', el).onclick = () => api.logout();
+  const ad = $('.admin', el), mn = $('#mn', el), setMenu = on => { ad.classList.toggle('menu-open', on); mn.setAttribute('aria-expanded', on); };
+  mn.onclick = () => setMenu(true); $('#mx', el).onclick = () => setMenu(false); $('#scrim', el).onclick = () => setMenu(false);
+  $$('.side a', el).forEach(a => a.addEventListener('click', () => setMenu(false)));
   if (tab === 'visao') return;
   if (tab === 'perfil') return bindPerfil(el, repaint);
   if (tab === 'financeiro') return bindFin(el, D, repaint);
@@ -257,12 +285,9 @@ function bind(el, tab, D, E) {
   const tb = $('tbody', el);
   if (tb) tb.onclick = async e => {
     const tr = e.target.closest('tr'); if (!tr) return; const row = sc.rows.find(r => r.id === tr.dataset.id); if (!row) return;
-    if (e.target.closest('[data-edit]')) openForm(sc, D, E, row, repaint);
-    if (e.target.closest('[data-del]')) {
-      const msg = sc.user ? `Remover o acesso de ${row.nome}? A pessoa deixa de entrar no app.` : `Excluir “${row.nome}”? Esta ação não pode ser desfeita.`;
-      if (!(await confirmBox(msg))) return;
-      try { await api.del(sc.col, row.id); toast('Removido.'); await repaint(); } catch (err) { toast('Não foi possível remover.'); console.error(err); }
-    }
+    if (e.target.closest('[data-det]')) openDet(sc, D, E, row, repaint);
+    else if (e.target.closest('[data-edit]')) openForm(sc, D, E, row, repaint);
+    else if (e.target.closest('[data-del]')) delRow(sc, row, repaint);
   };
 }
 export async function painel(tab = 'visao') {
