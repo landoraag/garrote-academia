@@ -373,3 +373,13 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
   .main{padding-bottom:116px}
   #toast{bottom:104px}
 }
+
+/* cronômetro do treino */
+.cron{display:flex;align-items:center;justify-content:space-between;background:var(--s1);border-radius:22px;padding:14px 18px}
+.cron small{font:600 11px var(--b);letter-spacing:2px;color:var(--dim);display:block}
+.cron b{display:block;font:700 40px/1.1 var(--d);font-variant-numeric:tabular-nums;color:var(--dim)}
+.cron .dot{width:12px;height:12px;border-radius:50%;background:var(--s3);flex:none}
+.cron.on b{color:#fff}.cron.on .dot{background:var(--red);animation:pulse 1.2s infinite}
+.cron.end b{color:#fff}.cron.end .dot{background:#2FB36B}
+.btn.link{height:44px;background:none;box-shadow:none;color:var(--dim);font:600 14px var(--b);align-self:center;width:auto;padding:0 16px}
+#et{font-variant-numeric:tabular-nums}

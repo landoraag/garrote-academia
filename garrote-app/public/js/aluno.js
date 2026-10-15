@@ -2,7 +2,7 @@
 import { api } from './api.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { perLabel, situ, ptDate } from './plano.js';
-import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly } from './ui.js';
+import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly, confirmBox } from './ui.js';
 
 const META_MES = 20;
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -37,6 +37,11 @@ function videoEl(url, label, tag) {
 
 const myTreinos = uid => api.list('treinos', [['alunoIds', 'array-contains', uid]]);
 const toMap = a => Object.fromEntries(a.map(x => [x.id, x]));
+/* cronômetro do treino: calculado a partir do horário de início gravado no Firestore (não perde o tempo ao trocar de tela ou fechar o app) */
+const fmtT = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), p = n => String(n).padStart(2, '0'); return (h ? h + ':' : '') + p(m) + ':' + p(s % 60); };
+const decorrido = D => D.inicio ? ((D.fim || Date.now()) - D.inicio) / 1000 : 0;
+const salvarExec = D => api.set('execucoes', D.eid, { uid: sid(), tid: D.tid, data: D.k, feitos: D.feitos, valores: D.valores,
+  ...(D.inicio ? { inicio: D.inicio } : {}), ...(D.fim ? { fim: D.fim, duracao: Math.round((D.fim - D.inicio) / 1000) } : {}) });
 const nSets = it => Math.max(1, it.series | 0);
 const itemDone = (it, feitos) => { const f = feitos[it.exId] || []; return f.length >= nSets(it) && f.slice(0, nSets(it)).every(Boolean); };
 
@@ -110,7 +115,7 @@ async function loadTreino(tid) {
   const [t, exs, cats, ex0] = await Promise.all([api.get('treinos', tid), api.list('exercicios'), api.list('categorias'), api.get('execucoes', `${uid}_${tid}_${k}`)]);
   if (!t) return null;
   const catMap = toMap(cats), exMap = Object.fromEntries(exs.map(e => [e.id, { ...e, grupo: (catMap[e.categoriaId] || {}).nome || '' }]));
-  return { t, exMap, feitos: (ex0 && ex0.feitos) || {}, valores: (ex0 && ex0.valores) || {}, eid: `${uid}_${tid}_${k}`, k };
+  return { t, exMap, feitos: (ex0 && ex0.feitos) || {}, valores: (ex0 && ex0.valores) || {}, eid: `${uid}_${tid}_${k}`, k, tid, inicio: (ex0 && ex0.inicio) || 0, fim: (ex0 && ex0.fim) || 0 };
 }
 export async function treino(tid) {
   const D = await loadTreino(tid); if (!D) return { depth: 3, html: `<div class="wk"><a class="iconbtn" href="#/treinos">${ic('back', 20)}</a><p class="empty">Treino não encontrado.</p></div>`, dark: true };
@@ -118,14 +123,31 @@ export async function treino(tid) {
   const rows = its.map((i, n) => { const e = D.exMap[i.exId] || { nome: '(exercício removido)' }, st = itemDone(i, D.feitos) ? 'done' : (nx === i ? 'now' : '');
     return `<a class="lrow ${st}" href="#/exercicio/${tid}/${n}"><span class="lb">${st === 'done' ? ic('check', 20, '#fff', 2.2) : n + 1}</span>
       <div class="tx"><b>${esc(e.nome)}${st === 'now' ? '<span class="tag">EM ANDAMENTO</span>' : ''}</b><small>${nSets(i)} × ${i.reps} · ${kgTxt(i.kg)} · ${i.descanso}s</small></div>${ic('chev', 20, '#6A6A70')}</a>`; }).join('');
-  const nxIdx = its.indexOf(nx);
+  const nxIdx = its.indexOf(nx), proximo = nx ? esc((D.exMap[nx.exId] || {}).nome || 'próximo') : '';
+  const concluido = `<button class="btn done" disabled>${ic('check', 20, '#fff', 2.4)}Treino concluído</button>`;
+  const botao = !its.length ? '' : ro() ? (nx ? `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${proximo}</a>` : concluido)
+    : !nx ? (D.inicio && !D.fim ? `<button class="btn red" id="fin">Finalizar treino</button>` : concluido)
+    : !D.inicio ? `<button class="btn red" id="ini">Iniciar treino</button>`
+    : D.fim ? `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${proximo}</a>`
+    : `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${proximo}</a><button class="btn link" id="enc">Encerrar treino</button>`;
   return { depth: 3, dark: true, html: `<div class="wk">
     <div class="wk-head"><a class="iconbtn" href="#/treinos" aria-label="Voltar">${ic('back', 20)}</a><small style="font:600 11px var(--b);letter-spacing:2px;color:var(--dim)">TREINO</small><span style="width:44px"></span></div>
     <div><h1 class="h1">${esc(D.t.nome)}</h1><p class="muted" style="margin-top:6px;font-size:14px">${its.length} exercícios</p></div>
-    <div class="prog"><div><b>${done}<span> / ${its.length}</span></b><small>concluídos</small></div><div class="bar"><i data-w="${its.length ? done / its.length * 100 : 0}"></i></div><span style="font:600 12px var(--b)">~${(its.length - done) * 8} min</span></div>
+    <div class="cron ${D.inicio ? (D.fim ? 'end' : 'on') : ''}"><div><small id="cl">${D.fim ? 'TEMPO TOTAL' : D.inicio ? 'TEMPO DE TREINO' : 'CRONÔMETRO'}</small><b id="ct">${fmtT(decorrido(D))}</b></div><i class="dot"></i></div>
+    <div class="prog"><div><b>${done}<span> / ${its.length}</span></b><small>concluídos</small></div><div class="bar"><i data-w="${its.length ? done / its.length * 100 : 0}"></i></div><span style="font:600 12px var(--b)">${D.fim ? '' : '~' + (its.length - done) * 8 + ' min'}</span></div>
     <div style="display:flex;flex-direction:column;gap:8px">${rows || '<p class="empty">Este treino ainda não tem exercícios.</p>'}</div><div class="grow"></div>
-    ${nx ? `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${esc((D.exMap[nx.exId] || {}).nome || 'próximo')}</a>` : its.length ? `<button class="btn done" disabled>${ic('check', 20, '#fff', 2.4)}Treino concluído</button>` : ''}</div>`,
-  after(el) { raf2(() => $$('.prog .bar i', el).forEach(i => i.style.width = i.dataset.w + '%')); } };
+    ${botao}</div>`,
+  after(el) {
+    raf2(() => $$('.prog .bar i', el).forEach(i => i.style.width = i.dataset.w + '%'));
+    const draw = () => { $('#ct', el).textContent = fmtT(decorrido(D)); };
+    const tk = D.inicio && !D.fim ? setInterval(draw, 1000) : null;
+    const atualizar = () => dispatchEvent(new HashChangeEvent('hashchange'));           // redesenha esta mesma tela
+    const encerrar = async () => { D.fim = Date.now(); try { await salvarExec(D); } catch (e) { D.fim = 0; return toast(friendly(e)); } toast(`Treino concluído em ${fmtT(decorrido(D))}. Bom trabalho.`); atualizar(); };
+    if ($('#ini', el)) $('#ini', el).onclick = async () => { D.inicio = Date.now(); D.fim = 0; try { await salvarExec(D); } catch (e) { return toast(friendly(e)); } go(`/exercicio/${tid}/${Math.max(0, nxIdx)}`); };
+    if ($('#fin', el)) $('#fin', el).onclick = encerrar;
+    if ($('#enc', el)) $('#enc', el).onclick = async () => { if (await confirmBox('Encerrar o treino agora? O cronômetro vai parar com os exercícios que você já fez.', 'Encerrar')) encerrar(); };
+    return () => clearInterval(tk);
+  } };
 }
 
 /* ---------------- Modo treino ---------------- */
@@ -144,7 +166,7 @@ export async function exercicio(tid, n) {
       <label class="pill"><input class="vin" data-i="${i}" data-f="reps" type="text" inputmode="numeric" value="${vals[i].reps}" aria-label="Repetições da série ${i + 1}" ${ro_}><em>x</em></label>
       <button class="ck" data-i="${i}" aria-label="Série ${i + 1}" aria-pressed="${d}">${ic('check', 22, 'currentColor', 2.2)}</button></div>`).join(''); };
   return { depth: 4, dark: true, html: `<div class="wk">
-    <div class="wk-head"><a class="iconbtn" href="#/treino/${tid}" aria-label="Voltar">${ic('back', 20)}</a><div class="c"><small>Modo treino</small><b>${esc(D.t.nome)}</b></div><button class="iconbtn" id="pz" aria-label="Pausar descanso">${ic('pause', 20, '#D91E26', 2.6)}</button></div>
+    <div class="wk-head"><a class="iconbtn" href="#/treino/${tid}" aria-label="Voltar">${ic('back', 20)}</a><div class="c"><small>Modo treino<span id="et">${D.inicio ? ' · ' + fmtT(decorrido(D)) : ''}</span></small><b>${esc(D.t.nome)}</b></div><button class="iconbtn" id="pz" aria-label="Pausar descanso">${ic('pause', 20, '#D91E26', 2.6)}</button></div>
     <div class="exhead"><div class="mini"><svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="none" stroke="#2A2A2D" stroke-width="4"/><circle class="arc" id="mp" cx="32" cy="32" r="28" fill="none" stroke="#D91E26" stroke-width="4" stroke-linecap="round" transform="rotate(-90 32 32)" style="stroke-dasharray:0 176"/></svg><b>${idx + 1}/${its.length}</b></div>
       <div style="flex:1;min-width:0"><h1>${esc(ex.nome)}</h1><p>${[ex.grupo, ex.equip, total + ' séries'].filter(Boolean).map(esc).join(' · ')}</p></div>
       <a class="iconbtn" href="#/treino/${tid}" aria-label="Ver treino completo">${ic('list', 20)}</a></div>
@@ -154,15 +176,18 @@ export async function exercicio(tid, n) {
     <div class="grow"></div><button class="btn red" id="cta"></button></div>`,
   after(el) {
     let rem = it.descanso, tot = it.descanso, tick = null, paused = false;
+    const showT = () => { const e = $('#et', el); if (e) e.textContent = D.inicio ? ' · ' + fmtT(decorrido(D)) : ''; };
+    const tt = setInterval(() => { if (D.inicio && !D.fim) showT(); }, 1000);
     const draw = () => { $('#rt', el).textContent = fmt(rem); $('#rb', el).style.width = (tot ? rem / tot * 100 : 0) + '%'; };
     const stop = () => { clearInterval(tick); tick = null; };
     const run = () => { stop(); tick = setInterval(() => { if (paused) return; rem--; if (rem <= 0) { rem = 0; stop(); $('#rest', el).classList.add('ready'); $('#rl', el).textContent = 'Próxima série'; navigator.vibrate && navigator.vibrate(200); } draw(); }, 1000); };
     const startRest = () => { rem = tot = it.descanso; paused = false; $('#rest', el).classList.remove('ready'); $('#rl', el).textContent = 'Descanso'; draw(); run(); };
     const cta = () => { const p = sets.findIndex(x => !x); $('#cta', el).textContent = p >= 0 ? `Concluir série ${p + 1}` : idx < its.length - 1 ? `Próximo: ${(D.exMap[its[idx + 1].exId] || {}).nome || 'exercício'}` : 'Finalizar treino'; };
-    const persist = async () => { D.feitos[it.exId] = sets.slice(); D.valores[it.exId] = vals.map(v => ({ ...v })); try { await api.set('execucoes', D.eid, { uid: sid(), tid, data: D.k, feitos: D.feitos, valores: D.valores }); } catch (e) { toast(friendly(e)); } };
+    const persist = async () => { D.feitos[it.exId] = sets.slice(); D.valores[it.exId] = vals.map(v => ({ ...v })); try { await salvarExec(D); } catch (e) { toast(friendly(e)); } };
     const mark = async i => {
       if (ro()) return blocked();
       sets[i] = !sets[i]; $('#sets', el).innerHTML = setsHTML(); cta();
+      if (sets[i] && !D.inicio) { D.inicio = Date.now(); showT(); }                      // se o aluno não tocou em "Iniciar treino", o cronômetro começa na 1ª série
       if (sets[i]) { $(`.ck[data-i="${i}"]`, el).classList.add('pop'); if (sets.every(Boolean)) { stop(); toast('Exercício concluído.'); } else startRest(); }
       await persist();
     };
@@ -173,12 +198,17 @@ export async function exercicio(tid, n) {
     $('#sets', el).addEventListener('change', e => { const inp = e.target.closest('.vin'); if (!inp) return; if (ro()) return blocked();
       const v = lerVal(inp); if (v === null) { toast('Digite um número válido.'); inp.value = inp.dataset.f === 'kg' ? (vals[+inp.dataset.i].kg ? String(vals[+inp.dataset.i].kg).replace('.', ',') : '') : vals[+inp.dataset.i].reps; return; }
       vals[+inp.dataset.i][inp.dataset.f] = v; persist(); });
-    $('#cta', el).onclick = () => { const p = sets.findIndex(x => !x); if (p >= 0) return mark(p);
-      if (idx < its.length - 1) return go(`/exercicio/${tid}/${idx + 1}`); toast('Treino concluído. Bom trabalho.'); go('/treino/' + tid); };
+    $('#cta', el).onclick = async () => { const p = sets.findIndex(x => !x); if (p >= 0) return mark(p);
+      if (idx < its.length - 1) return go(`/exercicio/${tid}/${idx + 1}`);
+      if (its.every(i => itemDone(i, D.feitos))) {
+        if (!ro() && D.inicio && !D.fim) { D.fim = Date.now(); try { await salvarExec(D); } catch (e) { D.fim = 0; return toast(friendly(e)); } }
+        toast(D.fim ? `Treino concluído em ${fmtT(decorrido(D))}. Bom trabalho.` : 'Treino concluído. Bom trabalho.');
+      } else toast('Ainda faltam exercícios neste treino.');
+      go('/treino/' + tid); };
     $('#plus', el).onclick = () => { rem += 30; tot = Math.max(tot, rem); $('#rest', el).classList.remove('ready'); $('#rl', el).textContent = 'Descanso'; draw(); if (!tick && sets.some(Boolean) && !sets.every(Boolean)) run(); };
     $('#pz', el).onclick = e => { paused = !paused; e.currentTarget.innerHTML = paused ? ic('arrow', 20, '#D91E26', 2.4) : ic('pause', 20, '#D91E26', 2.6); toast(paused ? 'Descanso pausado.' : 'Descanso retomado.'); };
     cta(); raf2(() => { $('#mp', el).style.strokeDasharray = `${(idx + 1) / its.length * 175.9} 176`; });
-    return stop;
+    return () => { stop(); clearInterval(tt); };
   } };
 }
 

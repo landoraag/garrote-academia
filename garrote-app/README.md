@@ -10,7 +10,7 @@ Sem configurar nada, abre em **modo demonstração** (dados só no navegador).
   - **Plano família:** use o mesmo "Grupo familiar" nos alunos da família. O valor do plano é dividido entre eles.
   - O dono **não** cria treinos, categorias nem exercícios e não alterna entre telas.
 - **Treinador:** cria os próprios alunos, exercícios, categorias e treinos, e atribui treinos aos alunos.
-- **Aluno:** faz check-in diário, vê e executa o treino, vê modalidades e agenda aula experimental.
+- **Aluno:** faz check-in diário, vê e executa o treino, vê modalidades e agenda aula experimental. Ao tocar em *Iniciar treino* (ou na primeira série), um **cronômetro** começa a contar e só para em *Finalizar treino* ou *Encerrar treino*; o horário fica salvo na coleção `execucoes` (campos `inicio`, `fim` e `duracao`).
 - **Todos:** em *Meu perfil* trocam foto, nome e senha. A foto é guardada no Firestore (coleção `fotos`), sem precisar do Storage.
 - **Layout:** pensado para celular e adaptado para computador (menu lateral).
 
