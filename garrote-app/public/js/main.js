@@ -70,7 +70,7 @@ const SCREENS = {
 };
 
 /* ---------- roteador com transição ---------- */
-let cur = null, curDepth = null, cleanup = null, token = 0, busy = false;
+let cur = null, curDepth = null, curWide = false, cleanup = null, token = 0, busy = false;
 async function render() {
   if (busy) return;
   const parts = (location.hash.slice(1) || '/login').split('/'), name = parts[1] || 'login', args = parts.slice(2), pub = ['login', 'setup'];
@@ -84,25 +84,27 @@ async function render() {
     else if (staff) { location.replace('#/painel/' + (target === 'perfil' ? 'perfil' : 'visao')); return; }   // dono e treinador usam só o painel
   }
   const my = ++token;
-  let v; try { v = await SCREENS[target](...args); } catch (err) { console.error(err); toast(friendly(err)); return; }
+  document.body.classList.add('loading');
+  let v; try { v = await SCREENS[target](...args); } catch (err) { console.error(err); toast(friendly(err)); if (my === token) document.body.classList.remove('loading'); return; }
   if (my !== token) return;
+  document.body.classList.remove('loading');
   if (cleanup) { cleanup(); cleanup = null; }
   document.body.classList.toggle('wide', !!v.wide);
   const el = document.createElement('section'); el.className = 'screen' + (v.dark ? ' dark' : ''); el.innerHTML = v.html;
   const back = curDepth !== null && v.depth < curDepth;
   if (cur) {
-    if (reduce) cur.remove();
+    if (reduce || (curWide && v.wide)) cur.remove();   // trocar de aba do painel: sem animação, na hora
     else { const old = cur; el.classList.add(back ? 'in-back' : 'in-fwd'); old.classList.add(back ? 'out-back' : 'out-fwd'); old.inert = true; setTimeout(() => old.remove(), 380); }
   }
-  app.appendChild(el); cur = el; curDepth = v.depth;
+  app.appendChild(el); cur = el; curDepth = v.depth; curWide = !!v.wide;
   cleanup = (v.after && v.after(el)) || null;
 }
 
 api.onAuth(async u => {
   SESSION.user = u; SESSION.me = null; SESSION.viewAs = null;
   if (u && !busy) {
-    try { SESSION.me = await api.get('users', u.uid); } catch (e) { console.error(e); }
-    if (SESSION.me) { try { const f = await api.get('fotos', u.uid); if (f) SESSION.me.foto = f.data; } catch {} }
+    const [me, f] = await Promise.all([api.get('users', u.uid).catch(e => { console.error(e); return null; }), api.get('fotos', u.uid).catch(() => null)]);   // em paralelo
+    SESSION.me = me; if (me && f) me.foto = f.data;
     if (SESSION.me && SESSION.me.ativo === 'nao') { toast('Seu acesso está inativo. Fale com a academia.'); SESSION.me = null; await api.logout(); return; }
   }
   if (!u) { cur && cur.remove(); cur = null; curDepth = null; location.hash = '#/login'; }
@@ -110,3 +112,4 @@ api.onAuth(async u => {
 });
 document.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) { e.preventDefault(); toast(s.dataset.soon); } });
 addEventListener('hashchange', render);
+if ('serviceWorker' in navigator) { let avisou = false; navigator.serviceWorker.addEventListener('message', e => { if (e.data === 'update' && !avisou) { avisou = true; toast('Nova versão pronta. Feche e abra o app para atualizar.'); } }); }

@@ -13,6 +13,11 @@ const MENU = {
   dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['perfil', 'Meu perfil']],
   treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['perfil', 'Meu perfil']]
 };
+/* atalhos fixos na parte de baixo do celular (5 ícones, o do meio é sempre a visão geral) */
+const BNAV = {
+  dono: [['treinadores', 'i-treinador', 'Treinadores'], ['alunos', 'i-alunos', 'Alunos'], ['visao', 'i-visao', 'Visão geral'], ['planos', 'i-planos', 'Planos'], ['financeiro', 'i-cifrao', 'Financeiro']],
+  treinador: [['alunos', 'i-alunos', 'Meus alunos'], ['treinos', 'db', 'Treinos'], ['visao', 'i-visao', 'Visão geral'], ['exercicios', 'bolt', 'Exercícios'], ['categorias', 'tag', 'Categorias']]
+};
 const eff = () => SESSION.me.role === 'treinador' ? { mode: 'treinador', tid: SESSION.user.uid } : { mode: 'dono', tid: null };
 
 async function load(tab) {
@@ -20,7 +25,7 @@ async function load(tab) {
   const [users, modalidades, categorias, exercicios, treinos] = await Promise.all(names.map(c => api.list(c)));
   const D = { users: users.sort(byName), modalidades: modalidades.sort(byName), categorias: categorias.sort(byName), exercicios: exercicios.sort(byName), treinos: treinos.sort(byName) };
   D.planos = SESSION.me.role === 'dono' ? (await api.list('planos')).sort(byName) : [];
-  if (tab === 'financeiro') [D.pagamentos, D.fotos] = await Promise.all([api.list('pagamentos'), api.list('fotos')]);
+  if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos');
   if (tab === 'visao') [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', dkey(new Date())]]), api.list('agendamentos')]);
   return D;
 }
@@ -250,6 +255,8 @@ async function openHist(a, D) {
 }
 function bindFin(el, D, repaint) {
   let fs = 'todos';
+  api.list('fotos').then(fl => { const m = Object.fromEntries(fl.map(f => [f.id, f.data]));   // fotos chegam depois, sem atrasar a tela
+    $$('tbody tr', el).forEach(tr => { const f = m[tr.dataset.id], av = f && $('.pcell .avtxt', tr); if (av) av.outerHTML = avatar({ nome: '', foto: f }, 38); }); }).catch(() => {});
   const apply = () => { const q = ($('#q', el).value || '').toLowerCase(); $$('tbody tr', el).forEach(r => r.hidden = !(fs === 'todos' || r.dataset.s === fs) || !r.textContent.toLowerCase().includes(q)); };
   $('#q', el).oninput = apply;
   $('#fchips', el).onclick = e => { const b = e.target.closest('[data-fs]'); if (!b) return; fs = b.dataset.fs; $$('#fchips .chip', el).forEach(c => c.classList.toggle('on', c === b)); apply(); };
@@ -266,7 +273,8 @@ function build(tab, D, E) {
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
     : tableHTML(schema(tab, D, E), D, E);
   const mbar = `<header class="mtop"><button type="button" class="iconbtn" id="mn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">${ic('menu', 22)}</button>${logo(30)}<span></span></header><div class="scrim" id="scrim"></div>`;
-  return `<div class="admin">${mbar}${side}<main class="main">${body}</main></div>`;
+  const bnav = `<nav class="bnav" aria-label="Atalhos">${BNAV[E.mode].map(([k, i, l]) => `<a href="#/painel/${k}" class="${tab === k ? 'on' : ''}" aria-label="${l}" title="${l}" ${tab === k ? 'aria-current="page"' : ''}>${ic(i, 24)}</a>`).join('')}</nav>`;
+  return `<div class="admin">${mbar}${side}<main class="main">${body}</main>${bnav}</div>`;
 }
 function bind(el, tab, D, E) {
   const repaint = async () => { const E2 = eff(), D2 = await load(tab); el.innerHTML = build(tab, D2, E2); bind(el, tab, D2, E2); };

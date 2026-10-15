@@ -358,3 +358,18 @@ body.wide .device{width:100%;box-shadow:none}
   .scrim{display:block;position:fixed;inset:0;background:rgba(12,12,12,.55);z-index:30;opacity:0;pointer-events:none;transition:opacity .25s}
   .admin.menu-open .scrim{opacity:1;pointer-events:auto}
 }
+
+/* ---------- v7: barra de carregamento ao trocar de tela ---------- */
+body::before{content:"";position:fixed;top:0;left:0;height:3px;width:100%;background:var(--red);transform:scaleX(0);transform-origin:left;opacity:0;z-index:60;pointer-events:none}
+body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
+@keyframes loadbar{0%{transform:scaleX(0)}70%{transform:scaleX(.85)}100%{transform:scaleX(.95)}}
+
+/* ---------- v8: atalhos em ícones na parte de baixo (celular) ---------- */
+.bnav{display:none}
+@media (max-width:900px){
+  .bnav{display:flex;align-items:center;justify-content:space-around;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));width:min(calc(100% - 32px),440px);height:68px;border-radius:34px;background:var(--ink);padding:0 10px;box-shadow:0 16px 36px rgba(12,12,12,.28);z-index:15}
+  .bnav a{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#8C8C92;background:var(--ink);transition:background .25s,color .25s,transform .15s}
+  .bnav a.on{background:var(--red);color:#fff}.bnav a:active{transform:scale(.92)}
+  .main{padding-bottom:116px}
+  #toast{bottom:104px}
+}

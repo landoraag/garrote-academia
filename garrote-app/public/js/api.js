@@ -10,9 +10,11 @@ async function makeFirebase() {
   const app = App.initializeApp(cfg), auth = A.getAuth(app), db = F.getFirestore(app);
   const withId = s => ({ id: s.id, ...s.data() });
   const clean = d => JSON.parse(JSON.stringify(d));
+  /* cache de listas na memória (30 s): trocar de tela fica instantâneo; qualquer gravação limpa a coleção */
+  const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); };
   return {
     mode: 'firebase',
-    onAuth: cb => A.onAuthStateChanged(auth, u => cb(u ? { uid: u.uid, email: u.email } : null)),
+    onAuth: cb => A.onAuthStateChanged(auth, u => { cache.clear(); cb(u ? { uid: u.uid, email: u.email } : null); }),
     login: (e, p) => A.signInWithEmailAndPassword(auth, e, p),
     logout: () => A.signOut(auth),
     reset: e => A.sendPasswordResetEmail(auth, e),
@@ -31,17 +33,19 @@ async function makeFirebase() {
       const b = F.writeBatch(db);
       b.set(F.doc(db, 'users', uid), clean(profile));
       b.set(F.doc(db, 'config', 'setup'), { donoUid: uid, criadoEm: Date.now() });
-      await b.commit();
+      await b.commit(); drop('users'); drop('config');
     },
     async get(c, id) { const s = await F.getDoc(F.doc(db, c, id)); return s.exists() ? withId(s) : null; },
     async list(c, filters = []) {
+      const k = c + '|' + JSON.stringify(filters), hit = cache.get(k);
+      if (hit && Date.now() - hit.t < TTL) return [...hit.d];
       const q = F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)));
-      return (await F.getDocs(q)).docs.map(withId);
+      const d = (await F.getDocs(q)).docs.map(withId); cache.set(k, { t: Date.now(), d }); return [...d];
     },
-    async set(c, id, d) { await F.setDoc(F.doc(db, c, id), clean(d)); },
-    async add(c, d) { return (await F.addDoc(F.collection(db, c), clean(d))).id; },
-    async update(c, id, d) { await F.updateDoc(F.doc(db, c, id), clean(d)); },
-    async del(c, id) { await F.deleteDoc(F.doc(db, c, id)); }
+    async set(c, id, d) { await F.setDoc(F.doc(db, c, id), clean(d)); drop(c); },
+    async add(c, d) { const id = (await F.addDoc(F.collection(db, c), clean(d))).id; drop(c); return id; },
+    async update(c, id, d) { await F.updateDoc(F.doc(db, c, id), clean(d)); drop(c); },
+    async del(c, id) { await F.deleteDoc(F.doc(db, c, id)); drop(c); }
   };
 }
 
