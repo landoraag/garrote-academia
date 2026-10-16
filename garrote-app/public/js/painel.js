@@ -10,8 +10,8 @@ const byName = (a, b) => String(a.nome || '').localeCompare(String(b.nome || '')
 const genPass = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)]; return s; };
 /* Dono: pessoas, modalidades e financeiro. Treinador: alunos, treinos, exercícios e categorias. */
 const MENU = {
-  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['perfil', 'Meu perfil']],
-  treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['perfil', 'Meu perfil']]
+  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro']],
+  treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias']]
 };
 /* atalhos fixos na parte de baixo do celular (5 ícones, o do meio é sempre a visão geral) */
 const BNAV = {
@@ -83,17 +83,25 @@ function schema(tab, D, E) {
         { k: 'dias', l: 'Dias da semana', type: 'days', full: 1 }, { k: 'alunoIds', l: 'Alunos que fazem este treino', type: 'multi', opts: () => als.map(a => [a.id, a.nome]) },
         { k: 'itens', l: 'Exercícios do treino', type: 'items', req: 1 }],
       cols: [['Nome', r => r.nome], ['Alunos', r => (r.alunoIds || []).map(id => nm(D.users, id).split(' ')[0]).join(', ') || '—'], ['Exercícios', r => (r.itens || []).length], ['Dias', dias]],
-      extra: r => [['Lista de exercícios', (r.itens || []).map((i, n) => `${n + 1}. ${nm(D.exercicios, i.exId)} · ${i.series}×${i.reps} · ${i.kg ? i.kg + ' kg' : 'Corpo'} · ${i.descanso}s`).join('\n') || '—']] }
+      extra: r => [['Lista de exercícios', (r.itens || []).map((i, n) => `${n + 1}. ${nm(D.exercicios, i.exId)} · ${i.sets && i.sets.length ? i.series + ' séries (' + i.sets.map(x => x.reps).join('/') + ' reps)' : i.series + '×' + i.reps} · ${i.kg ? i.kg + ' kg' : 'Corpo'} · ${i.descanso}s`).join('\n') || '—']] }
   };
   return S[tab];
 }
 
 /* ---------- formulário ---------- */
 const exLabel = (D, e) => `${(D.categorias.find(c => c.id === e.categoriaId) || {}).nome || 'Sem categoria'} · ${e.nome}`;
-const irow = (D, it = {}) => `<div class="irow"><select name="ex" aria-label="Exercício">${D.exercicios.map(e => `<option value="${esc(e.id)}" ${e.id === it.exId ? 'selected' : ''}>${esc(exLabel(D, e))}</option>`).join('')}</select>
+/* séries personalizadas: repetições editáveis por série; a carga é só uma referência (placeholder), o aluno coloca a dele na hora */
+const refKg = kg => kg ? Number(kg).toLocaleString('pt-BR') + ' kg' : 'Corpo';
+const srows = (rs, kg) => `<div class="shead"><span>Série</span><span>Repetições</span><span>Carga (referência)</span></div>${rs.map((r, k) => `<div class="srow"><b>${k + 1}</b><input class="srep" type="number" min="1" max="100" value="${r}" aria-label="Repetições da série ${k + 1}"><input class="sref" readonly tabindex="-1" placeholder="${refKg(kg)}" aria-label="Carga de referência da série ${k + 1}"></div>`).join('')}`;
+const setsHTML = it => { const on = it.sets && it.sets.length, n = Math.max(1, Math.min(12, it.series ?? 3)), rs = Array.from({ length: n }, (_, k) => (it.sets && it.sets[k] && it.sets[k].reps) || it.reps || 10);
+  return `<button type="button" class="psbtn" data-ps>${on ? 'Usar o mesmo para todas as séries' : 'Personalizar cada série'}</button><div class="setsbox">${srows(rs, it.kg)}</div>`; };
+const syncSets = (r, fresh) => { const n = Math.max(1, Math.min(12, +$('[name=series]', r).value || 1)), main = Math.max(1, +$('[name=reps]', r).value || 1), old = $$('.srep', r).map(i => i.value);
+  $('.setsbox', r).innerHTML = srows(Array.from({ length: n }, (_, k) => fresh || !old[k] ? main : old[k]), +$('[name=kg]', r).value || 0); };
+const itemOut = (r, o) => { if (r.classList.contains('ps')) { const sr = $$('.srep', r).map(i => Math.max(1, +i.value || 1)); o.sets = sr.map(reps => ({ reps })); o.series = sr.length; o.reps = sr[0]; } return o; };
+const irow = (D, it = {}) => `<div class="irow${it.sets && it.sets.length ? ' ps' : ''}"><select name="ex" aria-label="Exercício">${D.exercicios.map(e => `<option value="${esc(e.id)}" ${e.id === it.exId ? 'selected' : ''}>${esc(exLabel(D, e))}</option>`).join('')}</select>
   <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${it.series ?? 3}" aria-label="Séries"></label><label class="ii"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
   <label class="ii"><span>Carga (kg)</span><input name="kg" type="number" min="0" step="0.5" value="${it.kg ?? 0}" aria-label="Carga em kg"></label><label class="ii"><span>Descanso (s)</span><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos"></label>
-  <span class="ibtns"><button type="button" data-up aria-label="Subir">↑</button><button type="button" data-dn aria-label="Descer">↓</button><button type="button" data-rm aria-label="Remover">×</button></span></div>`;
+  <span class="ibtns"><button type="button" data-up aria-label="Subir">↑</button><button type="button" data-dn aria-label="Descer">↓</button><button type="button" data-rm aria-label="Remover">×</button></span>${setsHTML(it)}</div>`;
 function fieldHTML(f, v, D) {
   const cls = `field ${f.full ? 'full' : ''}`;
   if (f.type === 'select') return `<label class="${cls}">${f.l}<select name="${f.k}">${f.blank ? '<option value="">Nenhuma</option>' : ''}${f.opts().map(([o, l]) => `<option value="${esc(o)}" ${String(o) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
@@ -109,7 +117,7 @@ function collect(form, sc, isNew, D) {
     if ((f.create && !isNew) || f.hide) continue;
     if (f.type === 'multi') out[f.k] = $$(`[name="${f.k}"]:checked`, form).map(i => i.value);
     else if (f.type === 'days') out[f.k] = $$(`[name="${f.k}"]:checked`, form).map(i => +i.value);
-    else if (f.type === 'items') out[f.k] = $$('.irow', form).map(r => ({ exId: $('[name=ex]', r).value, series: Math.max(1, +$('[name=series]', r).value || 1), reps: Math.max(1, +$('[name=reps]', r).value || 1), kg: Math.max(0, +$('[name=kg]', r).value || 0), descanso: Math.max(0, +$('[name=desc]', r).value || 0) }));
+    else if (f.type === 'items') out[f.k] = $$('.irow', form).map(r => itemOut(r, { exId: $('[name=ex]', r).value, series: Math.max(1, +$('[name=series]', r).value || 1), reps: Math.max(1, +$('[name=reps]', r).value || 1), kg: Math.max(0, +$('[name=kg]', r).value || 0), descanso: Math.max(0, +$('[name=desc]', r).value || 0) }));
     else out[f.k] = (form.elements[f.k].value || '').trim();
     const v = out[f.k], empty = Array.isArray(v) ? !v.length : !v;
     if (f.req && empty) fail(f.type === 'items' ? 'Adicione pelo menos um exercício.' : f.type === 'days' ? 'Escolha pelo menos um dia.' : `Preencha: ${f.l.toLowerCase()}.`);
@@ -124,7 +132,9 @@ function bindItems(form, D) {
   const box = $('.items', form); if (!box) return;
   if (!$('.irow', box)) box.insertAdjacentHTML('beforeend', irow(D));
   $('[data-add]', form).onclick = () => { box.insertAdjacentHTML('beforeend', irow(D)); const r = box.lastElementChild; r.classList.add('new'); $('select', r).focus(); };
+  box.oninput = e => { const r = e.target.closest('.irow'); if (r && r.classList.contains('ps') && e.target.matches('[name=series],[name=kg]')) syncSets(r); };
   box.onclick = e => { const r = e.target.closest('.irow'); if (!r) return;
+    if (e.target.closest('[data-ps]')) { const on = r.classList.toggle('ps'); $('[data-ps]', r).textContent = on ? 'Usar o mesmo para todas as séries' : 'Personalizar cada série'; if (on) syncSets(r, true); return; }
     if (e.target.closest('[data-rm]')) r.remove(); else if (e.target.closest('[data-up]') && r.previousElementSibling) box.insertBefore(r, r.previousElementSibling); else if (e.target.closest('[data-dn]') && r.nextElementSibling) box.insertBefore(r.nextElementSibling, r); };
 }
 
@@ -151,7 +161,7 @@ function openForm(sc, D, E, row, done) {
   const isNew = !row, fs = sc.fields.filter(f => !(f.create && !isNew) && !f.hide);
   const html = `<div class="form">${fs.map(f => fieldHTML(f, row ? row[f.k] : f.def ? f.def() : f.type === 'items' || f.type === 'multi' || f.type === 'days' ? [] : '', D)).join('')}</div>`;
   const m = openModal({ title: `${isNew ? 'Novo' : 'Editar'} ${sc.one}`, html, wide: !!sc.wide, submit: isNew ? 'Criar' : 'Salvar',
-    onSubmit: async form => { const data = collect(form, sc, isNew, D); await saveRow(sc, data, row, E); await done(); toast(isNew ? 'Cadastro criado.' : 'Alterações salvas.'); } });
+    onSubmit: async form => { const data = collect(form, sc, isNew, D); await saveRow(sc, data, row, E); await Promise.race([done(), new Promise(r => setTimeout(r, 8000))]); toast(isNew ? 'Cadastro criado.' : 'Alterações salvas.'); } });
   bindItems(m.form, D);
 }
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -169,15 +179,15 @@ function visaoHTML(D, E) {
   <div class="two"><section class="card"><h2 class="h2" style="margin-bottom:8px">Check-ins de hoje</h2>${ck.length ? ck.map(c => personRow(user(c.uid).nome, 'às ' + new Date(c.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), '', '')).join('') : '<p class="empty">Ninguém fez check-in ainda hoje.</p>'}</section>
   <section class="card"><h2 class="h2" style="margin-bottom:8px">Aulas experimentais agendadas</h2>${ag.length ? ag.map(a => personRow(user(a.uid).nome, `${(D.modalidades.find(m => m.id === a.modId) || {}).nome || 'Modalidade'} · ${(a.slotKey || '').split('-').reverse().slice(0, 2).join('/')} às ${a.hora || ''}`, 'Experimental')).join('') : '<p class="empty">Nenhum agendamento por enquanto.</p>'}</section></div>`;
 }
-/* ---------- paginação: 10 itens por página, sem sair da tela ---------- */
-const PAGE = 10;
-const pagerHTML = (page, pages) => pages <= 1 ? '' : `<div class="pager"><button type="button" class="btn ghost pg-prev" data-pg="prev" ${page === 1 ? 'hidden' : ''}>‹ Página anterior</button><button type="button" class="btn dark pg-next" data-pg="next">${page < pages ? 'Ir para a Próxima Página' : 'Voltar para a Primeira Página'} - ${page} de ${pages}</button></div>`;
+/* ---------- paginação: 5 itens por página no celular, 10 no computador ---------- */
+const pageSize = () => matchMedia('(max-width:700px)').matches ? 5 : 10;
+const pagerHTML = (page, pages) => pages <= 1 ? '' : `<div class="pager"><button type="button" class="btn ghost pg-prev" data-pg="prev" ${page === 1 ? 'hidden' : ''}>‹ Anterior</button><button type="button" class="btn dark pg-next" data-pg="next">${page < pages ? 'Próxima página' : 'Voltar à primeira página'} - ${page}/${pages}</button></div>`;
 function pager(el, getTotal, paint) {
   let page = 1, pages = 1;
   const box = $('#pager', el);
   const render = (keep = true) => {
     if (!keep) page = 1;
-    pages = Math.max(1, Math.ceil(getTotal() / PAGE)); page = Math.min(page, pages);
+    pages = Math.max(1, Math.ceil(getTotal() / pageSize())); page = Math.min(page, pages);
     paint(page);
     box.innerHTML = pagerHTML(page, pages);
   };
@@ -196,7 +206,7 @@ function tableHTML(sc, D, E) {
     <div class="tools"><input id="q" type="search" placeholder="Buscar" aria-label="Buscar"><button class="btn red" id="new" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ Novo ${sc.one}</button></div></div>`;
   if (!rows.length) return head + `<section class="card"><p class="empty">Nenhum ${sc.one} cadastrado. Clique em “Novo ${sc.one}” para começar.</p></section>`;
   return head + `<section class="card tblcard"><table class="tbl"><thead><tr>${sc.cols.map(c => `<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>
-    ${rows.slice(0, PAGE).map(r => rowHTML(sc, r)).join('')}</tbody></table></section><div id="pager">${pagerHTML(1, Math.ceil(rows.length / PAGE))}</div>`;
+    ${rows.slice(0, pageSize()).map(r => rowHTML(sc, r)).join('')}</tbody></table></section><div id="pager">${pagerHTML(1, Math.ceil(rows.length / pageSize()))}</div>`;
 }
 /* celular: a lista mostra só o nome e um botão "Detalhes" que abre um modal com tudo */
 const detHTML = items => `<div class="det-list">${items.map(([l, v]) => `<div class="det-i"><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
@@ -228,12 +238,12 @@ function finHTML(D) {
   const C = finCalc(D), fotos = Object.fromEntries((D.fotos || []).map(f => [f.id, f.data])), mes = dkey(new Date()).slice(0, 7);
   const recebido = (D.pagamentos || []).filter(p => (p.data || '').startsWith(mes)).reduce((t, p) => t + (p.valor || 0), 0), cnt = k => C.rows.filter(r => r.st === k).length;
   const kpi = (l, v, s) => `<div class="card"><small>${l}</small><b>${v}</b><em>${s}</em></div>`;
-  const rows = C.rows.slice(0, PAGE).map(r => finRow(r, fotos)).join('');
+  const rows = C.rows.slice(0, pageSize()).map(r => finRow(r, fotos)).join('');
   return `<div class="head"><div><h1 class="h1">Financeiro</h1><p class="muted" style="margin-top:4px;font-size:14px">Planos, pagamentos e situação de cada aluno</p></div>
     <div class="tools"><input id="q" type="search" placeholder="Buscar aluno" aria-label="Buscar"><a class="btn dark" href="#/painel/planos" style="width:auto;height:46px;padding:0 20px;border-radius:14px;font-size:14px">Gerenciar planos</a></div></div>
   <div class="kpis money">${kpi('Receita mensal prevista', brl(C.receita), 'planos ativos por mês')}${kpi('Recebido no mês', brl(recebido), 'pagamentos registrados')}${kpi('Em atraso', cnt('atrasado'), 'alunos com vencimento vencido')}${kpi('Sem plano', cnt('semplano'), 'defina um plano para cobrar')}</div>
   <div class="chips" id="fchips">${[['todos', 'Todos'], ['emdia', 'Em dia'], ['atrasado', 'Em atraso'], ['pendente', 'Pendente'], ['semplano', 'Sem plano'], ['totalpass', 'Total Pass']].map(([k, l], i) => `<button class="chip ${i ? '' : 'on'}" data-fs="${k}">${l}</button>`).join('')}</div>
-  <section class="card tblcard">${C.rows.length ? `<table class="tbl"><thead><tr><th>Aluno</th><th>Plano</th><th>Valor/mês</th><th>Situação</th><th>Vencimento</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">Nenhum aluno cadastrado ainda.</p>'}</section><div id="pager">${pagerHTML(1, Math.ceil(C.rows.length / PAGE))}</div>`;
+  <section class="card tblcard">${C.rows.length ? `<table class="tbl"><thead><tr><th>Aluno</th><th>Plano</th><th>Valor/mês</th><th>Situação</th><th>Vencimento</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">Nenhum aluno cadastrado ainda.</p>'}</section><div id="pager">${pagerHTML(1, Math.ceil(C.rows.length / pageSize()))}</div>`;
 }
 function openFinDet(a, D, repaint) {
   const r = finCalc(D).rows.find(x => x.a.id === a.id); if (!r) return;
@@ -281,7 +291,7 @@ function bindFin(el, D, repaint) {
   const hay = new Map(C.rows.map(r => [r.a.id, [r.a.nome, r.a.email, r.p && r.p.nome, r.stl, r.a.familiaId].join(' ').toLowerCase()]));
   let list = C.rows;
   const render = tb ? pager(el, () => list.length, page => {
-    tb.innerHTML = list.slice((page - 1) * PAGE, page * PAGE).map(r => finRow(r, fotos)).join('') || '<tr><td colspan="6" class="empty">Nenhum aluno encontrado.</td></tr>';
+    tb.innerHTML = list.slice((page - 1) * pageSize(), page * pageSize()).map(r => finRow(r, fotos)).join('') || '<tr><td colspan="6" class="empty">Nenhum aluno encontrado.</td></tr>';
   }) : () => {};
   const apply = () => { list = C.rows.filter(r => (fs === 'todos' || r.st === fs) && hay.get(r.a.id).includes(term)); render(false); };
   api.list('fotos').then(fl => { fotos = Object.fromEntries(fl.map(f => [f.id, f.data])); render(); }).catch(() => {});   // fotos chegam depois, sem atrasar a tela
@@ -294,7 +304,7 @@ function bindFin(el, D, repaint) {
 function build(tab, D, E) {
   const me = SESSION.me;
   const side = `<aside class="side" id="menu" aria-label="Menu">${logo(34)}<button type="button" class="iconbtn mclose" id="mx" aria-label="Fechar menu">${ic('close', 20)}</button>${MENU[E.mode].map(([k, l]) => `<a class="${tab === k ? 'on' : ''}" href="#/painel/${k}">${l}</a>`).join('')}
-    <div class="who">${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div>
+    <div class="who"><a class="whou" href="#/painel/perfil" aria-label="Abrir meu perfil"${tab === 'perfil' ? ' aria-current="page"' : ''}>${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div></a>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
   const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D)
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
@@ -321,7 +331,7 @@ function bind(el, tab, D, E) {
     const hay = new Map(sc.rows.map(r => [r.id, sc.cols.map(c => String(c[1](r))).join(' ').toLowerCase()]));
     let list = sc.rows;
     const render = pager(el, () => list.length, page => {
-      tb.innerHTML = list.slice((page - 1) * PAGE, page * PAGE).map(r => rowHTML(sc, r)).join('') || `<tr><td colspan="${sc.cols.length + 1}" class="empty">Nenhum resultado para a busca.</td></tr>`;
+      tb.innerHTML = list.slice((page - 1) * pageSize(), page * pageSize()).map(r => rowHTML(sc, r)).join('') || `<tr><td colspan="${sc.cols.length + 1}" class="empty">Nenhum resultado para a busca.</td></tr>`;
     });
     if (q) q.oninput = () => { const t = q.value.trim().toLowerCase(); list = t ? sc.rows.filter(r => hay.get(r.id).includes(t)) : sc.rows; render(false); };
   }
@@ -333,7 +343,7 @@ function bind(el, tab, D, E) {
   };
 }
 export async function painel(tab = 'visao') {
-  const E = eff(); if (!MENU[E.mode].some(m => m[0] === tab)) tab = 'visao';
+  const E = eff(); if (tab !== 'perfil' && !MENU[E.mode].some(m => m[0] === tab)) tab = 'visao';   // 'perfil' não está no menu: abre pela foto/nome
   const D = await load(tab);
   return { depth: 0, wide: true, html: build(tab, D, E), after: el => bind(el, tab, D, E) };
 }

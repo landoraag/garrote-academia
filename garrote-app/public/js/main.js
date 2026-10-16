@@ -94,7 +94,7 @@ async function render() {
   const back = curDepth !== null && v.depth < curDepth;
   if (cur) {
     if (reduce || (curWide && v.wide)) cur.remove();   // trocar de aba do painel: sem animação, na hora
-    else { const old = cur; el.classList.add(back ? 'in-back' : 'in-fwd'); old.classList.add(back ? 'out-back' : 'out-fwd'); old.inert = true; setTimeout(() => old.remove(), 380); }
+    else { const old = cur; el.classList.add(back ? 'in-back' : 'in-fwd'); setTimeout(() => el.classList.remove('in-back', 'in-fwd'), 420); old.classList.add(back ? 'out-back' : 'out-fwd'); old.inert = true; setTimeout(() => old.remove(), 380); }
   }
   app.appendChild(el); cur = el; curDepth = v.depth; curWide = !!v.wide;
   cleanup = (v.after && v.after(el)) || null;

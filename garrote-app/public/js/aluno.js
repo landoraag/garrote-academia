@@ -122,7 +122,7 @@ export async function treino(tid) {
   const its = D.t.itens || [], done = its.filter(i => itemDone(i, D.feitos)).length, nx = its.find(i => !itemDone(i, D.feitos));
   const rows = its.map((i, n) => { const e = D.exMap[i.exId] || { nome: '(exercício removido)' }, st = itemDone(i, D.feitos) ? 'done' : (nx === i ? 'now' : '');
     return `<a class="lrow ${st}" href="#/exercicio/${tid}/${n}"><span class="lb">${st === 'done' ? ic('check', 20, '#fff', 2.2) : n + 1}</span>
-      <div class="tx"><b>${esc(e.nome)}${st === 'now' ? '<span class="tag">EM ANDAMENTO</span>' : ''}</b><small>${nSets(i)} × ${i.reps} · ${kgTxt(i.kg)} · ${i.descanso}s</small></div>${ic('chev', 20, '#6A6A70')}</a>`; }).join('');
+      <div class="tx"><b>${esc(e.nome)}${st === 'now' ? '<span class="tag">EM ANDAMENTO</span>' : ''}</b><small>${i.sets && i.sets.length ? nSets(i) + ' séries · ' + i.sets.map(x => x.reps).join('/') + ' reps' : nSets(i) + ' × ' + i.reps} · ${kgTxt(i.kg)} · ${i.descanso}s</small></div>${ic('chev', 20, '#6A6A70')}</a>`; }).join('');
   const nxIdx = its.indexOf(nx), proximo = nx ? esc((D.exMap[nx.exId] || {}).nome || 'próximo') : '';
   const concluido = `<button class="btn done" disabled>${ic('check', 20, '#fff', 2.4)}Treino concluído</button>`;
   const botao = !its.length ? '' : ro() ? (nx ? `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${proximo}</a>` : concluido)
@@ -158,11 +158,12 @@ export async function exercicio(tid, n) {
   const sets = Array.from({ length: total }, (_, i) => !!(D.feitos[it.exId] || [])[i]);
   /* peso e repetições de cada série: começam com o que o professor definiu e o aluno pode alterar (vale só para o dia) */
   const salvo = D.valores[it.exId] || [];
-  const vals = Array.from({ length: total }, (_, i) => ({ kg: salvo[i] && salvo[i].kg != null ? salvo[i].kg : it.kg, reps: salvo[i] && salvo[i].reps != null ? salvo[i].reps : it.reps }));
+  const repsProf = i => (it.sets && it.sets[i] && it.sets[i].reps) || it.reps, refKg = it.kg ? String(it.kg).replace('.', ',') : 'Corpo';   // carga do professor: só referência (placeholder)
+  const vals = Array.from({ length: total }, (_, i) => ({ kg: salvo[i] && salvo[i].kg != null ? salvo[i].kg : 0, reps: salvo[i] && salvo[i].reps != null ? salvo[i].reps : repsProf(i) }));
   const ro_ = ro() ? 'readonly' : '';
   const setsHTML = () => { const c = sets.findIndex(x => !x);
     return `<div class="set-head"><span class="sn"></span><b class="kg">Peso</b><b>Repetições</b><span class="cks"></span></div>` + sets.map((d, i) => `<div class="set ${d ? 'done' : i === c ? 'now' : ''}"><span class="sn">${i === c ? '<i></i>' : i + 1}</span>
-      <label class="pill kg"><input class="vin" data-i="${i}" data-f="kg" type="text" inputmode="decimal" placeholder="Corpo" value="${vals[i].kg ? esc(String(vals[i].kg).replace('.', ',')) : ''}" aria-label="Peso da série ${i + 1}" ${ro_}><em>kg</em></label>
+      <label class="pill kg"><input class="vin" data-i="${i}" data-f="kg" type="text" inputmode="decimal" placeholder="${esc(refKg)}" value="${vals[i].kg ? esc(String(vals[i].kg).replace('.', ',')) : ''}" aria-label="Peso da série ${i + 1}" ${ro_}><em>kg</em></label>
       <label class="pill"><input class="vin" data-i="${i}" data-f="reps" type="text" inputmode="numeric" value="${vals[i].reps}" aria-label="Repetições da série ${i + 1}" ${ro_}><em>x</em></label>
       <button class="ck" data-i="${i}" aria-label="Série ${i + 1}" aria-pressed="${d}">${ic('check', 22, 'currentColor', 2.2)}</button></div>`).join(''); };
   return { depth: 4, dark: true, html: `<div class="wk">

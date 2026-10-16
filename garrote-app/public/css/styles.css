@@ -19,8 +19,8 @@ body.wide .device{width:100%;box-shadow:none}
 .screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column;background:var(--bg);scrollbar-width:none}
 .screen::-webkit-scrollbar{display:none}
 .screen.dark{background:radial-gradient(90% 40% at 50% 0,rgba(217,30,38,.22),transparent 70%),var(--ink);color:#fff}
-.in-fwd{animation:in-fwd .36s var(--ease) both;z-index:2}
-.in-back{animation:in-back .36s var(--ease) both;z-index:2}
+.in-fwd{animation:in-fwd .36s var(--ease) backwards;z-index:2}
+.in-back{animation:in-back .36s var(--ease) backwards;z-index:2}
 .out-fwd{animation:out-fwd .36s var(--ease) both}
 .out-back{animation:out-back .36s var(--ease) both}
 @keyframes in-fwd{from{transform:translateX(32px);opacity:0}to{transform:none;opacity:1}}
@@ -386,6 +386,22 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 
 /* paginação das listas do painel */
 .pager{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:16px 0 8px}
-.pager .btn{width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px}
+.pager .btn{width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px;line-height:1.15;white-space:normal}
 .pager [hidden]{display:none}
 @media (max-width:700px){.pager .btn{flex:1;min-width:0;padding:0 12px}}
+
+/* foto + nome do usuário no menu: link para o perfil */
+.side .who a.whou{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:0;background:none;color:#fff;border-radius:12px;transition:opacity .2s}
+.side .who a.whou:hover{opacity:.8}
+
+/* treino: personalizar cada série (reps editáveis, carga só como referência) */
+.irow .psbtn{grid-column:1/-1;justify-self:start;height:34px;padding:0 12px;border-radius:10px;background:var(--s2,#eee);color:var(--muted);font:600 12px var(--b)}
+.irow .setsbox{display:none;grid-column:1/-1;gap:6px}
+.irow.ps .setsbox{display:grid}
+.irow .shead,.irow .srow{display:grid;grid-template-columns:56px 1fr 1fr;gap:8px;align-items:center}
+.irow .shead span{font:600 11px var(--b);color:var(--muted)}
+.irow .srow b{font:700 13px var(--b)}
+.irow .sref{background:transparent;border-style:dashed;pointer-events:none}
+.irow .sref::placeholder{color:var(--muted);opacity:1}
+
+.pill input::placeholder{opacity:1}

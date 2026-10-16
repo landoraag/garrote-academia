@@ -10,6 +10,9 @@ async function makeFirebase() {
   const app = App.initializeApp(cfg), auth = A.getAuth(app), db = F.getFirestore(app);
   const withId = s => ({ id: s.id, ...s.data() });
   const clean = d => JSON.parse(JSON.stringify(d));
+  /* gravação: o Firestore só responde quando o servidor confirma; com internet instável isso podia demorar e a tela travava.
+     Se passar de 10 s sem resposta, libera a tela (o envio continua em segundo plano) */
+  const wr = p => { p.catch(e => console.error('gravação', e)); return Promise.race([p, new Promise(r => setTimeout(r, 10000))]); };
   /* cache de listas na memória (30 s): trocar de tela fica instantâneo; qualquer gravação limpa a coleção */
   const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); };
   return {
@@ -42,10 +45,10 @@ async function makeFirebase() {
       const q = F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)));
       const d = (await F.getDocs(q)).docs.map(withId); cache.set(k, { t: Date.now(), d }); return [...d];
     },
-    async set(c, id, d) { await F.setDoc(F.doc(db, c, id), clean(d)); drop(c); },
-    async add(c, d) { const id = (await F.addDoc(F.collection(db, c), clean(d))).id; drop(c); return id; },
-    async update(c, id, d) { await F.updateDoc(F.doc(db, c, id), clean(d)); drop(c); },
-    async del(c, id) { await F.deleteDoc(F.doc(db, c, id)); drop(c); }
+    async set(c, id, d) { await wr(F.setDoc(F.doc(db, c, id), clean(d))); drop(c); },
+    async add(c, d) { const ref = F.doc(F.collection(db, c)); await wr(F.setDoc(ref, clean(d))); drop(c); return ref.id; },
+    async update(c, id, d) { await wr(F.updateDoc(F.doc(db, c, id), clean(d))); drop(c); },
+    async del(c, id) { await wr(F.deleteDoc(F.doc(db, c, id))); drop(c); }
   };
 }
 
