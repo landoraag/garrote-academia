@@ -1,6 +1,6 @@
 /* Painel do dono e do treinador (tela larga). Cadastros genéricos guiados por "schema". */
 import { api, mode } from './api.js';
-import { $, $$, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName } from './ui.js';
+import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName } from './ui.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ } from './plano.js';
 
@@ -169,13 +169,34 @@ function visaoHTML(D, E) {
   <div class="two"><section class="card"><h2 class="h2" style="margin-bottom:8px">Check-ins de hoje</h2>${ck.length ? ck.map(c => personRow(user(c.uid).nome, 'às ' + new Date(c.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), '', '')).join('') : '<p class="empty">Ninguém fez check-in ainda hoje.</p>'}</section>
   <section class="card"><h2 class="h2" style="margin-bottom:8px">Aulas experimentais agendadas</h2>${ag.length ? ag.map(a => personRow(user(a.uid).nome, `${(D.modalidades.find(m => m.id === a.modId) || {}).nome || 'Modalidade'} · ${(a.slotKey || '').split('-').reverse().slice(0, 2).join('/')} às ${a.hora || ''}`, 'Experimental')).join('') : '<p class="empty">Nenhum agendamento por enquanto.</p>'}</section></div>`;
 }
+/* ---------- paginação: 10 itens por página, sem sair da tela ---------- */
+const PAGE = 10;
+const pagerHTML = (page, pages) => pages <= 1 ? '' : `<div class="pager"><button type="button" class="btn ghost pg-prev" data-pg="prev" ${page === 1 ? 'hidden' : ''}>‹ Página anterior</button><button type="button" class="btn dark pg-next" data-pg="next">${page < pages ? 'Ir para a Próxima Página' : 'Voltar para a Primeira Página'} - ${page} de ${pages}</button></div>`;
+function pager(el, getTotal, paint) {
+  let page = 1, pages = 1;
+  const box = $('#pager', el);
+  const render = (keep = true) => {
+    if (!keep) page = 1;
+    pages = Math.max(1, Math.ceil(getTotal() / PAGE)); page = Math.min(page, pages);
+    paint(page);
+    box.innerHTML = pagerHTML(page, pages);
+  };
+  box.onclick = e => {
+    const b = e.target.closest('[data-pg]'); if (!b) return;
+    page = b.dataset.pg === 'prev' ? Math.max(1, page - 1) : page < pages ? page + 1 : 1;
+    render();
+    const h = $('.main .head', el); h && h.scrollIntoView({ block: 'start', behavior: reduce ? 'auto' : 'smooth' });
+  };
+  return render;
+}
+const rowHTML = (sc, r) => `<tr data-id="${esc(r.id)}">${sc.cols.map(c => `<td>${esc(c[1](r))}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`;
 function tableHTML(sc, D, E) {
   const rows = sc.rows;
   const head = `<div class="head"><div><h1 class="h1">${sc.title}</h1><p class="muted" style="margin-top:4px;font-size:14px">${rows.length} ${rows.length === 1 ? 'cadastro' : 'cadastros'}</p></div>
     <div class="tools"><input id="q" type="search" placeholder="Buscar" aria-label="Buscar"><button class="btn red" id="new" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ Novo ${sc.one}</button></div></div>`;
   if (!rows.length) return head + `<section class="card"><p class="empty">Nenhum ${sc.one} cadastrado. Clique em “Novo ${sc.one}” para começar.</p></section>`;
   return head + `<section class="card tblcard"><table class="tbl"><thead><tr>${sc.cols.map(c => `<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>
-    ${rows.map(r => `<tr data-id="${esc(r.id)}">${sc.cols.map(c => `<td>${esc(c[1](r))}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`).join('')}</tbody></table></section>`;
+    ${rows.slice(0, PAGE).map(r => rowHTML(sc, r)).join('')}</tbody></table></section><div id="pager">${pagerHTML(1, Math.ceil(rows.length / PAGE))}</div>`;
 }
 /* celular: a lista mostra só o nome e um botão "Detalhes" que abre um modal com tudo */
 const detHTML = items => `<div class="det-list">${items.map(([l, v]) => `<div class="det-i"><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
@@ -199,19 +220,20 @@ function finCalc(D) {
     return { a, p, st, stl, n, fam: !!(p && p.familia === 'sim'), share: a.ativo === 'nao' || !p ? 0 : mensalDe(p) / n }; });
   return { rows, receita: rows.reduce((t, r) => t + r.share, 0) };
 }
+const finRow = (r, fotos) => `<tr data-id="${esc(r.a.id)}" data-s="${r.st}"><td><div class="pcell">${avatar({ nome: r.a.nome, foto: fotos[r.a.id] }, 38)}<div><b>${esc(r.a.nome)}</b><small>${esc(r.a.email || '')}</small></div></div></td>
+    <td>${r.p ? esc(r.p.nome) : '—'}${r.p ? `<small class="sub">${r.p.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(r.p.periodo)} · ${r.fam ? 'Família' + (r.a.familiaId ? ` · ${esc(r.a.familiaId)} (${r.n})` : '') : 'Individual'}</small>` : ''}</td>
+    <td>${brl(r.share)}</td><td class="keep"><span class="st-chip ${r.st}">${r.stl}</span></td><td>${r.p && r.p.categoria === 'totalpass' ? '—' : ptDate(r.a.vencimento)}</td>
+    <td class="act"><button class="det" data-det>Detalhes</button><button data-pay>Pagamento</button><button data-plan>Plano</button><button data-hist>Histórico</button></td></tr>`;
 function finHTML(D) {
   const C = finCalc(D), fotos = Object.fromEntries((D.fotos || []).map(f => [f.id, f.data])), mes = dkey(new Date()).slice(0, 7);
   const recebido = (D.pagamentos || []).filter(p => (p.data || '').startsWith(mes)).reduce((t, p) => t + (p.valor || 0), 0), cnt = k => C.rows.filter(r => r.st === k).length;
   const kpi = (l, v, s) => `<div class="card"><small>${l}</small><b>${v}</b><em>${s}</em></div>`;
-  const rows = C.rows.map(r => `<tr data-id="${esc(r.a.id)}" data-s="${r.st}"><td><div class="pcell">${avatar({ nome: r.a.nome, foto: fotos[r.a.id] }, 38)}<div><b>${esc(r.a.nome)}</b><small>${esc(r.a.email || '')}</small></div></div></td>
-    <td>${r.p ? esc(r.p.nome) : '—'}${r.p ? `<small class="sub">${r.p.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(r.p.periodo)} · ${r.fam ? 'Família' + (r.a.familiaId ? ` · ${esc(r.a.familiaId)} (${r.n})` : '') : 'Individual'}</small>` : ''}</td>
-    <td>${brl(r.share)}</td><td class="keep"><span class="st-chip ${r.st}">${r.stl}</span></td><td>${r.p && r.p.categoria === 'totalpass' ? '—' : ptDate(r.a.vencimento)}</td>
-    <td class="act"><button class="det" data-det>Detalhes</button><button data-pay>Pagamento</button><button data-plan>Plano</button><button data-hist>Histórico</button></td></tr>`).join('');
+  const rows = C.rows.slice(0, PAGE).map(r => finRow(r, fotos)).join('');
   return `<div class="head"><div><h1 class="h1">Financeiro</h1><p class="muted" style="margin-top:4px;font-size:14px">Planos, pagamentos e situação de cada aluno</p></div>
     <div class="tools"><input id="q" type="search" placeholder="Buscar aluno" aria-label="Buscar"><a class="btn dark" href="#/painel/planos" style="width:auto;height:46px;padding:0 20px;border-radius:14px;font-size:14px">Gerenciar planos</a></div></div>
   <div class="kpis money">${kpi('Receita mensal prevista', brl(C.receita), 'planos ativos por mês')}${kpi('Recebido no mês', brl(recebido), 'pagamentos registrados')}${kpi('Em atraso', cnt('atrasado'), 'alunos com vencimento vencido')}${kpi('Sem plano', cnt('semplano'), 'defina um plano para cobrar')}</div>
   <div class="chips" id="fchips">${[['todos', 'Todos'], ['emdia', 'Em dia'], ['atrasado', 'Em atraso'], ['pendente', 'Pendente'], ['semplano', 'Sem plano'], ['totalpass', 'Total Pass']].map(([k, l], i) => `<button class="chip ${i ? '' : 'on'}" data-fs="${k}">${l}</button>`).join('')}</div>
-  <section class="card tblcard">${C.rows.length ? `<table class="tbl"><thead><tr><th>Aluno</th><th>Plano</th><th>Valor/mês</th><th>Situação</th><th>Vencimento</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">Nenhum aluno cadastrado ainda.</p>'}</section>`;
+  <section class="card tblcard">${C.rows.length ? `<table class="tbl"><thead><tr><th>Aluno</th><th>Plano</th><th>Valor/mês</th><th>Situação</th><th>Vencimento</th><th></th></tr></thead><tbody>${rows}</tbody></table>` : '<p class="empty">Nenhum aluno cadastrado ainda.</p>'}</section><div id="pager">${pagerHTML(1, Math.ceil(C.rows.length / PAGE))}</div>`;
 }
 function openFinDet(a, D, repaint) {
   const r = finCalc(D).rows.find(x => x.a.id === a.id); if (!r) return;
@@ -254,13 +276,18 @@ async function openHist(a, D) {
   openModal({ title: `Histórico de ${firstName(a.nome)}`, html: list.length ? `<div class="hist">${list.map(p => `<div class="person"><div class="nm"><b>${brl(p.valor)}</b><small>${ptDate(p.data)} · ${esc(p.forma || '')} · ${esc((D.planos.find(x => x.id === p.planoId) || {}).nome || 'Plano')}</small></div><span class="rl">${perLabel(p.meses)}</span></div>`).join('')}</div>` : '<p class="empty">Nenhum pagamento registrado ainda.</p>' });
 }
 function bindFin(el, D, repaint) {
-  let fs = 'todos';
-  api.list('fotos').then(fl => { const m = Object.fromEntries(fl.map(f => [f.id, f.data]));   // fotos chegam depois, sem atrasar a tela
-    $$('tbody tr', el).forEach(tr => { const f = m[tr.dataset.id], av = f && $('.pcell .avtxt', tr); if (av) av.outerHTML = avatar({ nome: '', foto: f }, 38); }); }).catch(() => {});
-  const apply = () => { const q = ($('#q', el).value || '').toLowerCase(); $$('tbody tr', el).forEach(r => r.hidden = !(fs === 'todos' || r.dataset.s === fs) || !r.textContent.toLowerCase().includes(q)); };
-  $('#q', el).oninput = apply;
+  let fs = 'todos', term = '', fotos = {};
+  const C = finCalc(D), tb = $('tbody', el);
+  const hay = new Map(C.rows.map(r => [r.a.id, [r.a.nome, r.a.email, r.p && r.p.nome, r.stl, r.a.familiaId].join(' ').toLowerCase()]));
+  let list = C.rows;
+  const render = tb ? pager(el, () => list.length, page => {
+    tb.innerHTML = list.slice((page - 1) * PAGE, page * PAGE).map(r => finRow(r, fotos)).join('') || '<tr><td colspan="6" class="empty">Nenhum aluno encontrado.</td></tr>';
+  }) : () => {};
+  const apply = () => { list = C.rows.filter(r => (fs === 'todos' || r.st === fs) && hay.get(r.a.id).includes(term)); render(false); };
+  api.list('fotos').then(fl => { fotos = Object.fromEntries(fl.map(f => [f.id, f.data])); render(); }).catch(() => {});   // fotos chegam depois, sem atrasar a tela
+  $('#q', el).oninput = e => { term = e.target.value.trim().toLowerCase(); apply(); };
   $('#fchips', el).onclick = e => { const b = e.target.closest('[data-fs]'); if (!b) return; fs = b.dataset.fs; $$('#fchips .chip', el).forEach(c => c.classList.toggle('on', c === b)); apply(); };
-  const tb = $('tbody', el); if (!tb) return;
+  if (!tb) return;
   tb.onclick = e => { const tr = e.target.closest('tr'), a = tr && D.users.find(u => u.id === tr.dataset.id); if (!a) return;
     if (e.target.closest('[data-det]')) openFinDet(a, D, repaint); else if (e.target.closest('[data-pay]')) openPay(a, D, repaint); else if (e.target.closest('[data-plan]')) openPlano(a, D, repaint); else if (e.target.closest('[data-hist]')) openHist(a, D); };
 }
@@ -289,8 +316,15 @@ function bind(el, tab, D, E) {
   const sc = schema(tab, D, E); if (!sc) return;
   const create = () => openForm(sc, D, E, null, repaint);
   const nb = $('#new', el); if (nb) nb.onclick = create;
-  const q = $('#q', el); if (q) q.oninput = () => $$('tbody tr', el).forEach(r => r.hidden = !r.textContent.toLowerCase().includes(q.value.toLowerCase()));
-  const tb = $('tbody', el);
+  const q = $('#q', el), tb = $('tbody', el);
+  if (tb) {
+    const hay = new Map(sc.rows.map(r => [r.id, sc.cols.map(c => String(c[1](r))).join(' ').toLowerCase()]));
+    let list = sc.rows;
+    const render = pager(el, () => list.length, page => {
+      tb.innerHTML = list.slice((page - 1) * PAGE, page * PAGE).map(r => rowHTML(sc, r)).join('') || `<tr><td colspan="${sc.cols.length + 1}" class="empty">Nenhum resultado para a busca.</td></tr>`;
+    });
+    if (q) q.oninput = () => { const t = q.value.trim().toLowerCase(); list = t ? sc.rows.filter(r => hay.get(r.id).includes(t)) : sc.rows; render(false); };
+  }
   if (tb) tb.onclick = async e => {
     const tr = e.target.closest('tr'); if (!tr) return; const row = sc.rows.find(r => r.id === tr.dataset.id); if (!row) return;
     if (e.target.closest('[data-det]')) openDet(sc, D, E, row, repaint);

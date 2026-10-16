@@ -383,3 +383,9 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 .cron.end b{color:#fff}.cron.end .dot{background:#2FB36B}
 .btn.link{height:44px;background:none;box-shadow:none;color:var(--dim);font:600 14px var(--b);align-self:center;width:auto;padding:0 16px}
 #et{font-variant-numeric:tabular-nums}
+
+/* paginação das listas do painel */
+.pager{display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;margin:16px 0 8px}
+.pager .btn{width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px}
+.pager [hidden]{display:none}
+@media (max-width:700px){.pager .btn{flex:1;min-width:0;padding:0 12px}}
