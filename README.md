@@ -21,7 +21,7 @@ Em todos os painéis, a foto e o nome no canto inferior esquerdo do menu levam a
 ## Tecnologias
 
 - HTML, CSS e JavaScript (módulos ES), sem etapa de build
-- Firebase: Authentication, Firestore e Hosting
+- Firebase: Authentication, Firestore (versão lite, mais leve) e Hosting
 - Service worker para abrir rápido e funcionar como app instalado (PWA)
 
 ## Estrutura

@@ -6,7 +6,7 @@ export const mode = cfg.apiKey ? 'firebase' : 'demo';
 
 async function makeFirebase() {
   const B = 'https://www.gstatic.com/firebasejs/10.14.1/';
-  const [App, A, F] = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore.js')]);
+  const [App, A, F] = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore-lite.js').catch(() => import(B + 'firebase-firestore.js'))]);   // lite: carrega mais rápido e cada gravação responde na hora
   const app = App.initializeApp(cfg), auth = A.getAuth(app), db = F.getFirestore(app);
   const withId = s => ({ id: s.id, ...s.data() });
   const clean = d => JSON.parse(JSON.stringify(d));
@@ -15,6 +15,11 @@ async function makeFirebase() {
   const wr = p => { p.catch(e => console.error('gravação', e)); return Promise.race([p, new Promise(r => setTimeout(r, 10000))]); };
   /* cache de listas na memória (30 s): trocar de tela fica instantâneo; qualquer gravação limpa a coleção */
   const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); };
+  const CATALOGO = new Set(['users', 'modalidades', 'categorias', 'exercicios', 'treinos', 'planos']), STALE = 600000;   // só listas completas do painel; check-ins, pagamentos etc. sempre frescos
+  const fetchList = (k, c, filters) => {
+    const e = { t: Date.now(), p: F.getDocs(F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)))).then(s => s.docs.map(withId)) };
+    cache.set(k, e); e.p.catch(() => { if (cache.get(k) === e) cache.delete(k); }); return e;
+  };
   return {
     mode: 'firebase',
     onAuth: cb => A.onAuthStateChanged(auth, u => { cache.clear(); cb(u ? { uid: u.uid, email: u.email } : null); }),
@@ -40,10 +45,12 @@ async function makeFirebase() {
     },
     async get(c, id) { const s = await F.getDoc(F.doc(db, c, id)); return s.exists() ? withId(s) : null; },
     async list(c, filters = []) {
-      const k = c + '|' + JSON.stringify(filters), hit = cache.get(k);
-      if (hit && Date.now() - hit.t < TTL) return [...hit.d];
-      const q = F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)));
-      const d = (await F.getDocs(q)).docs.map(withId); cache.set(k, { t: Date.now(), d }); return [...d];
+      const k = c + '|' + JSON.stringify(filters), hit = cache.get(k), age = hit ? Date.now() - hit.t : Infinity;
+      if (hit && (age < TTL || (age < STALE && !filters.length && CATALOGO.has(c)))) {   // recente: usa; cadastro um pouco velho: usa agora e atualiza por trás
+        if (age >= TTL) fetchList(k, c, filters);
+        return [...await hit.p];
+      }
+      return [...await fetchList(k, c, filters).p];
     },
     async set(c, id, d) { await wr(F.setDoc(F.doc(db, c, id), clean(d))); drop(c); },
     async add(c, d) { const ref = F.doc(F.collection(db, c)); await wr(F.setDoc(ref, clean(d))); drop(c); return ref.id; },

@@ -2,7 +2,7 @@
 import { api, mode } from './api.js';
 import * as A from './aluno.js';
 import { painel } from './painel.js';
-import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce } from './ui.js';
+import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce, dkey } from './ui.js';
 
 const app = $('#app');
 const home = () => SESSION.me && SESSION.me.role === 'aluno' ? '/home' : '/painel/visao';
@@ -96,15 +96,21 @@ async function render() {
     if (reduce || (curWide && v.wide)) cur.remove();   // trocar de aba do painel: sem animação, na hora
     else { const old = cur; el.classList.add(back ? 'in-back' : 'in-fwd'); setTimeout(() => el.classList.remove('in-back', 'in-fwd'), 420); old.classList.add(back ? 'out-back' : 'out-fwd'); old.inert = true; setTimeout(() => old.remove(), 380); }
   }
-  app.appendChild(el); cur = el; curDepth = v.depth; curWide = !!v.wide;
+  app.appendChild(el); const boot = $('#boot'); boot && boot.remove(); cur = el; curDepth = v.depth; curWide = !!v.wide;
   cleanup = (v.after && v.after(el)) || null;
 }
 
 api.onAuth(async u => {
   SESSION.user = u; SESSION.me = null; SESSION.viewAs = null;
   if (u && !busy) {
+    let last = ''; try { last = localStorage.getItem('garrote:role') || ''; } catch {}
+    if (last === 'dono' || last === 'treinador') {   // painel: já pede as listas junto com o perfil, em vez de esperar
+      ['users', 'modalidades', 'categorias', 'exercicios', 'treinos', ...(last === 'dono' ? ['planos'] : [])].forEach(c => api.list(c).catch(() => {}));
+      if (!/^#\/painel\/(?!visao)/.test(location.hash)) { api.list('checkins', [['data', '==', dkey(new Date())]]).catch(() => {}); api.list('agendamentos').catch(() => {}); }
+    }
     const [me, f] = await Promise.all([api.get('users', u.uid).catch(e => { console.error(e); return null; }), api.get('fotos', u.uid).catch(() => null)]);   // em paralelo
     SESSION.me = me; if (me && f) me.foto = f.data;
+    if (me) try { localStorage.setItem('garrote:role', me.role); } catch {}
     if (SESSION.me && SESSION.me.ativo === 'nao') { toast('Seu acesso está inativo. Fale com a academia.'); SESSION.me = null; await api.logout(); return; }
   }
   if (!u) { cur && cur.remove(); cur = null; curDepth = null; location.hash = '#/login'; }
@@ -112,4 +118,3 @@ api.onAuth(async u => {
 });
 document.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) { e.preventDefault(); toast(s.dataset.soon); } });
 addEventListener('hashchange', render);
-if ('serviceWorker' in navigator) { let avisou = false; navigator.serviceWorker.addEventListener('message', e => { if (e.data === 'update' && !avisou) { avisou = true; toast('Nova versão pronta. Feche e abra o app para atualizar.'); } }); }

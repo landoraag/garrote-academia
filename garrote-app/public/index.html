@@ -12,6 +12,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Garrote">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+<link rel="preload" as="image" href="assets/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
@@ -27,15 +31,15 @@
 <link rel="modulepreload" href="js/firebase-config.js">
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js" crossorigin>
 <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js" crossorigin>
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js" crossorigin>
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-lite.js" crossorigin>
 </head>
 <body>
-<div id="app" class="device"></div>
+<div id="app" class="device"><div id="boot" style="position:absolute;inset:0;background:#0C0C0C;display:flex;align-items:center;justify-content:center"><img src="assets/logo.png" alt="Garrote Academia" width="170" height="34" style="height:auto;max-width:60%"></div></div>
 <script>
-/* bootfail: mostra o erro na tela se o app não iniciar (em vez de ficar em branco) */
-(function(){function show(m){var a=document.getElementById('app');if(!a||a.querySelector('.screen'))return;a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;background:#0C0C0C;min-height:100%"><b style="font-size:20px">Não foi possível iniciar o app</b><p>Confira o arquivo <code>public/js/firebase-config.js</code> e atualize a página com Ctrl+F5.</p><p style="color:#9A9AA0;word-break:break-word">Detalhe: '+String(m).replace(/</g,'&lt;')+'</p></div>';}
-addEventListener('error',function(e){show(e.message||'erro ao carregar')});addEventListener('unhandledrejection',function(e){show(e.reason&&e.reason.message||e.reason)});
-setTimeout(function(){show('o app demorou demais para responder (verifique a internet e a configuração do Firebase)')},8000);})();
+/* abertura lenta: nada de mensagem de erro por falhas rápidas. Só se o app passar de 25 s sem abrir
+   aparece um aviso simples de conexão lenta, com botão para tentar de novo */
+(function(){setTimeout(function(){var a=document.getElementById('app');if(!a||a.querySelector('.screen'))return;
+a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;background:#0C0C0C;min-height:100%"><b style="font-size:20px">Conexão lenta</b><p style="color:#9A9AA0">O app está demorando para abrir. Confira sua internet e tente novamente.</p><button onclick="location.reload()" style="height:48px;padding:0 24px;border:0;border-radius:14px;background:#D91E26;color:#fff;font:600 15px sans-serif">Tentar novamente</button></div>';},25000);})();
 </script>
 <div id="toast" role="status" aria-live="polite"></div>
 <script type="module" src="js/main.js"></script>
