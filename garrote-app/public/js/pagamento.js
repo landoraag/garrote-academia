@@ -94,7 +94,13 @@ export function abrirPagamento({ plano, aluno, onPago }) {
       $('[data-cod]', el).value = d.pix.qrCode || '';
       $('.pg-pix', el).hidden = false;
       if (concluido(d)) return;
-      poll = setInterval(async () => { if (fechado) return clearInterval(poll); try { concluido(await chamar('status?id=' + encodeURIComponent(d.cobrancaId))); } catch {} }, 4000);
+      // confere a cada 5 s por até 3 min; depois disso o webhook dá a baixa sozinho
+      const fim = Date.now() + 180e3;
+      poll = setInterval(async () => {
+        if (fechado) return clearInterval(poll);
+        if (Date.now() > fim) { clearInterval(poll); const a = $('.pg-aguarda', el); if (a) a.lastChild.textContent = 'Assim que o pagamento cair, a mensalidade é atualizada sozinha. Pode fechar esta tela.'; return; }
+        try { concluido(await chamar('status?id=' + encodeURIComponent(d.cobrancaId))); } catch {}
+      }, 5000);
     } catch (err) { res(false, err.message); b.disabled = false; }
   };
   $('[data-copiar]', el).onclick = e => navigator.clipboard.writeText($('[data-cod]', el).value).then(() => { e.target.textContent = 'Copiado'; toast('Código Pix copiado.'); });

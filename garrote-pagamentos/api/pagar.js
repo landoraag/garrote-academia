@@ -6,15 +6,26 @@ import { cors, usuarioLogado } from '../lib/acesso.js';
 import { precoFinal, nParc, periodo, valorStr, grupoDoAluno, bloqueio } from '../lib/planos.js';
 import { criarOrder } from '../lib/mp.js';
 import { aplicarOrder } from '../lib/aplicar.js';
-import { ok, erro, metodo } from '../lib/http.js';
+import { ok, erro, metodo, corpoValido } from '../lib/http.js';
+import { limitar, ipDe } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   if (cors(req, res) || !metodo(req, res, 'POST')) return;
   let refCob;
   try {
+    await limitar(res, 'pagar-ip', ipDe(req), 15, 600);              // por aparelho/rede: 15 a cada 10 min
     const uid = await usuarioLogado(req);
-    const { metodo: forma, cartao } = req.body || {};
+    await limitar(res, 'pagar-uid', uid, 6, 600);                    // por aluno: 6 a cada 10 min
+    if (!corpoValido(req)) return erro(res, new Error('Pedido inválido.'), 400);
+    const { metodo: forma, cartao } = req.body;
     if (!['pix', 'cartao'].includes(forma)) return erro(res, new Error('Forma de pagamento inválida.'), 400);
+    if (forma === 'cartao') {
+      // contra "teste de cartões" (fraude com cartões roubados): poucas tentativas por hora e por dia
+      await limitar(res, 'cartao-uid-hora', uid, 5, 3600);
+      await limitar(res, 'cartao-uid-dia', uid, 10, 86400);
+      await limitar(res, 'cartao-ip-hora', ipDe(req), 8, 3600);
+      if (!cartaoValido(cartao)) return erro(res, new Error('Dados do cartão incompletos.'), 400);
+    }
 
     const banco = db();
     const snapAluno = await banco.collection('users').doc(uid).get();
@@ -26,6 +37,17 @@ export default async function handler(req, res) {
 
     const grupo = await grupoDoAluno(banco, aluno, plano);
     const valor = precoFinal(plano), v = valorStr(valor);
+
+    // Pix já gerado há pouco e ainda em aberto: devolve o mesmo, em vez de criar outro
+    // (evita encher o Mercado Pago de cobranças se alguém apertar o botão várias vezes)
+    const refAberto = banco.collection('pixAbertos').doc(uid);
+    if (forma === 'pix') {
+      const ab = (await refAberto.get()).data();
+      if (ab && Date.now() - ab.criadoEm < 50 * 60e3 && ab.valor === valor && ab.planoId === plano.id) {
+        const c = (await banco.collection('cobrancas').doc(ab.cobrancaId).get()).data();
+        if (c && c.status === 'pendente') return ok(res, { cobrancaId: ab.cobrancaId, status: 'pendente', pix: ab.pix, reaproveitado: true }, 200);
+      }
+    }
     refCob = banco.collection('cobrancas').doc();
     await refCob.set({
       pagadorId: uid, alunoIds: grupo.ids, planoId: plano.id, familiaId: grupo.chave ? aluno.familiaId : '',
@@ -44,11 +66,12 @@ export default async function handler(req, res) {
       };
       corpo.transactions = { payments: [{ amount: v, payment_method: { id: 'pix', type: 'bank_transfer' }, expiration_time: 'PT1H' }] };
     } else {
-      if (!cartao?.token || !cartao?.payment_method_id) return erro(res, new Error('Dados do cartão incompletos.'), 400);
       const parcelas = Math.min(Math.max(1, cartao.installments | 0), nParc(plano));
-      corpo.payer = { email: aluno.email, ...(cartao.payer?.identification ? { identification: cartao.payer.identification } : {}) };
+      const doc = String(cartao.payer?.identification?.number || '').replace(/\D/g, '');
+      corpo.payer = { email: aluno.email, ...(doc ? { identification: { type: 'CPF', number: doc } } : {}) };
       corpo.transactions = { payments: [{ amount: v, payment_method: {
-        id: cartao.payment_method_id, type: cartao.payment_type_id || 'credit_card', token: cartao.token, installments: parcelas
+        id: cartao.payment_method_id, type: cartao.payment_type_id === 'debit_card' ? 'debit_card' : 'credit_card',
+        token: cartao.token, installments: cartao.payment_type_id === 'debit_card' ? 1 : parcelas
       } }] };
     }
 
@@ -62,6 +85,9 @@ export default async function handler(req, res) {
     const r = await aplicarOrder(order);
 
     const pg = order.transactions?.payments?.[0]?.payment_method || {};
+    if (forma === 'pix' && r.status === 'pendente')
+      await refAberto.set({ cobrancaId: refCob.id, valor, planoId: plano.id, criadoEm: Date.now(),
+        pix: { qrCode: pg.qr_code || null, qrCodeBase64: pg.qr_code_base64 || null, ticketUrl: pg.ticket_url || null } });
     ok(res, {
       cobrancaId: refCob.id, status: r.status || 'pendente', detalhe: order.status_detail || null,
       vencimento: r.vencimento || null, familia: grupo.ids.length > 1 ? grupo.ids.length : 0,
@@ -80,4 +106,15 @@ function traduzir(m = '') {
   if (/expir/i.test(m)) return 'Cartão vencido ou data inválida.';
   if (/rejected|declined|outside the valid range/i.test(m)) return 'Pagamento recusado. Tente outro cartão ou use o Pix.';
   return 'Não foi possível processar o pagamento. Confira os dados ou use o Pix.';
+}
+
+/* formato dos dados do cartão que o app manda (o número do cartão nunca vem: só o token do Mercado Pago) */
+function cartaoValido(c) {
+  if (!c || typeof c !== 'object') return false;
+  if (typeof c.token !== 'string' || !/^[A-Za-z0-9-]{8,80}$/.test(c.token)) return false;
+  if (typeof c.payment_method_id !== 'string' || !/^[a-z_]{2,30}$/.test(c.payment_method_id)) return false;
+  if (c.payment_type_id && !['credit_card', 'debit_card'].includes(c.payment_type_id)) return false;
+  if (c.installments != null && !(Number.isInteger(+c.installments) && +c.installments >= 1 && +c.installments <= 24)) return false;
+  const doc = String(c.payer?.identification?.number || '').replace(/\D/g, '');
+  return !doc || doc.length === 11;
 }

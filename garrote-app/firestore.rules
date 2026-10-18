@@ -21,6 +21,8 @@ service cloud.firestore {
 
     // Cobranças do Mercado Pago: só o servidor de pagamentos (conta de serviço) lê e grava.
     match /cobrancas/{id} { allow read, write: if false; }
+    match /pixAbertos/{id} { allow read, write: if false; }
+    match /limites/{id} { allow read, write: if false; }
 
     // Foto de perfil (guardada em texto, sem precisar do Storage)
     match /fotos/{uid} {
@@ -39,7 +41,8 @@ service cloud.firestore {
       allow create: if (signedIn() && request.auth.uid == uid && request.resource.data.role == 'dono' && !setupDone())
                     || isOwner()
                     || (isTrainer() && request.resource.data.role == 'aluno' && request.resource.data.treinadorId == request.auth.uid
-                        && !('planoId' in request.resource.data));
+                        // treinador cadastra o aluno, mas plano, família e vencimento são só do dono
+                        && !request.resource.data.keys().hasAny(['planoId', 'familiaId', 'vencimento', 'ultimoPagamento']));
       allow update: if isOwner()
                     || (isTrainer() && resource.data.role == 'aluno' && resource.data.treinadorId == request.auth.uid
                         && request.resource.data.role == 'aluno' && request.resource.data.treinadorId == request.auth.uid

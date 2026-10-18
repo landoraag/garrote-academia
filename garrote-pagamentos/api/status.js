@@ -5,13 +5,16 @@ import { cors, usuarioLogado } from '../lib/acesso.js';
 import { buscarOrder } from '../lib/mp.js';
 import { aplicarOrder } from '../lib/aplicar.js';
 import { ok, erro, metodo } from '../lib/http.js';
+import { limitar, ipDe } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   if (cors(req, res) || !metodo(req, res, 'GET')) return;
   try {
+    await limitar(res, 'status-ip', ipDe(req), 120, 300);
     const uid = await usuarioLogado(req);
+    await limitar(res, 'status-uid', uid, 60, 300);   // a tela consulta a cada 5 s por até 3 min
     const id = String(req.query.id || '');
-    if (!id) return erro(res, new Error('Informe a cobrança.'), 400);
+    if (!/^[A-Za-z0-9]{10,40}$/.test(id)) return erro(res, new Error('Informe a cobrança.'), 400);
     const ref = db().collection('cobrancas').doc(id);
     let c = (await ref.get()).data();
     if (!c || (c.pagadorId !== uid && !(c.alunoIds || []).includes(uid))) return erro(res, new Error('Cobrança não encontrada.'), 404);
