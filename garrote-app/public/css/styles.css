@@ -574,8 +574,9 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 #intro{position:fixed;inset:0;z-index:100;background:#0A0A07;display:flex;align-items:center;justify-content:center;transition:opacity .6s var(--ease),visibility .6s}
 #intro video{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(100%,1280px);height:auto;max-width:none;opacity:0;transition:opacity .25s;
   -webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent);mask-image:radial-gradient(closest-side,#000 70%,transparent)}
-#intro img{width:min(62vw,260px);height:auto;transition:opacity .25s}
-#intro.tocando video{opacity:1}#intro.tocando img{opacity:0}
+#intro img{width:min(62vw,260px);height:auto;opacity:0;transition:opacity .4s}
+#intro.semvideo img{opacity:1}#intro.semvideo video{display:none}
+#intro.tocando video{opacity:1}
 #intro.sai{opacity:0;visibility:hidden;pointer-events:none}
 #intro.sai video{transform:scale(1.06);transition:transform .7s var(--ease)}
 @media (max-aspect-ratio:1/1){#intro video{width:140vw}}

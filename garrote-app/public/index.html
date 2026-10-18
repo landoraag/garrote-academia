@@ -55,7 +55,7 @@ a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;backgr
    já está pronta; tocar/clicar pula. Se o app demorar, depois do fim do vídeo a abertura sai mesmo assim.
    Se o vídeo não conseguir tocar (ex.: modo pouca energia do iPhone), fica só o logo e o app abre normal. */
 (function(){
-  var W=window.__intro={ativa:false,fim:null},K='garrote:abertura',d=new Date(),
+  var W=window.__intro={ativa:false,fim:null},K='garrote:abertura:v2',d=new Date(),
       hoje=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
   try{if(localStorage.getItem(K)===hoje)return;}catch(e){}
   if(navigator.connection&&navigator.connection.saveData)return;
@@ -69,11 +69,14 @@ a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;backgr
     dispatchEvent(new Event('garrote:intro-fim'));setTimeout(function(){o.remove()},700);}
   function ver(){if(pronto&&viu)sair();}
   W.fim=function(){pronto=true;ver();};                     // chamado pelo app quando a primeira tela aparece
-  v.addEventListener('timeupdate',function(){if(v.currentTime>=MIN){viu=true;ver();}});
-  v.addEventListener('ended',function(){viu=true;ver();setTimeout(sair,2500);});
-  v.addEventListener('playing',function(){o.classList.add('tocando');marca();});   // só conta o dia se o vídeo tocou de verdade
-  v.addEventListener('error',function(){viu=true;ver();setTimeout(sair,1500);});
-  setTimeout(function(){if(!v.currentTime){viu=true;ver();setTimeout(sair,1500);}},2500);   // não começou a tocar: segue sem vídeo
+  v.addEventListener('timeupdate',function(){if(v.currentTime>=MIN){if(!viu)marca();viu=true;ver();}});   // só conta o dia quando o logo foi visto montado
+  v.addEventListener('ended',function(){if(!viu)marca();viu=true;ver();setTimeout(sair,2500);});
+  var tocou=false;
+  function semVideo(){if(tocou)return;o.classList.add('semvideo');viu=true;ver();setTimeout(sair,1500);}
+  v.addEventListener('playing',function(){if(saiu)return;tocou=true;o.classList.add('tocando');});
+  v.addEventListener('error',semVideo);
+  setTimeout(semVideo,6000);                                // em 6 s nem começou (internet ruim, autoplay bloqueado): segue sem vídeo
+  setTimeout(function(){viu=true;ver();setTimeout(sair,1500);},14000);   // trava de segurança: nunca segura o app além disso
   o.addEventListener('click',function(){viu=true;sair();});
   var p=v.play&&v.play();p&&p.catch&&p.catch(function(){});
 })();
