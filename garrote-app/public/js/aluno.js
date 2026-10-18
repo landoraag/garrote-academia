@@ -3,7 +3,7 @@ import { api } from './api.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { perLabel, situ, ptDate, precoTxt } from './plano.js';
 import { pedirNotif, agendar, cancelar, mostrar, limpar, hora } from './notif.js';
-import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly, confirmBox, openModal, fail, catTree, isTempo, itemTxt, segAlvo, segTxt } from './ui.js';
+import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly, confirmBox, openModal, fail, catTree, isTempo, itemTxt, segAlvo, segTxt, temaBtn } from './ui.js';
 
 const META_MES = 20;
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -21,7 +21,7 @@ export function streakInfo(dates, today) {
   return { cur, rec: Math.max(rec, cur) };
 }
 
-const topIcon = () => `<a class="iconbtn avbtn" href="#/perfil" aria-label="Meu perfil">${avatar(SESSION.me, 44)}</a>`;
+const topIcon = () => `<div class="tright">${temaBtn()}<a class="iconbtn avbtn" href="#/perfil" aria-label="Meu perfil">${avatar(SESSION.me, 44)}</a></div>`;
 const viewing = async () => ro() ? `<p class="viewing">Visualizando como ${esc((await api.get('users', sid()) || {}).nome || 'aluno')}. Somente leitura.</p>` : '';
 const nav = a => `<nav class="nav" aria-label="Principal">${[['home', 'Início', '/home'], ['db', 'Treino', '/treinos'], ['grid', 'Modalidades', '/modalidades'], ['user', 'Perfil', '/perfil']]
   .map(([i, n, h]) => `<a href="#${h}" aria-label="${n}" class="${a === i ? 'on' : ''}">${ic(i)}<span class="lbl">${n}</span></a>`).join('')}</nav>`;
@@ -45,10 +45,10 @@ const NOME = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', '
 const diasTxt = t => { const d = [...(t.dias || [])].sort((a, b) => ate(a) - ate(b)), nm = d.length > 3 ? CURTO : NOME;
   return d.length ? d.map(n => `<span class="${ate(n) === 0 ? 'hj' : ''}">${ate(n) === 0 ? 'Hoje' : nm[n]}</span>`).join(', ') : 'Sem dia definido'; };
 /* check-in automático: ao iniciar o treino, o dia conta como check-in (se ainda não tiver) */
-async function autoCheckin(k) {
+async function autoCheckin(k, tid) {
   const uid = sid();
   try { const cks = await api.list('checkins', [['uid', '==', uid]]); if (cks.some(c => c.data === k)) return;
-    await api.set('checkins', `${uid}_${k}`, { uid, data: k, ts: Date.now() }); toast('Treino iniciado. Check-in de hoje feito.'); }
+    await api.set('checkins', `${uid}_${k}`, { uid, data: k, ts: Date.now(), auto: true, tid }); toast('Treino iniciado. Check-in de hoje feito.'); }
   catch (e) { console.error('check-in automático', e); }
 }
 const toMap = a => Object.fromEntries(a.map(x => [x.id, x]));
@@ -119,8 +119,8 @@ export async function home() {
 export async function treinos() {
   const uid = sid(), list = await myTreinos(uid), mods = toMap(await api.list('modalidades'));
   list.sort((a, b) => proxDia(a) - proxDia(b) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));   // na ordem da semana, a partir de hoje
-  const cards = list.map(t => `<a class="card mcard tr" href="#/treino/${t.id}"><div class="top"><div class="mic">${ic('db', 26)}</div><div><h3>${esc(t.nome)}</h3><small>${esc((mods[t.modalidadeId] || {}).nome || 'Treino')} · ${(t.itens || []).length} exercícios</small></div></div>
-    <div class="foot"><p class="tdias">${diasTxt(t)}</p>${ic('chev', 20, '#B5B5BA')}</div></a>`).join('');
+  const cards = list.map(t => `<a class="card mcard tr" href="#/treino/${t.id}"><div class="top"><div class="mic">${ic('db', 26)}</div><div class="ttx"><h3>${esc(t.nome)}</h3><small>${esc((mods[t.modalidadeId] || {}).nome || 'Treino')} · ${(t.itens || []).length} exercícios</small>
+    <p class="tdias">${diasTxt(t)}</p></div>${ic('chev', 20, '#B5B5BA')}</div></a>`).join('');
   return { depth: 2, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
     <div class="body"><div><h1 class="h1">Meus treinos</h1><p class="muted" style="margin-top:4px;font-size:14px">Montados pelo seu professor</p></div>
     <div class="cards">${cards || '<p class="empty">Você ainda não tem treino. Fale com seu professor.</p>'}</div></div><div style="height:16px;flex:none"></div>${nav('db')}` };
@@ -161,6 +161,18 @@ function avaliar(D) {
   setTimeout(() => { const b = $('.nt.on', box) || $('.nt', box); b && b.focus(); }, 90);   // não abre o teclado logo de cara
 }
 const encerrarTimers = () => { lsSet(RK, null); lsSet(CK, null); cancelar('descanso'); cancelar('crono'); limpar(); };
+/* reiniciar: apaga o andamento de hoje deste treino (cronômetro, séries, pesos, nota).
+   O check-in só sai se foi o próprio início deste treino que fez, e nenhum outro treino foi começado hoje. */
+async function reiniciar(D) {
+  await api.set('execucoes', D.eid, { uid: sid(), tid: D.tid, data: D.k, feitos: {}, valores: {} });
+  Object.assign(D, { feitos: {}, valores: {}, inicio: 0, fim: 0, dif: null, obs: '' });
+  encerrarTimers();
+  try { const uid = sid(), ck = await api.get('checkins', `${uid}_${D.k}`);
+    if (ck && ck.auto && ck.tid === D.tid) {
+      const outros = (await api.list('execucoes', [['uid', '==', uid], ['data', '==', D.k]])).some(x => x.tid !== D.tid && x.inicio);
+      if (!outros) await api.del('checkins', `${uid}_${D.k}`); } }
+  catch (e) { console.error('desfazer check-in', e); }
+}
 
 export async function treino(tid) {
   const D = await loadTreino(tid); if (!D) return { depth: 3, html: `<div class="wk"><a class="iconbtn" href="#/treinos">${ic('back', 20)}</a><p class="empty">Treino não encontrado.</p></div>`, dark: true };
@@ -176,20 +188,26 @@ export async function treino(tid) {
     : !D.inicio ? `<button class="btn red" id="ini">Iniciar treino</button>`
     : D.fim ? `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${proximo}</a>${resumoBtn}`
     : `<a class="btn red" href="#/exercicio/${tid}/${nxIdx}">Continuar: ${proximo}</a><button class="btn link" id="enc">Encerrar treino</button>`;
+  const comecou = !!D.inicio || Object.values(D.feitos).some(a => (a || []).some(Boolean));
+  const resetBtn = !ro() && comecou ? `<button class="btn link rst" id="rst">${ic('reset', 18)}Reiniciar treino</button>` : '';
   return { depth: 3, dark: true, html: `<div class="wk">
     <div class="wk-head"><a class="iconbtn" href="#/treinos" aria-label="Voltar">${ic('back', 20)}</a><small style="font:600 11px var(--b);letter-spacing:2px;color:var(--dim)">TREINO</small><span style="width:44px"></span></div>
     <div><h1 class="h1">${esc(D.t.nome)}</h1><p class="muted" style="margin-top:6px;font-size:14px">${its.length} exercícios</p></div>
     <div class="cron ${D.inicio ? (D.fim ? 'end' : 'on') : ''}"><div><small id="cl">${D.fim ? 'TEMPO TOTAL' : D.inicio ? 'TEMPO DE TREINO' : 'CRONÔMETRO'}</small><b id="ct">${fmtT(decorrido(D))}</b></div><i class="dot"></i></div>
     <div class="prog"><div><b>${done}<span> / ${its.length}</span></b><small>concluídos</small></div><div class="bar"><i data-w="${its.length ? done / its.length * 100 : 0}"></i></div><span style="font:600 12px var(--b)">${D.fim ? '' : '~' + (its.length - done) * 8 + ' min'}</span></div>
     <div style="display:flex;flex-direction:column;gap:8px">${rows || '<p class="empty">Este treino ainda não tem exercícios.</p>'}</div><div class="grow"></div>
-    ${botao}</div>`,
+    ${botao}${resetBtn}</div>`,
   after(el) {
     raf2(() => $$('.prog .bar i', el).forEach(i => i.style.width = i.dataset.w + '%'));
     const draw = () => { $('#ct', el).textContent = fmtT(decorrido(D)); };
     const tk = D.inicio && !D.fim ? setInterval(draw, 1000) : null;
     const encerrar = async () => { D.fim = Date.now(); try { await salvarExec(D); } catch (e) { D.fim = 0; return toast(friendly(e)); } encerrarTimers(); avaliar(D); };
-    if ($('#ini', el)) $('#ini', el).onclick = async () => { pedirNotif(); D.inicio = Date.now(); D.fim = 0; try { await salvarExec(D); } catch (e) { return toast(friendly(e)); } autoCheckin(D.k); go(`/exercicio/${tid}/${Math.max(0, nxIdx)}`); };
+    if ($('#ini', el)) $('#ini', el).onclick = async () => { pedirNotif(); D.inicio = Date.now(); D.fim = 0; try { await salvarExec(D); } catch (e) { return toast(friendly(e)); } autoCheckin(D.k, D.tid); go(`/exercicio/${tid}/${Math.max(0, nxIdx)}`); };
     if ($('#fin', el)) $('#fin', el).onclick = encerrar;
+    if ($('#rst', el)) $('#rst', el).onclick = async () => {
+      if (!(await confirmBox('Reiniciar este treino? O cronômetro e as séries marcadas hoje voltam do zero. Use se você começou sem querer.', 'Reiniciar'))) return;
+      try { await reiniciar(D); } catch (e) { return toast(friendly(e)); }
+      toast('Treino reiniciado.'); dispatchEvent(new Event('hashchange')); };
     if ($('#enc', el)) $('#enc', el).onclick = async () => { if (await confirmBox('Encerrar o treino agora? O cronômetro vai parar com os exercícios que você já fez.', 'Encerrar')) encerrar(); };
     const off = avisoAoSair(() => D.inicio && !D.fim && !ro(), () => { const r = lsGet(RK), d = r && r.eid === D.eid && !r.paused && r.end > Date.now();
       return `${D.t.nome} · começou às ${hora(D.inicio).slice(0, 5)}${d ? ` · descanso até ${hora(r.end)}` : ''}${nx ? ` · próximo: ${(D.exMap[nx.exId] || {}).nome || 'exercício'}` : ''}`; }, () => `#/treino/${tid}`);
@@ -232,7 +250,7 @@ export async function exercicio(tid, n) {
     const atual = () => sets.findIndex(x => !x);
     const proxTxt = () => { const p = atual(); return p >= 0 ? `Série ${p + 1} de ${total} · ${ex.nome}` : idx < its.length - 1 ? `Próximo exercício: ${nomeEx(idx + 1)}` : 'Finalizar o treino'; };
     const showT = () => { const e = $('#et', el); if (e) e.textContent = D.inicio ? ' · ' + fmtT(decorrido(D)) : ''; };
-    const comecar = () => { if (!D.inicio) { D.inicio = Date.now(); showT(); autoCheckin(D.k); } pedirNotif(); };   // se o aluno não tocou em "Iniciar treino", o cronômetro começa na 1ª série
+    const comecar = () => { if (!D.inicio) { D.inicio = Date.now(); showT(); autoCheckin(D.k, D.tid); } pedirNotif(); };   // se o aluno não tocou em "Iniciar treino", o cronômetro começa na 1ª série
 
     /* ---- descanso: guardado como horário de término, então continua contando fora do app ---- */
     let rest = lsGet(RK), tot = it.descanso, ready = false;
@@ -382,7 +400,7 @@ export async function modalidades() {
 
 export async function modalidade(id) {
   const uid = sid(), [m, prof] = await Promise.all([api.get('modalidades', id), ro() ? api.get('users', uid) : SESSION.me]);
-  if (!m) return { depth: 2, html: `<div class="body"><a class="iconbtn light" href="#/modalidades">${ic('back', 20, '#0C0C0C')}</a><p class="empty">Modalidade não encontrada.</p></div>` };
+  if (!m) return { depth: 2, html: `<div class="body"><a class="iconbtn light" href="#/modalidades">${ic('back', 20)}</a><p class="empty">Modalidade não encontrada.</p></div>` };
   const matr = (prof.modalidades || []).includes(id), now = new Date(), slots = [];
   (m.dias || []).forEach(d => { const dt = new Date(now); dt.setHours(0, 0, 0, 0); dt.setDate(now.getDate() + ((d - iso(now) + 7) % 7)); slots.push({ dt, key: dkey(dt) }); });
   slots.sort((a, b) => a.dt - b.dt); slots.length = Math.min(slots.length, 3);
@@ -426,7 +444,7 @@ export async function perfil() {
   const plano = mine && mine.planoId ? await api.get('planos', mine.planoId).catch(() => null) : null, [stc, stl] = situ(mine || {}, plano);
   const planoCard = `<section class="card span2"><h2 class="h2" style="margin-bottom:10px">Meu plano</h2>${plano ? `<div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b style="font:700 22px var(--d)">${esc(plano.nome)}</b><div class="muted" style="font-size:13px">${plano.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(plano.periodo)} · ${plano.familia === 'sim' ? 'Família' : 'Individual'}</div>${plano.categoria === 'totalpass' ? '' : `<div class="muted" style="font-size:13px;margin-top:2px">${esc(precoTxt(plano))}</div>`}</div><div style="text-align:right"><span class="st-chip ${stc}">${stl}</span>${plano.categoria === 'totalpass' || !mine.vencimento ? '' : `<div class="muted" style="font-size:13px;margin-top:4px">Vencimento ${ptDate(mine.vencimento)}</div>`}</div></div>` : '<p class="muted" style="margin:0;font-size:14px">Nenhum plano definido. Fale com a recepção.</p>'}</section>`;
   const { cur, rec } = streakInfo(new Set(cks.map(c => c.data)), new Date());
-  return { depth: 1, html: `<header class="hero compact"><div class="topbar">${logo(30)}<span style="width:44px"></span></div></header>
+  return { depth: 1, html: `<header class="hero compact"><div class="topbar">${logo(30)}${temaBtn()}</div></header>
   <div class="body dgrid"><div class="span2"><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div>
     <div class="stats span2"><div class="card"><b>${cur}</b><small>dias seguidos</small></div><div class="card"><b>${rec}</b><small>recorde</small></div><div class="card"><b>${cks.length}</b><small>check-ins</small></div></div>
     ${planoCard}${perfilHTML()}<button class="btn dark span2" id="out">Sair da conta</button></div><div style="height:16px;flex:none"></div>${nav('user')}`,

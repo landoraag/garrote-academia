@@ -63,7 +63,8 @@ service cloud.firestore {
       allow read: if isStaff() || (hasProfile() && resource.data.uid == request.auth.uid);
       allow create: if hasProfile() && request.resource.data.uid == request.auth.uid
                     && id == request.auth.uid + '_' + request.resource.data.data;
-      allow delete: if isOwner();
+      // o aluno só pode apagar o check-in automático que o início do treino fez (botão "Reiniciar treino")
+      allow delete: if isOwner() || (hasProfile() && resource.data.uid == request.auth.uid && resource.data.auto == true);
     }
 
     // Estes documentos têm id começando pelo uid do aluno ("uid_...").

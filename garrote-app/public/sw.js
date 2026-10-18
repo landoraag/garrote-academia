@@ -1,7 +1,7 @@
 /* Service worker: abre o app na hora, a partir do cache, e atualiza em segundo plano.
    Não mexe nas chamadas do Firebase (login e banco de dados): só nos arquivos do app, fontes e SDK.
    Também mostra os avisos do treino (fim do descanso etc.), mesmo com o app em segundo plano. */
-const CACHE = 'garrote-v15';
+const CACHE = 'garrote-v16';
 const SHELL = ['index.html', 'css/styles.css', 'js/main.js', 'js/api.js', 'js/aluno.js', 'js/painel.js', 'js/perfil.js', 'js/plano.js', 'js/ui.js', 'js/notif.js', 'js/firebase-config.js', 'assets/logo.png', 'assets/favicon.png', 'assets/icon-180.png', 'manifest.webmanifest'];
 const FIXED = h => h === 'www.gstatic.com' || h === 'fonts.googleapis.com' || h === 'fonts.gstatic.com';   // versões fixas: cache primeiro
 

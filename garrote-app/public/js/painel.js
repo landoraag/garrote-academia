@@ -1,6 +1,6 @@
 /* Painel do dono e do treinador (tela larga). Cadastros genéricos guiados por "schema". */
 import { api, mode } from './api.js';
-import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo } from './ui.js';
+import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn } from './ui.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt } from './plano.js';
 
@@ -132,12 +132,16 @@ const exsel = (D, it) => { const T = catTree(D.categorias), e = D.exercicios.fin
   return `<div class="exsel"><label class="ii"><span>Categoria</span><select name="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${T.tops.map(c => `<option value="${esc(c.id)}" ${c.id === cat ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}${semCat ? `<option value="${SEM}" ${cat === SEM ? 'selected' : ''}>Sem categoria</option>` : ''}</select></label>
     <label class="ii sb" ${cat && T.subs(cat).length ? '' : 'hidden'}><span>Subcategoria</span><select name="sub" aria-label="Subcategoria">${subOpts(T, cat, sub)}</select></label>
     <label class="ii exn"><span>Exercício</span><select name="ex" aria-label="Exercício" ${cat ? '' : 'disabled'}>${exOpts(D, T, cat, sub, it.exId)}</select></label></div>`; };
-const irow = (D, it = {}) => { const tm = isTempo(it);
-  return `<div class="irow${it.sets && it.sets.length ? ' ps' : ''}${tm ? ' tm' : ''}">${exsel(D, it)}
-  <label class="ii"><span>Medida</span><select name="un" aria-label="Medida"><option value="kg">Carga (kg)</option><option value="s" ${tm ? 'selected' : ''}>Tempo (segundos)</option></select></label>
+/* cada exercício fica fechado (só categoria, exercício e botões); ao tocar na barra abre o resto */
+const isum = r => { const tm = $('[name=un]', r).value === 's', s = +$('[name=series]', r).value || 1, v = +$('[name=val]', r).value || 0, d = +$('[name=desc]', r).value || 0;
+  return `${s} × ${tm ? v + 's' : (+$('[name=reps]', r).value || 1)}${tm ? '' : ' · ' + (v ? v.toLocaleString('pt-BR') + ' kg' : 'Corpo')} · ${d}s descanso`; };
+const irow = (D, it = {}, open = false) => { const tm = isTempo(it);
+  return `<div class="irow${it.sets && it.sets.length ? ' ps' : ''}${tm ? ' tm' : ''}${open ? ' open' : ''}"><div class="itop" data-tg>${exsel(D, it)}
+  <span class="ibtns"><button type="button" data-up aria-label="Subir">↑</button><button type="button" data-dn aria-label="Descer">↓</button><button type="button" data-rm aria-label="Remover">×</button><button type="button" class="chev" data-tgb aria-label="Mostrar detalhes" aria-expanded="${open}">${ic('chev', 18, 'currentColor', 2.2)}</button></span><small class="isum"></small></div>
+  <div class="ibody"><label class="ii"><span>Medida</span><select name="un" aria-label="Medida"><option value="kg">Carga (kg)</option><option value="s" ${tm ? 'selected' : ''}>Tempo (segundos)</option></select></label>
   <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${it.series ?? 3}" aria-label="Séries"></label><label class="ii rp"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
   <label class="ii"><span class="vl">${tm ? 'Tempo (s)' : 'Carga (kg)'}</span><input name="val" type="number" min="0" step="${tm ? 5 : 0.5}" value="${tm ? it.seg ?? 30 : it.kg ?? 0}" aria-label="Carga ou tempo"></label><label class="ii"><span>Descanso (s)</span><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos"></label>
-  <span class="ibtns"><button type="button" data-up aria-label="Subir">↑</button><button type="button" data-dn aria-label="Descer">↓</button><button type="button" data-rm aria-label="Remover">×</button></span>${setsHTML(it)}</div>`; };
+  ${setsHTML(it)}</div></div>`; };
 function fieldHTML(f, v, D) {
   const cls = `field ${f.full ? 'full' : ''}`;
   if (f.type === 'select') return `<label class="${cls}">${f.l}<select name="${f.k}">${f.blank ? `<option value="">${esc(f.blankL || 'Nenhuma')}</option>` : ''}${f.opts().map(([o, l]) => `<option value="${esc(o)}" ${String(o) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
@@ -177,8 +181,11 @@ const picker = sel => { sel.focus(); try { sel.showPicker && sel.showPicker(); }
 function bindItems(form, D) {
   const box = $('.items', form); if (!box) return;
   const T = catTree(D.categorias);
-  if (!$('.irow', box)) box.insertAdjacentHTML('beforeend', irow(D));
-  $('[data-add]', form).onclick = () => { box.insertAdjacentHTML('beforeend', irow(D)); const r = box.lastElementChild; r.classList.add('new'); $('[name=cat]', r).focus(); };
+  if (!$('.irow', box)) box.insertAdjacentHTML('beforeend', irow(D, {}, true));
+  const sum = r => { $('.isum', r).textContent = isum(r); };
+  const tog = (r, on) => { on = r.classList.toggle('open', on); $('[data-tgb]', r).setAttribute('aria-expanded', on); $('[data-tgb]', r).setAttribute('aria-label', on ? 'Esconder detalhes' : 'Mostrar detalhes'); if (!on) sum(r); };
+  $$('.irow', box).forEach(sum);
+  $('[data-add]', form).onclick = () => { box.insertAdjacentHTML('beforeend', irow(D, {}, true)); const r = box.lastElementChild; r.classList.add('new'); sum(r); $('[name=cat]', r).focus(); };
   box.onchange = e => { const r = e.target.closest('.irow'); if (!r) return; const cat = $('[name=cat]', r).value, ex = $('[name=ex]', r);
     if (e.target.name === 'cat') { const hasSub = !!cat && T.subs(cat).length > 0;
       $('.sb', r).hidden = !hasSub; $('[name=sub]', r).innerHTML = subOpts(T, cat, ''); ex.disabled = !cat; ex.innerHTML = exOpts(D, T, cat, '', '');
@@ -186,8 +193,10 @@ function bindItems(form, D) {
     else if (e.target.name === 'sub') { ex.innerHTML = exOpts(D, T, cat, e.target.value, ''); picker(ex); }
     else if (e.target.name === 'un') { const tm = e.target.value === 's', v = $('[name=val]', r);
       r.classList.toggle('tm', tm); $('.vl', r).textContent = tm ? 'Tempo (s)' : 'Carga (kg)'; v.value = tm ? 30 : 0; v.step = tm ? 5 : 0.5; if (r.classList.contains('ps')) syncSets(r, true); } };
-  box.oninput = e => { const r = e.target.closest('.irow'); if (r && r.classList.contains('ps') && e.target.matches('[name=series],[name=val]')) syncSets(r, r.classList.contains('tm') && e.target.name === 'val'); };
+  box.addEventListener('change', e => { const r = e.target.closest('.irow'); if (r) sum(r); });
+  box.oninput = e => { const r = e.target.closest('.irow'); if (r) sum(r); if (r && r.classList.contains('ps') && e.target.matches('[name=series],[name=val]')) syncSets(r, r.classList.contains('tm') && e.target.name === 'val'); };
   box.onclick = e => { const r = e.target.closest('.irow'); if (!r) return;
+    if (e.target.closest('[data-tgb]') || (e.target.closest('[data-tg]') && !e.target.closest('.ii,button'))) { tog(r); return; }
     if (e.target.closest('[data-ps]')) { const on = r.classList.toggle('ps'); $('[data-ps]', r).textContent = on ? 'Usar o mesmo para todas as séries' : 'Personalizar cada série'; if (on) syncSets(r, true); return; }
     if (e.target.closest('[data-rm]')) r.remove(); else if (e.target.closest('[data-up]') && r.previousElementSibling) box.insertBefore(r, r.previousElementSibling); else if (e.target.closest('[data-dn]') && r.nextElementSibling) box.insertBefore(r.nextElementSibling, r); };
 }
@@ -371,12 +380,13 @@ function bindFin(el, D, repaint) {
 function build(tab, D, E) {
   const me = SESSION.me;
   const side = `<aside class="side" id="menu" aria-label="Menu">${logo(34)}<button type="button" class="iconbtn mclose" id="mx" aria-label="Fechar menu">${ic('close', 20)}</button>${MENU[E.mode].map(([k, l]) => `<a class="${tab === k ? 'on' : ''}" href="#/painel/${k}">${l}</a>`).join('')}
+    <div class="thmline"><span>Aparência</span>${temaBtn()}</div>
     <div class="who"><a class="whou" href="#/painel/perfil" aria-label="Abrir meu perfil"${tab === 'perfil' ? ' aria-current="page"' : ''}>${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div></a>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
   const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D)
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
     : tableHTML(schema(tab, D, E), D, E);
-  const mbar = `<header class="mtop"><button type="button" class="iconbtn" id="mn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">${ic('menu', 22)}</button>${logo(30)}<span></span></header><div class="scrim" id="scrim"></div>`;
+  const mbar = `<header class="mtop"><button type="button" class="iconbtn" id="mn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">${ic('menu', 22)}</button>${logo(30)}${temaBtn()}</header><div class="scrim" id="scrim"></div>`;
   const bnav = `<nav class="bnav" aria-label="Atalhos">${BNAV[E.mode].map(([k, i, l]) => `<a href="#/painel/${k}" class="${tab === k ? 'on' : ''}" aria-label="${l}" title="${l}" ${tab === k ? 'aria-current="page"' : ''}>${ic(i, 24)}</a>`).join('')}</nav>`;
   return `<div class="admin">${mbar}${side}<main class="main">${body}</main>${bnav}</div>`;
 }
