@@ -1,0 +1,5 @@
+.env
+.env.*
+firebase-chave.json
+*-firebase-adminsdk-*.json
+node_modules

@@ -23,6 +23,7 @@ async function makeFirebase() {
   };
   return {
     mode: 'firebase',
+    idToken: () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null),   // login conferido pelo servidor de pagamentos
     onAuth: cb => A.onAuthStateChanged(auth, u => { cache.clear(); cb(u ? { uid: u.uid, email: u.email } : null); }),
     login: (e, p) => A.signInWithEmailAndPassword(auth, e, p),
     logout: () => A.signOut(auth),
@@ -129,6 +130,7 @@ function makeDemo() {
   const rid = () => 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   return {
     mode: 'demo', seed,
+    idToken: async () => null,
     onAuth(cb) { cbs.push(cb); setTimeout(() => cb(cur()), 0); },
     async login(e, p) { const a = db.accounts[e.toLowerCase()]; if (!a || a.pass !== p) throw err('auth/invalid-credential'); db.session = a.uid; save(); cbs.forEach(cb => cb(cur())); },
     async logout() { db.session = null; save(); cbs.forEach(cb => cb(null)); },

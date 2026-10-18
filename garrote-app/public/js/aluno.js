@@ -2,6 +2,7 @@
 import { api } from './api.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { perLabel, situ, ptDate, precoTxt } from './plano.js';
+import { pagamentoAtivo, abrirPagamento } from './pagamento.js';
 import { pedirNotif, agendar, cancelar, mostrar, limpar, hora } from './notif.js';
 import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly, confirmBox, openModal, fail, catTree, isTempo, itemTxt, segAlvo, segTxt, temaBtn } from './ui.js';
 
@@ -442,11 +443,13 @@ export async function modalidade(id) {
 export async function perfil() {
   const uid = sid(), [cks, mine] = await Promise.all([api.list('checkins', [['uid', '==', uid]]), api.get('users', uid)]);
   const plano = mine && mine.planoId ? await api.get('planos', mine.planoId).catch(() => null) : null, [stc, stl] = situ(mine || {}, plano);
-  const planoCard = `<section class="card span2"><h2 class="h2" style="margin-bottom:10px">Meu plano</h2>${plano ? `<div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b style="font:700 22px var(--d)">${esc(plano.nome)}</b><div class="muted" style="font-size:13px">${plano.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(plano.periodo)} · ${plano.familia === 'sim' ? 'Família' : 'Individual'}</div>${plano.categoria === 'totalpass' ? '' : `<div class="muted" style="font-size:13px;margin-top:2px">${esc(precoTxt(plano))}</div>`}</div><div style="text-align:right"><span class="st-chip ${stc}">${stl}</span>${plano.categoria === 'totalpass' || !mine.vencimento ? '' : `<div class="muted" style="font-size:13px;margin-top:4px">Vencimento ${ptDate(mine.vencimento)}</div>`}</div></div>` : '<p class="muted" style="margin:0;font-size:14px">Nenhum plano definido. Fale com a recepção.</p>'}</section>`;
+  const podePagar = !!plano && plano.categoria !== 'totalpass' && !ro() && pagamentoAtivo();
+  const planoCard = `<section class="card span2"><h2 class="h2" style="margin-bottom:10px">Meu plano</h2>${plano ? `<div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b style="font:700 22px var(--d)">${esc(plano.nome)}</b><div class="muted" style="font-size:13px">${plano.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(plano.periodo)} · ${plano.familia === 'sim' ? 'Família' : 'Individual'}</div>${plano.categoria === 'totalpass' ? '' : `<div class="muted" style="font-size:13px;margin-top:2px">${esc(precoTxt(plano))}</div>`}</div><div style="text-align:right"><span class="st-chip ${stc}">${stl}</span>${plano.categoria === 'totalpass' || !mine.vencimento ? '' : `<div class="muted" style="font-size:13px;margin-top:4px">Vencimento ${ptDate(mine.vencimento)}</div>`}</div></div>${podePagar ? `<button class="btn red" id="pagar" style="margin-top:14px">${stc === 'emdia' ? 'Pagar mensalidade adiantada' : 'Pagar mensalidade'}</button>` : ''}` : '<p class="muted" style="margin:0;font-size:14px">Nenhum plano definido. Fale com a recepção.</p>'}</section>`;
   const { cur, rec } = streakInfo(new Set(cks.map(c => c.data)), new Date());
   return { depth: 1, html: `<header class="hero compact"><div class="topbar">${logo(30)}${temaBtn()}</div></header>
   <div class="body dgrid"><div class="span2"><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div>
     <div class="stats span2"><div class="card"><b>${cur}</b><small>dias seguidos</small></div><div class="card"><b>${rec}</b><small>recorde</small></div><div class="card"><b>${cks.length}</b><small>check-ins</small></div></div>
     ${planoCard}${perfilHTML()}<button class="btn dark span2" id="out">Sair da conta</button></div><div style="height:16px;flex:none"></div>${nav('user')}`,
-  after(el) { $('#out', el).onclick = () => api.logout(); bindPerfil(el, () => dispatchEvent(new Event('hashchange'))); } };
+  after(el) { $('#out', el).onclick = () => api.logout(); bindPerfil(el, () => dispatchEvent(new Event('hashchange')));
+    const pg = $('#pagar', el); if (pg) pg.onclick = () => abrirPagamento({ plano, aluno: mine, onPago: () => setTimeout(() => dispatchEvent(new Event('hashchange')), 2500) }); } };
 }

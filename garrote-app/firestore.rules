@@ -19,6 +19,9 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
+    // Cobranças do Mercado Pago: só o servidor de pagamentos (conta de serviço) lê e grava.
+    match /cobrancas/{id} { allow read, write: if false; }
+
     // Foto de perfil (guardada em texto, sem precisar do Storage)
     match /fotos/{uid} {
       allow read: if signedIn() && (request.auth.uid == uid || isStaff());
