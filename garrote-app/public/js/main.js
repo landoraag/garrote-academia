@@ -97,6 +97,23 @@ const SCREENS = {
   home: A.home, treinos: A.treinos, treino: A.treino, exercicio: A.exercicio, resumo: A.resumo, modalidades: A.modalidades, modalidade: A.modalidade, perfil: A.perfil, painel
 };
 
+/* ---------- chegada: os itens da primeira tela entram em sequência ----------
+   No celular a abertura em vídeo está por cima: os itens entram junto com o fade do vídeo. */
+const ENTRA = '.login-top,.sheet>*,.hero>*,.body>*,.cards>*,.stats>*,.dgrid>*,.nav,.bnav,.wk>*,.dhero>*,.mtop,.side>*,.main>*,.kpis>*,.two>*';
+function entra(el) {
+  if (reduce) return;
+  const all = [...el.querySelectorAll(ENTRA)], set = new Set(all), alto = innerHeight;
+  const itens = all.filter(x => !all.some(y => y !== x && x.contains(y) && set.has(y)))   // anima as peças, não as caixas que as contêm
+    .filter(x => { const r = x.getBoundingClientRect(); return r.height && r.top < alto; });   // só o que aparece de primeira
+  itens.forEach((x, i) => { x.style.animationDelay = Math.min(i, 12) * 55 + 'ms'; x.classList.add('entra'); });
+  setTimeout(() => itens.forEach(x => { x.classList.remove('entra'); x.style.animationDelay = ''; }), 1600);
+}
+function chegada(el) {
+  const I = window.__intro;
+  if (I && I.ativa) { addEventListener('garrote:intro-fim', () => entra(el), { once: true }); I.fim(); }
+  else entra(el);
+}
+
 /* ---------- roteador com transição ---------- */
 let cur = null, curDepth = null, curWide = false, cleanup = null, token = 0, busy = false;
 async function render() {
@@ -125,7 +142,9 @@ async function render() {
     if (reduce || (curWide && v.wide)) cur.remove();   // trocar de aba do painel: sem animação, na hora
     else { const old = cur; el.classList.add(back ? 'in-back' : 'in-fwd'); setTimeout(() => el.classList.remove('in-back', 'in-fwd'), 420); old.classList.add(back ? 'out-back' : 'out-fwd'); old.inert = true; setTimeout(() => old.remove(), 380); }
   }
-  app.appendChild(el); const boot = $('#boot'); boot && boot.remove(); cur = el; curDepth = v.depth; curWide = !!v.wide;
+  const boot = $('#boot'), primeira = !!boot;
+  app.appendChild(el); boot && boot.remove(); cur = el; curDepth = v.depth; curWide = !!v.wide;
+  if (primeira) chegada(el);
   pwEyes(el); cleanup = (v.after && v.after(el)) || null;
 }
 
