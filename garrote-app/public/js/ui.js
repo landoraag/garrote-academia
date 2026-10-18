@@ -51,6 +51,19 @@ export const ic = (n, s = 22, c = 'currentColor', sw = 1.8, cls = '') => ICONF[n
 export const playIc = '<svg width="26" height="26" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
 export const logo = h => `<img class="logo" src="assets/logo.png" alt="Garrote Academia Piraju" style="height:${h}px">`;
 
+/* olho para mostrar/ocultar a senha em todo campo de senha */
+const EYE = 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', EYE_OFF = 'M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4.1M6.6 6.6A17 17 0 0 0 2 12s3.6 7 10 7a9.6 9.6 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2';
+const eyeSvg = d => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+export function pwEyes(root) {
+  $$('input[type=password]', root).forEach(inp => {
+    if (inp.parentElement.classList.contains('pwbox')) return;
+    const box = document.createElement('span'); box.className = 'pwbox'; inp.before(box); box.appendChild(inp);
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'eye'; b.setAttribute('aria-label', 'Mostrar senha'); b.setAttribute('aria-pressed', 'false'); b.innerHTML = eyeSvg(EYE); box.appendChild(b);
+    b.onclick = e => { e.preventDefault(); const show = inp.type === 'password'; inp.type = show ? 'text' : 'password';
+      b.innerHTML = eyeSvg(show ? EYE_OFF : EYE); b.setAttribute('aria-label', show ? 'Ocultar senha' : 'Mostrar senha'); b.setAttribute('aria-pressed', String(show)); };
+  });
+}
+
 export function fail(msg) { const e = new Error(msg); e.user = true; throw e; }
 export function friendly(err) {
   if (err && err.user) return err.message;
@@ -63,7 +76,7 @@ export function friendly(err) {
 export function openModal({ title, html, submit = 'Salvar', onSubmit, wide = false, foot = '', onClose }) {
   const ov = document.createElement('div'); ov.className = 'ov';
   ov.innerHTML = `<form class="dlg ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" novalidate><h2 class="h2">${esc(title)}</h2><div class="dbody">${html}</div><p class="err" data-err aria-live="polite"></p><div class="dfoot">${foot}<button type="button" class="btn ghost" data-x>${onSubmit ? 'Cancelar' : 'Fechar'}</button>${onSubmit ? `<button class="btn red" type="submit">${esc(submit)}</button>` : ''}</div></form>`;
-  document.body.appendChild(ov);
+  document.body.appendChild(ov); pwEyes(ov);
   const form = $('form', ov), prev = document.activeElement;
   const onKey = e => { if (e.key === 'Escape') close(); };
   function close() { document.removeEventListener('keydown', onKey); ov.classList.add('out'); setTimeout(() => ov.remove(), 200); prev && prev.focus && prev.focus(); onClose && onClose(); }

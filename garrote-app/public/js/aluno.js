@@ -36,6 +36,20 @@ function videoEl(url, label, tag) {
 }
 
 const myTreinos = uid => api.list('treinos', [['alunoIds', 'array-contains', uid]]);
+/* distância (em dias) de hoje até cada dia do treino: hoje = 0, amanhã = 1... */
+const ate = n => (n - iso(new Date()) + 7) % 7;
+const proxDia = t => (t.dias || []).length ? Math.min(...t.dias.map(ate)) : 99;
+const NOME = ['', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], CURTO = ['', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+/* dias do treino em texto, começando pelo dia de hoje */
+const diasTxt = t => { const d = [...(t.dias || [])].sort((a, b) => ate(a) - ate(b)), nm = d.length > 3 ? CURTO : NOME;
+  return d.length ? d.map(n => `<span class="${ate(n) === 0 ? 'hj' : ''}">${ate(n) === 0 ? 'Hoje' : nm[n]}</span>`).join(', ') : 'Sem dia definido'; };
+/* check-in automático: ao iniciar o treino, o dia conta como check-in (se ainda não tiver) */
+async function autoCheckin(k) {
+  const uid = sid();
+  try { const cks = await api.list('checkins', [['uid', '==', uid]]); if (cks.some(c => c.data === k)) return;
+    await api.set('checkins', `${uid}_${k}`, { uid, data: k, ts: Date.now() }); toast('Treino iniciado. Check-in de hoje feito.'); }
+  catch (e) { console.error('check-in automático', e); }
+}
 const toMap = a => Object.fromEntries(a.map(x => [x.id, x]));
 /* cronômetro do treino: calculado a partir do horário de início gravado no Firestore (não perde o tempo ao trocar de tela ou fechar o app) */
 const fmtT = s => { s = Math.max(0, Math.floor(s)); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), p = n => String(n).padStart(2, '0'); return (h ? h + ':' : '') + p(m) + ':' + p(s % 60); };
@@ -102,8 +116,9 @@ export async function home() {
 /* ---------------- Meus treinos ---------------- */
 export async function treinos() {
   const uid = sid(), list = await myTreinos(uid), mods = toMap(await api.list('modalidades'));
-  const cards = list.map(t => `<a class="card mcard" href="#/treino/${t.id}"><div class="top"><div class="mic">${ic('db', 26)}</div><div><h3>${esc(t.nome)}</h3><small>${esc((mods[t.modalidadeId] || {}).nome || 'Treino')} · ${(t.itens || []).length} exercícios</small></div></div>
-    <div class="foot"><div class="dias">${[1, 2, 3, 4, 5, 6, 7].map(n => `<span class="${(t.dias || []).includes(n) ? 'on' : ''}">${LET[n]}</span>`).join('')}</div>${ic('chev', 20, '#B5B5BA')}</div></a>`).join('');
+  list.sort((a, b) => proxDia(a) - proxDia(b) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));   // na ordem da semana, a partir de hoje
+  const cards = list.map(t => `<a class="card mcard tr" href="#/treino/${t.id}"><div class="top"><div class="mic">${ic('db', 26)}</div><div><h3>${esc(t.nome)}</h3><small>${esc((mods[t.modalidadeId] || {}).nome || 'Treino')} · ${(t.itens || []).length} exercícios</small></div></div>
+    <div class="foot"><p class="tdias">${diasTxt(t)}</p>${ic('chev', 20, '#B5B5BA')}</div></a>`).join('');
   return { depth: 2, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
     <div class="body"><div><h1 class="h1">Meus treinos</h1><p class="muted" style="margin-top:4px;font-size:14px">Montados pelo seu professor</p></div>
     <div class="cards">${cards || '<p class="empty">Você ainda não tem treino. Fale com seu professor.</p>'}</div></div><div style="height:16px;flex:none"></div>${nav('db')}` };
@@ -143,7 +158,7 @@ export async function treino(tid) {
     const tk = D.inicio && !D.fim ? setInterval(draw, 1000) : null;
     const atualizar = () => dispatchEvent(new HashChangeEvent('hashchange'));           // redesenha esta mesma tela
     const encerrar = async () => { D.fim = Date.now(); try { await salvarExec(D); } catch (e) { D.fim = 0; return toast(friendly(e)); } toast(`Treino concluído em ${fmtT(decorrido(D))}. Bom trabalho.`); atualizar(); };
-    if ($('#ini', el)) $('#ini', el).onclick = async () => { D.inicio = Date.now(); D.fim = 0; try { await salvarExec(D); } catch (e) { return toast(friendly(e)); } go(`/exercicio/${tid}/${Math.max(0, nxIdx)}`); };
+    if ($('#ini', el)) $('#ini', el).onclick = async () => { D.inicio = Date.now(); D.fim = 0; try { await salvarExec(D); } catch (e) { return toast(friendly(e)); } autoCheckin(D.k); go(`/exercicio/${tid}/${Math.max(0, nxIdx)}`); };
     if ($('#fin', el)) $('#fin', el).onclick = encerrar;
     if ($('#enc', el)) $('#enc', el).onclick = async () => { if (await confirmBox('Encerrar o treino agora? O cronômetro vai parar com os exercícios que você já fez.', 'Encerrar')) encerrar(); };
     return () => clearInterval(tk);
@@ -188,7 +203,7 @@ export async function exercicio(tid, n) {
     const mark = async i => {
       if (ro()) return blocked();
       sets[i] = !sets[i]; $('#sets', el).innerHTML = setsHTML(); cta();
-      if (sets[i] && !D.inicio) { D.inicio = Date.now(); showT(); }                      // se o aluno não tocou em "Iniciar treino", o cronômetro começa na 1ª série
+      if (sets[i] && !D.inicio) { D.inicio = Date.now(); showT(); autoCheckin(D.k); }                      // se o aluno não tocou em "Iniciar treino", o cronômetro começa na 1ª série
       if (sets[i]) { $(`.ck[data-i="${i}"]`, el).classList.add('pop'); if (sets.every(Boolean)) { stop(); toast('Exercício concluído.'); } else startRest(); }
       await persist();
     };

@@ -8,6 +8,7 @@ async function makeFirebase() {
   const B = 'https://www.gstatic.com/firebasejs/10.14.1/';
   const [App, A, F] = await Promise.all([import(B + 'firebase-app.js'), import(B + 'firebase-auth.js'), import(B + 'firebase-firestore-lite.js').catch(() => import(B + 'firebase-firestore.js'))]);   // lite: carrega mais rápido e cada gravação responde na hora
   const app = App.initializeApp(cfg), auth = A.getAuth(app), db = F.getFirestore(app);
+  auth.languageCode = 'pt-BR';   // e-mails do Firebase (redefinição de senha) em português
   const withId = s => ({ id: s.id, ...s.data() });
   const clean = d => JSON.parse(JSON.stringify(d));
   /* gravação: o Firestore só responde quando o servidor confirma; com internet instável isso podia demorar e a tela travava.
@@ -25,7 +26,10 @@ async function makeFirebase() {
     onAuth: cb => A.onAuthStateChanged(auth, u => { cache.clear(); cb(u ? { uid: u.uid, email: u.email } : null); }),
     login: (e, p) => A.signInWithEmailAndPassword(auth, e, p),
     logout: () => A.signOut(auth),
-    reset: e => A.sendPasswordResetEmail(auth, e),
+    /* o link do e-mail volta para o próprio app (tela "Criar nova senha"); depois de salvar, o botão leva ao login */
+    reset: e => A.sendPasswordResetEmail(auth, e, { url: location.origin + '/' }),
+    checkReset: code => A.verifyPasswordResetCode(auth, code),          // devolve o e-mail da conta
+    confirmReset: (code, pass) => A.confirmPasswordReset(auth, code, pass),
     async signUp(email, pass) { return (await A.createUserWithEmailAndPassword(auth, email, pass)).user.uid; },
     // Cria a conta de outra pessoa sem derrubar a sessão de quem está logado (app secundário).
     async createAccount(email, pass) {
@@ -119,6 +123,8 @@ function makeDemo() {
     async login(e, p) { const a = db.accounts[e.toLowerCase()]; if (!a || a.pass !== p) throw err('auth/invalid-credential'); db.session = a.uid; save(); cbs.forEach(cb => cb(cur())); },
     async logout() { db.session = null; save(); cbs.forEach(cb => cb(null)); },
     async reset() {},
+    async checkReset() { return 'aluno@garrote.demo'; },
+    async confirmReset() {},
     async signUp(email, pass) { return this.createAccount(email, pass); },
     async createAccount(email, pass) { email = email.toLowerCase(); if (db.accounts[email]) throw err('auth/email-already-in-use'); const uid = 'u' + rid(); db.accounts[email] = { pass, uid }; save(); return uid; },
     async changePassword(cur, next) { const a = db.accounts[(cur_() || {}).email]; if (!a || a.pass !== cur) throw err('auth/wrong-password'); a.pass = next; save(); },

@@ -2,9 +2,12 @@
 import { api, mode } from './api.js';
 import * as A from './aluno.js';
 import { painel } from './painel.js';
-import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce, dkey } from './ui.js';
+import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce, dkey, pwEyes } from './ui.js';
 
 const app = $('#app');
+/* link do e-mail de redefinição: o Firebase abre o app com ?mode=resetPassword&oobCode=... */
+const Q = new URLSearchParams(location.search), RESET = Q.get('mode') === 'resetPassword' && Q.get('oobCode') ? Q.get('oobCode') : '';
+const limparURL = () => history.replaceState(null, '', location.pathname + '#/login');
 const home = () => SESSION.me && SESSION.me.role === 'aluno' ? '/home' : '/painel/visao';
 
 const SCREENS = {
@@ -63,6 +66,31 @@ const SCREENS = {
       };
     } };
   },
+  async redefinir() {
+    let email = '', ok = true; try { email = await api.checkReset(RESET); } catch { ok = false; }
+    if (!ok) return { depth: 0, dark: true, html: `<div class="login-top">${logo(52)}<p>Redefinir senha</p></div><div class="sheet"><h1 class="h1">Link expirado</h1>
+      <p class="muted" style="font-size:15px;line-height:1.5">Este link já foi usado ou passou do prazo. Volte ao login, digite seu e-mail e toque em "Esqueci minha senha" para receber um novo.</p><button class="btn red" id="vl">Ir para o login</button></div>`,
+      after(el) { $('#vl', el).onclick = () => { limparURL(); render(); }; } };
+    return { depth: 0, dark: true, html: `
+    <div class="login-top">${logo(52)}<p>Redefinir senha</p></div>
+    <form class="sheet" id="f" novalidate>
+      <div><h1 class="h1">Criar nova senha</h1><p class="muted" style="margin-top:6px;font-size:15px">Para a conta ${esc(email)}</p></div>
+      <label class="field">Nova senha (mínimo 6 caracteres)<input name="n1" type="password" autocomplete="new-password"></label>
+      <label class="field">Confirmar nova senha<input name="n2" type="password" autocomplete="new-password"></label>
+      <p class="err" id="e" aria-live="polite"></p>
+      <button class="btn red" type="submit">Salvar nova senha</button>
+    </form>`,
+    after(el) {
+      $('#f', el).onsubmit = async e => {
+        e.preventDefault(); const n1 = $('[name=n1]', el).value, n2 = $('[name=n2]', el).value, b = $('.btn.red', el); $('#e', el).textContent = '';
+        try {
+          if (n1.length < 6) fail('A senha precisa ter pelo menos 6 caracteres.'); if (n1 !== n2) fail('A confirmação não confere.');
+          b.disabled = true; await api.confirmReset(RESET, n1);
+          limparURL(); toast('Senha alterada. Entre com a nova senha.'); render();
+        } catch (err) { b.disabled = false; $('#e', el).textContent = /expired|invalid-action/.test((err && err.code) || '') ? 'Este link expirou. Peça um novo no login.' : friendly(err); }
+      };
+    } };
+  },
   async semperfil() {
     return { depth: 0, dark: true, html: `<div class="login-top">${logo(52)}</div><div class="sheet"><h1 class="h1">Acesso ainda não liberado</h1><p class="muted" style="font-size:15px;line-height:1.5">Seu e-mail entrou, mas ainda não tem um perfil na academia. Peça para o dono ou seu professor liberar o seu acesso.</p><button class="btn dark" id="out">Sair</button></div>`, after(el) { $('#out', el).onclick = () => api.logout(); } };
   },
@@ -75,7 +103,8 @@ async function render() {
   if (busy) return;
   const parts = (location.hash.slice(1) || '/login').split('/'), name = parts[1] || 'login', args = parts.slice(2), pub = ['login', 'setup'];
   let target = SCREENS[name] ? name : 'login';
-  if (!SESSION.user) { if (!pub.includes(target)) { location.replace('#/login'); target = 'login'; } }
+  if (RESET && new URLSearchParams(location.search).get('oobCode')) target = 'redefinir';
+  else if (!SESSION.user) { if (!pub.includes(target)) { location.replace('#/login'); target = 'login'; } }
   else if (!SESSION.me) { if (!pub.includes(target)) target = 'semperfil'; }
   else {
     if (pub.includes(target)) { location.replace('#' + home()); return; }
@@ -97,7 +126,7 @@ async function render() {
     else { const old = cur; el.classList.add(back ? 'in-back' : 'in-fwd'); setTimeout(() => el.classList.remove('in-back', 'in-fwd'), 420); old.classList.add(back ? 'out-back' : 'out-fwd'); old.inert = true; setTimeout(() => old.remove(), 380); }
   }
   app.appendChild(el); const boot = $('#boot'); boot && boot.remove(); cur = el; curDepth = v.depth; curWide = !!v.wide;
-  cleanup = (v.after && v.after(el)) || null;
+  pwEyes(el); cleanup = (v.after && v.after(el)) || null;
 }
 
 api.onAuth(async u => {

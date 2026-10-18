@@ -7,7 +7,8 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 **Aluno**
 - Vê os treinos e abre o modo treino, com cronômetro e descanso entre as séries.
 - Cada série traz a repetição definida pelo treinador (editável) e a carga como referência: o aluno digita o peso que usou.
-- Faz check-in, vê as modalidades, agenda aula experimental e edita o próprio perfil (foto, nome e senha).
+- Os treinos aparecem na ordem da semana a partir de hoje, com os dias escritos por extenso.
+- Faz check-in (ao iniciar um treino, o check-in do dia é feito automaticamente), vê as modalidades, agenda aula experimental e edita o próprio perfil (foto, nome e senha).
 
 **Treinador**
 - Painel com visão geral, alunos, treinos, exercícios e categorias.
@@ -16,7 +17,7 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 **Dono**
 - Painel com visão geral, treinadores, alunos, modalidades, planos e financeiro.
 
-Em todos os painéis, a foto e o nome no canto inferior esquerdo do menu levam ao perfil. As listas são paginadas (5 itens por página no celular, 10 no computador).
+Todo campo de senha tem um olho para mostrar ou ocultar o que foi digitado. Em todos os painéis, a foto e o nome no canto inferior esquerdo do menu levam ao perfil. As listas são paginadas (5 itens por página no celular, 10 no computador).
 
 ## Tecnologias
 
@@ -45,6 +46,8 @@ garrote-app/
       perfil.js          tela de perfil
       plano.js           planos e pagamentos
       firebase-config.js configuração do seu projeto Firebase
+  email/
+    redefinir-senha.html modelo do e-mail para colar no Firebase
 atualizar.sh             aplica um zip de atualização e faz o deploy
 ```
 
@@ -58,6 +61,13 @@ atualizar.sh             aplica um zip de atualização e faz o deploy
 cd garrote-app
 firebase deploy --only hosting,firestore:rules
 ```
+
+## E-mail de redefinição de senha
+
+O e-mail sai em português e o link abre a tela **Criar nova senha** dentro do próprio app. Para deixar tudo com a cara da academia, no Console do Firebase:
+
+1. **Authentication > Templates > Redefinição de senha**, clique no lápis e cole o conteúdo de `garrote-app/email/redefinir-senha.html` (as instruções de nome do remetente e assunto estão no topo do arquivo).
+2. Na mesma tela, em **Personalizar URL de ação**, coloque o endereço do app com `/` no final (ex.: `https://SEU-PROJETO.web.app/`).
 
 ## Atualizando o app
 
