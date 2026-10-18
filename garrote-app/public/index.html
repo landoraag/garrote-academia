@@ -50,28 +50,30 @@ ap();var f=function(){ap();dispatchEvent(new Event('garrote:tema'))};m.addEventL
 a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;background:#0C0C0C;min-height:100%"><b style="font-size:20px">Conexão lenta</b><p style="color:#9A9AA0">O app está demorando para abrir. Confira sua internet e tente novamente.</p><button onclick="location.reload()" style="height:48px;padding:0 24px;border:0;border-radius:14px;background:#D91E26;color:#fff;font:600 15px sans-serif">Tentar novamente</button></div>';},25000);})();
 </script>
 <script>
-/* abertura em vídeo (só no celular): toca enquanto o app carrega por baixo.
-   Sai com fade quando o logo terminou de montar (~5 s) e a primeira tela já está pronta; tocar na tela pula.
-   Se o app demorar, depois do fim do vídeo a abertura sai mesmo assim e fica a tela de carregamento normal.
-   Sem vídeo (economia de dados, movimento reduzido, autoplay bloqueado no modo pouca energia): não atrapalha. */
+/* abertura em vídeo: toca na primeira vez que o app é aberto no dia (celular e computador),
+   enquanto o app carrega por baixo. Sai com fade quando o logo terminou de montar (~5 s) e a primeira tela
+   já está pronta; tocar/clicar pula. Se o app demorar, depois do fim do vídeo a abertura sai mesmo assim.
+   Se o vídeo não conseguir tocar (ex.: modo pouca energia do iPhone), fica só o logo e o app abre normal. */
 (function(){
-  var cel=matchMedia('(max-width:760px)').matches||matchMedia('(pointer:coarse) and (max-width:1024px)').matches;
-  var calma=matchMedia('(prefers-reduced-motion: reduce)').matches, econ=navigator.connection&&navigator.connection.saveData;
-  var W=window.__intro={ativa:false,fim:null};
-  if(!cel||calma||econ)return;
+  var W=window.__intro={ativa:false,fim:null},K='garrote:abertura',d=new Date(),
+      hoje=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+  try{if(localStorage.getItem(K)===hoje)return;}catch(e){}
+  if(navigator.connection&&navigator.connection.saveData)return;
   var o=document.createElement('div');o.id='intro';o.setAttribute('aria-hidden','true');
   o.innerHTML='<img src="assets/logo.png" alt=""><video muted playsinline autoplay preload="auto" src="assets/abertura.mp4"></video>';
   document.body.appendChild(o);W.ativa=true;
-  var v=o.querySelector('video'),pronto=false,viu=false,saiu=false,MIN=5;
+  var v=o.querySelector('video');v.muted=true;
+  var pronto=false,viu=false,saiu=false,MIN=5;
+  function marca(){try{localStorage.setItem(K,hoje)}catch(e){}}
   function sair(){if(saiu)return;saiu=true;o.classList.add('sai');W.ativa=false;
     dispatchEvent(new Event('garrote:intro-fim'));setTimeout(function(){o.remove()},700);}
   function ver(){if(pronto&&viu)sair();}
   W.fim=function(){pronto=true;ver();};                     // chamado pelo app quando a primeira tela aparece
   v.addEventListener('timeupdate',function(){if(v.currentTime>=MIN){viu=true;ver();}});
   v.addEventListener('ended',function(){viu=true;ver();setTimeout(sair,2500);});
-  v.addEventListener('playing',function(){o.classList.add('tocando');});
+  v.addEventListener('playing',function(){o.classList.add('tocando');marca();});   // só conta o dia se o vídeo tocou de verdade
   v.addEventListener('error',function(){viu=true;ver();setTimeout(sair,1500);});
-  setTimeout(function(){if(!v.currentTime){viu=true;ver();setTimeout(sair,1500);}},1500);   // não começou a tocar: fica só o logo
+  setTimeout(function(){if(!v.currentTime){viu=true;ver();setTimeout(sair,1500);}},2500);   // não começou a tocar: segue sem vídeo
   o.addEventListener('click',function(){viu=true;sair();});
   var p=v.play&&v.play();p&&p.catch&&p.catch(function(){});
 })();

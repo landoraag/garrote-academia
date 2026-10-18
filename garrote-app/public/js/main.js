@@ -101,12 +101,11 @@ const SCREENS = {
    No celular a abertura em vídeo está por cima: os itens entram junto com o fade do vídeo. */
 const ENTRA = '.login-top,.sheet>*,.hero>*,.body>*,.cards>*,.stats>*,.dgrid>*,.nav,.bnav,.wk>*,.dhero>*,.mtop,.side>*,.main>*,.kpis>*,.two>*';
 function entra(el) {
-  if (reduce) return;
   const all = [...el.querySelectorAll(ENTRA)], set = new Set(all), alto = innerHeight;
   const itens = all.filter(x => !all.some(y => y !== x && x.contains(y) && set.has(y)))   // anima as peças, não as caixas que as contêm
     .filter(x => { const r = x.getBoundingClientRect(); return r.height && r.top < alto; });   // só o que aparece de primeira
-  itens.forEach((x, i) => { x.style.animationDelay = Math.min(i, 12) * 55 + 'ms'; x.classList.add('entra'); });
-  setTimeout(() => itens.forEach(x => { x.classList.remove('entra'); x.style.animationDelay = ''; }), 1600);
+  itens.forEach((x, i) => { x.style.setProperty('--d', Math.min(i, 12) * 55 + 'ms'); x.classList.add('entra'); });
+  setTimeout(() => itens.forEach(x => { x.classList.remove('entra'); x.style.removeProperty('--d'); }), 1700);
 }
 function chegada(el) {
   const I = window.__intro;
