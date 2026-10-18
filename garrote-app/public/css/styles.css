@@ -410,3 +410,81 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 .irow .sref::placeholder{color:var(--muted);opacity:1}
 
 .pill input::placeholder{opacity:1}
+
+/* ---------- montagem do treino: categoria → subcategoria → exercício, medida kg ou segundos ---------- */
+.items{display:flex;flex-direction:column;gap:10px}
+.irow{grid-template-columns:repeat(5,minmax(0,1fr)) auto;padding:12px;border:1px solid var(--line);border-radius:16px;align-items:end}
+.irow .ii span{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+.irow [hidden]{display:none!important}
+.irow.tm .rp{display:none}
+.irow .exsel{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px}
+.irow .exsel select{grid-column:auto}
+.irow .exsel .ii.sb[hidden]+.exn{grid-column:span 2}
+.irow select:disabled{opacity:.6}
+.irow .ibtns{justify-self:end}
+.ihead{display:none}
+@media (max-width:700px){
+  .irow{grid-template-columns:1fr 1fr}
+  .irow .exsel{grid-template-columns:1fr}
+  .irow .exsel .ii.sb[hidden]+.exn{grid-column:auto}
+  .irow .ibtns{grid-column:span 2}
+}
+.note.calc{background:var(--bg);color:var(--ink);font-weight:600}
+
+/* ---------- busca avançada de exercícios ---------- */
+.catf{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.catf .chip{border:1px solid var(--line)}
+.catf .chip span{font-weight:500;opacity:.6;margin-left:2px}
+.catf .subc{padding:10px;border-radius:16px;background:#fff;border:1px dashed var(--line)}
+.catf .subc .chip{background:var(--bg)}.catf .subc .chip.on{background:var(--red);color:#fff;border-color:var(--red)}
+
+/* ---------- visão geral ---------- */
+.lnk{font:600 13px var(--b);color:var(--red);padding:6px 2px;flex:none}
+.lnk:hover{text-decoration:underline}
+.person .rl.hj{background:var(--red);color:#fff}
+
+/* ---------- treino do aluno ---------- */
+.tag.tmp{background:rgba(255,255,255,.1);color:var(--dim)}
+.btn.ghost-d{background:transparent;border:1px solid var(--s3);color:#fff;height:50px}
+.pill.meta{color:var(--dim);font-size:15px}
+.crono{background:var(--s1);border-radius:24px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;border:1.5px solid transparent;transition:border-color .2s}
+.crono.on{border-color:var(--red)}.crono.hit{border-color:#2FB36B}
+.crono .crtop{display:flex;justify-content:space-between;gap:10px}
+.crono small{font:600 11px var(--b);letter-spacing:1.5px;color:var(--dim)}
+.crono b{font:700 56px/1 var(--d);font-variant-numeric:tabular-nums;text-align:center}
+.crono.hit b{color:#2FB36B}
+.crono .bar{height:6px;border-radius:3px;background:var(--s3);overflow:hidden}.crono .bar i{display:block;height:100%;width:0;background:var(--red);transition:width .5s linear}
+.crono.hit .bar i{background:#2FB36B}
+.crono .crbtns{display:grid;grid-template-columns:1fr 1.2fr 1.4fr;gap:8px}
+.crb{height:46px;border-radius:16px;background:var(--s2);color:#fff;font:600 14px var(--b)}
+.crb.go{background:#fff;color:var(--ink)}.crono.on .crb.go{background:var(--s3);color:#fff}
+.crb.ok{background:var(--red)}
+.crono.off .crb{opacity:.4;pointer-events:none}
+
+/* nota de 0 a 10 */
+.notas{display:grid;grid-template-columns:repeat(11,1fr);gap:4px}
+.nt{height:42px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font:700 16px var(--d);transition:background .15s,color .15s,transform .15s}
+.nt:active{transform:scale(.94)}
+.nt.on{background:var(--red);border-color:var(--red);color:#fff}
+.nleg{display:flex;justify-content:space-between;font:500 11px var(--b);color:var(--muted);margin-top:6px}
+@media (max-width:420px){.notas{grid-template-columns:repeat(6,1fr)}.nt{height:44px}}
+
+/* resumo do treino */
+.rcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rcard{background:var(--s1);border-radius:20px;padding:14px 16px}
+.rcard small{display:block;font:600 11px var(--b);letter-spacing:1.5px;color:var(--dim);text-transform:uppercase}
+.rcard b{display:block;font:700 30px/1.15 var(--d);font-variant-numeric:tabular-nums}.rcard b span{font-size:16px;color:var(--dim)}
+.rcard em{font:500 12px var(--b);font-style:normal;color:var(--dim)}
+.robs{background:var(--s1);border-radius:20px;padding:14px 16px;border-left:3px solid var(--red)}
+.robs.old{border-left-color:var(--s3)}
+.robs small{font:600 11px var(--b);letter-spacing:1px;color:var(--dim);text-transform:uppercase}.robs p{margin-top:4px;font:400 15px/1.45 var(--b)}
+.rx{background:var(--s1);border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.rxh{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.rxh b{font:600 16px var(--b)}.rxh small{font:500 12px var(--b);color:var(--dim);flex:none}
+.rsets{margin:0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px;counter-reset:s}
+.rsets li{counter-increment:s;padding:6px 10px;border-radius:12px;background:var(--s2);font:600 13px var(--b)}
+.rsets li::before{content:counter(s) "ª  ";color:var(--dim)}
+.rsets li.off{color:var(--dim);font-weight:500}
+.cmp{margin:0;font:500 13px/1.6 var(--b);color:#C9C9CE}
+.up{color:#2FB36B;font-weight:700}.down{color:#FF6B70;font-weight:700}.eq{color:var(--dim)}
+.rcard .up,.rcard .down{font-size:12px}
+@media (min-width:700px){.rcards{grid-template-columns:repeat(4,1fr)}}

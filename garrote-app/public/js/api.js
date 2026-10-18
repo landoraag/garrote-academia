@@ -64,7 +64,7 @@ async function makeFirebase() {
 }
 
 function makeDemo() {
-  const KEY = 'garrote:demo:v3', clone = x => JSON.parse(JSON.stringify(x));
+  const KEY = 'garrote:demo:v4', clone = x => JSON.parse(JSON.stringify(x));
   const day = n => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const seed = () => {
     const u = (id, nome, email, role, extra = {}) => [id, { nome, email, role, ativo: 'sim', telefone: '(19) 99999-0000', criadoEm: Date.now(), ...extra }];
@@ -79,8 +79,8 @@ function makeDemo() {
       u('u-carla', 'Carla Souza', 'carla@garrote.demo', 'aluno', { treinadorId: 'u-rafael', modalidades: ['muay-thai'], planoId: 'p-tri', vencimento: day(5) }),
       u('u-pedro', 'Pedro Alves', 'pedro@garrote.demo', 'aluno', { treinadorId: 'u-diego', modalidades: [] })
     ]);
-    const pl = (nome, periodo, valor, extra = {}) => ({ nome, categoria: 'academia', periodo, valor, familia: 'nao', membros: 1, descricao: '', ...extra });
-    const planos = { 'p-mensal': pl('Mensal', 1, 99), 'p-tri': pl('Trimestral', 3, 270), 'p-sem': pl('Semestral', 6, 510), 'p-anual': pl('Anual', 12, 960),
+    const pl = (nome, periodo, valor, extra = {}) => ({ nome, categoria: 'academia', periodo, valor, descontoTipo: 'pct', desconto: 0, parcelas: 1, familia: 'nao', membros: 1, descricao: '', ...extra });
+    const planos = { 'p-mensal': pl('Mensal', 1, 150), 'p-tri': pl('Trimestral', 3, 450, { desconto: 5, parcelas: 3 }), 'p-sem': pl('Semestral', 6, 900, { descontoTipo: 'valor', desconto: 60, parcelas: 6 }), 'p-anual': pl('Anual', 12, 1800, { desconto: 10, parcelas: 12 }),
       'p-familia': pl('Plano Família', 1, 180, { familia: 'sim', membros: 3 }), 'p-total': pl('Total Pass', 1, 45, { categoria: 'totalpass' }) };
     const pagamentos = { pg1: { alunoIds: ['u-lucas'], planoId: 'p-mensal', valor: 99, data: day(0), meses: 1, forma: 'Pix' } };
     const accounts = {}; Object.entries(users).forEach(([id, p]) => accounts[p.email] = { pass: '123456', uid: id });
@@ -90,24 +90,34 @@ function makeDemo() {
       mod('muay-thai', 'Muay Thai', 'bolt', 'Prof. Diego', 'Tatame', '60 min', 'Técnica de socos, chutes, joelhadas e cotoveladas, com condicionamento físico.', [1, 3, 5], '19h', '20h', '6 vagas'),
       mod('danca', 'Dança', 'note', 'Profª. Camila', 'Sala 2', '60 min', 'Ritmos para soltar o corpo, queimar calorias e ganhar coordenação.', [2, 4], '18h30', '19h30', '8 vagas')
     ]);
-    const categorias = Object.fromEntries([['peito', 'Peito'], ['costas', 'Costas'], ['pernas', 'Pernas'], ['ombros', 'Ombros'], ['bracos', 'Braços'], ['core', 'Core']].map(([id, nome]) => [id, { nome }]));
+    const categorias = Object.fromEntries([['peito', 'Peito'], ['costas', 'Costas'], ['quadriceps', 'Quadríceps'], ['ombros', 'Ombro'], ['bracos', 'Braços'], ['core', 'Core'],
+      ['peito-sup', 'Peito superior', 'peito'], ['peito-med', 'Peito medial', 'peito'], ['peito-inf', 'Peito inferior', 'peito'], ['triceps', 'Tríceps', 'bracos'], ['biceps', 'Bíceps', 'bracos'],
+      ['abdomen', 'Abdômen', 'core'], ['lombar', 'Lombar', 'core']].map(([id, nome, paiId]) => [id, { nome, ...(paiId ? { paiId } : {}) }]));
     const ex = (id, nome, categoriaId, equip) => [id, { nome, categoriaId, equip, video: '', descricao: '' }];
     const exercicios = Object.fromEntries([
-      ex('flexao', 'Flexão de braço', 'peito', 'Peso do corpo'), ex('supino-maquina', 'Supino máquina', 'peito', 'Máquina'), ex('supino-reto', 'Supino reto com barra', 'peito', 'Barra'),
-      ex('supino-inclinado', 'Supino inclinado com halteres', 'peito', 'Halteres'), ex('crucifixo', 'Crucifixo na máquina', 'peito', 'Máquina'),
-      ex('triceps-corda', 'Tríceps corda na polia', 'bracos', 'Polia'), ex('triceps-testa', 'Tríceps testa', 'bracos', 'Barra W'),
-      ex('puxada', 'Puxada frontal', 'costas', 'Polia'), ex('remada', 'Remada curvada', 'costas', 'Barra'), ex('agachamento', 'Agachamento livre', 'pernas', 'Barra')
+      ex('flexao', 'Flexão de braço', 'peito-med', 'Peso do corpo'), ex('supino-maquina', 'Supino máquina', 'peito-med', 'Máquina'), ex('supino-reto', 'Supino reto com barra', 'peito-med', 'Barra'),
+      ex('supino-inclinado', 'Supino inclinado com halteres', 'peito-sup', 'Halteres'), ex('crucifixo', 'Crucifixo na máquina', 'peito-med', 'Máquina'), ex('supino-declinado', 'Supino declinado', 'peito-inf', 'Barra'),
+      ex('triceps-corda', 'Tríceps corda na polia', 'triceps', 'Polia'), ex('triceps-testa', 'Tríceps testa', 'triceps', 'Barra W'), ex('rosca-direta', 'Rosca direta', 'biceps', 'Barra'),
+      ex('puxada', 'Puxada frontal', 'costas', 'Polia'), ex('remada', 'Remada curvada', 'costas', 'Barra'), ex('agachamento', 'Agachamento livre', 'quadriceps', 'Barra'),
+      ex('prancha', 'Prancha abdominal', 'abdomen', 'Peso do corpo'), ex('desenvolvimento', 'Desenvolvimento com halteres', 'ombros', 'Halteres')
     ]);
     const it = (exId, series, reps, kg, descanso) => ({ exId, series, reps, kg, descanso });
     const treinos = {
       t1: { nome: 'Peito e Tríceps', modalidadeId: 'musculacao', dias: [1, 2, 3, 4, 5, 6], alunoIds: ['u-lucas'], criadoPor: 'u-rafael', criadoEm: Date.now(),
-        itens: [it('flexao', 3, 15, 0, 45), it('supino-maquina', 3, 12, 30, 60), it('supino-reto', 4, 10, 40, 90), it('supino-inclinado', 4, 12, 16, 90), it('crucifixo', 3, 12, 35, 60), it('triceps-corda', 4, 12, 25, 60), it('triceps-testa', 3, 10, 20, 60)] },
+        itens: [it('flexao', 3, 15, 0, 45), it('supino-maquina', 3, 12, 30, 60), it('supino-reto', 4, 10, 40, 90), it('supino-inclinado', 4, 12, 16, 90), it('crucifixo', 3, 12, 35, 60), it('triceps-corda', 4, 12, 25, 60), it('triceps-testa', 3, 10, 20, 60),
+          { exId: 'prancha', series: 3, reps: 1, kg: 0, descanso: 30, un: 's', seg: 30 }] },
       t2: { nome: 'Costas e Pernas', modalidadeId: 'musculacao', dias: [2, 4], alunoIds: ['u-lucas'], criadoPor: 'u-rafael', criadoEm: Date.now(),
         itens: [it('puxada', 4, 12, 45, 60), it('remada', 4, 10, 30, 60), it('agachamento', 4, 10, 40, 90)] }
     };
     const checkins = {}; for (let i = 1; i <= 11; i++) { const d = day(i); checkins['u-lucas_' + d] = { uid: 'u-lucas', data: d, ts: Date.now() }; }
-    const execucoes = { [`u-lucas_t1_${day(0)}`]: { uid: 'u-lucas', tid: 't1', data: day(0), feitos: { flexao: [true, true, true], 'supino-maquina': [true, true, true], 'supino-reto': [true, true, false, false] } } };
-    return { cols: { users, modalidades, categorias, exercicios, treinos, checkins, execucoes, agendamentos: {}, planos, pagamentos, config: { setup: { donoUid: 'u-dono' } } }, accounts, session: null };
+    const v = (kg, reps) => ({ kg, reps });
+    const execucoes = { [`u-lucas_t1_${day(0)}`]: { uid: 'u-lucas', tid: 't1', data: day(0), feitos: { flexao: [true, true, true], 'supino-maquina': [true, true, true], 'supino-reto': [true, true, false, false] } },
+      [`u-lucas_t1_${day(7)}`]: { uid: 'u-lucas', tid: 't1', data: day(7), inicio: Date.now() - 7 * 864e5, fim: Date.now() - 7 * 864e5 + 3480e3, duracao: 3480, dificuldade: 7, obs: 'Senti o ombro no supino inclinado.',
+        feitos: { flexao: [true, true, true], 'supino-maquina': [true, true, true], 'supino-reto': [true, true, true, true], 'supino-inclinado': [true, true, true, true], crucifixo: [true, true, true], 'triceps-corda': [true, true, true, true], 'triceps-testa': [true, true, true], prancha: [true, true, true] },
+        valores: { flexao: [v(0, 15), v(0, 14), v(0, 12)], 'supino-maquina': [v(30, 12), v(30, 12), v(30, 10)], 'supino-reto': [v(40, 10), v(40, 10), v(40, 8), v(40, 8)], 'supino-inclinado': [v(16, 12), v(16, 12), v(16, 10), v(16, 10)],
+          crucifixo: [v(35, 12), v(35, 12), v(35, 12)], 'triceps-corda': [v(25, 12), v(25, 12), v(25, 12), v(25, 10)], 'triceps-testa': [v(20, 10), v(20, 10), v(20, 8)], prancha: [{ seg: 30 }, { seg: 28 }, { seg: 25 }] } } };
+    const agendamentos = { [`u-pedro_muay-thai_${day(4)}`]: { uid: 'u-pedro', modId: 'muay-thai', slotKey: day(4), hora: '19h', ts: Date.now() }, [`u-carla_danca_${day(-2)}`]: { uid: 'u-carla', modId: 'danca', slotKey: day(-2), hora: '18h30', ts: Date.now() } };
+    return { cols: { users, modalidades, categorias, exercicios, treinos, checkins, execucoes, agendamentos, planos, pagamentos, config: { setup: { donoUid: 'u-dono' } } }, accounts, session: null };
   };
   let db; try { db = JSON.parse(localStorage.getItem(KEY)); } catch {} if (!db) db = seed();
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));

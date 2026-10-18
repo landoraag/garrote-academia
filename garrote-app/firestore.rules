@@ -68,11 +68,13 @@ service cloud.firestore {
 
     // Estes documentos têm id começando pelo uid do aluno ("uid_...").
     // Usar o id evita erro de permissão ao ler um documento que ainda não existe.
+    // a listagem por uid (resumo do treino compara com o treino anterior) usa o campo uid do documento
     match /execucoes/{id} {
-      allow read: if isStaff() || (hasProfile() && id.matches(request.auth.uid + '_.*'));
+      allow read: if isStaff() || (hasProfile() && (id.matches(request.auth.uid + '_.*') || resource.data.uid == request.auth.uid));
       allow create, update: if hasProfile() && request.resource.data.uid == request.auth.uid && id.matches(request.auth.uid + '_.*');
     }
 
+    // aulas experimentais: um documento por data (uid_modalidade_data); os que já passaram ficam como histórico
     match /agendamentos/{id} {
       allow read: if isStaff() || (hasProfile() && id.matches(request.auth.uid + '_.*'));
       allow create, update: if hasProfile() && request.resource.data.uid == request.auth.uid && id.matches(request.auth.uid + '_.*');

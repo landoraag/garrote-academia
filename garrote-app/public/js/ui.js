@@ -14,6 +14,13 @@ export const iso = d => (d.getDay() + 6) % 7 + 1;
 export const dkey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const fmt = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 export const kgTxt = n => n ? Number(n).toLocaleString('pt-BR') + ' kg' : 'Corpo';
+/* exercício por tempo (prancha etc.): un = 's' e o alvo de cada série fica em seg */
+export const isTempo = it => !!it && it.un === 's';
+export const segTxt = s => { s = Math.max(0, Math.round(+s || 0)); return s >= 60 ? `${Math.floor(s / 60)} min${s % 60 ? ' ' + (s % 60) + ' s' : ''}` : s + ' s'; };
+export const segAlvo = (it, i) => (it.sets && it.sets[i] && it.sets[i].seg) || it.seg || 30;
+export const itemTxt = it => { const n = Math.max(1, it.series | 0), per = it.sets && it.sets.length;
+  if (isTempo(it)) return per ? `${n} séries · ${it.sets.map((x, i) => segAlvo(it, i)).join('/')} s` : `${n} × ${segTxt(it.seg || 30)}`;
+  return `${per ? n + ' séries · ' + it.sets.map(x => x.reps).join('/') + ' reps' : n + ' × ' + it.reps} · ${kgTxt(it.kg)}`; };
 export const initials = n => String(n || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 export const firstName = n => String(n || '').trim().split(/\s+/)[0] || '';
 export const brl = n => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -21,6 +28,19 @@ export const avatar = (u, size = 40, cls = '') => u && u.foto
   ? `<img class="avimg ${cls}" src="${esc(u.foto)}" alt="" style="width:${size}px;height:${size}px">`
   : `<span class="avtxt ${cls}" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px">${esc(initials(u && u.nome))}</span>`;
 export const raf2 = fn => requestAnimationFrame(() => requestAnimationFrame(fn));
+/* categorias em dois níveis: principal (Peito) e subcategoria (Peito superior, com paiId = Peito).
+   Subcategoria cujo pai foi excluído passa a valer como principal. */
+export function catTree(cats = []) {
+  const byId = Object.fromEntries(cats.map(c => [c.id, c])), cmp = (a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
+  const isSub = c => !!(c && c.paiId && byId[c.paiId] && c.paiId !== c.id);
+  const tops = cats.filter(c => !isSub(c)).sort(cmp);
+  const subs = id => cats.filter(c => isSub(c) && c.paiId === id).sort(cmp);
+  const top = id => { const c = byId[id]; return !c ? '' : isSub(c) ? c.paiId : c.id; };
+  const sub = id => isSub(byId[id]) ? id : '';
+  const nome = id => (byId[id] || {}).nome || '';
+  const path = id => { const c = byId[id]; return !c ? '' : isSub(c) ? `${nome(c.paiId)} · ${c.nome}` : c.nome; };
+  return { byId, tops, subs, top, sub, nome, path, isSub };
+}
 
 let toastT;
 export function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2800); }
@@ -73,9 +93,9 @@ export function friendly(err) {
   console.error(err); return 'Não foi possível concluir. Tente de novo.';
 }
 
-export function openModal({ title, html, submit = 'Salvar', onSubmit, wide = false, foot = '', onClose }) {
+export function openModal({ title, html, submit = 'Salvar', onSubmit, wide = false, foot = '', onClose, cancel }) {
   const ov = document.createElement('div'); ov.className = 'ov';
-  ov.innerHTML = `<form class="dlg ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" novalidate><h2 class="h2">${esc(title)}</h2><div class="dbody">${html}</div><p class="err" data-err aria-live="polite"></p><div class="dfoot">${foot}<button type="button" class="btn ghost" data-x>${onSubmit ? 'Cancelar' : 'Fechar'}</button>${onSubmit ? `<button class="btn red" type="submit">${esc(submit)}</button>` : ''}</div></form>`;
+  ov.innerHTML = `<form class="dlg ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" novalidate><h2 class="h2">${esc(title)}</h2><div class="dbody">${html}</div><p class="err" data-err aria-live="polite"></p><div class="dfoot">${foot}<button type="button" class="btn ghost" data-x>${esc(cancel || (onSubmit ? 'Cancelar' : 'Fechar'))}</button>${onSubmit ? `<button class="btn red" type="submit">${esc(submit)}</button>` : ''}</div></form>`;
   document.body.appendChild(ov); pwEyes(ov);
   const form = $('form', ov), prev = document.activeElement;
   const onKey = e => { if (e.key === 'Escape') close(); };

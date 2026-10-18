@@ -94,7 +94,7 @@ const SCREENS = {
   async semperfil() {
     return { depth: 0, dark: true, html: `<div class="login-top">${logo(52)}</div><div class="sheet"><h1 class="h1">Acesso ainda não liberado</h1><p class="muted" style="font-size:15px;line-height:1.5">Seu e-mail entrou, mas ainda não tem um perfil na academia. Peça para o dono ou seu professor liberar o seu acesso.</p><button class="btn dark" id="out">Sair</button></div>`, after(el) { $('#out', el).onclick = () => api.logout(); } };
   },
-  home: A.home, treinos: A.treinos, treino: A.treino, exercicio: A.exercicio, modalidades: A.modalidades, modalidade: A.modalidade, perfil: A.perfil, painel
+  home: A.home, treinos: A.treinos, treino: A.treino, exercicio: A.exercicio, resumo: A.resumo, modalidades: A.modalidades, modalidade: A.modalidade, perfil: A.perfil, painel
 };
 
 /* ---------- roteador com transição ---------- */
