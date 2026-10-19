@@ -3,7 +3,7 @@
    Aluno, plano, valor e família vêm do Firestore; o app não manda nada disso. */
 import { db } from '../lib/firebase.js';
 import { cors, usuarioLogado } from '../lib/acesso.js';
-import { precoFinal, nParc, periodo, valorStr, grupoDoAluno, bloqueio } from '../lib/planos.js';
+import { precoFinal, precoPix, nParc, periodo, valorStr, grupoDoAluno, bloqueio } from '../lib/planos.js';
 import { criarOrder } from '../lib/mp.js';
 import { aplicarOrder } from '../lib/aplicar.js';
 import { ok, erro, metodo, corpoValido } from '../lib/http.js';
@@ -36,7 +36,8 @@ export default async function handler(req, res) {
     if (motivo) return erro(res, new Error(motivo), 400);
 
     const grupo = await grupoDoAluno(banco, aluno, plano);
-    const valor = precoFinal(plano), v = valorStr(valor);
+    // Pix: valor com o desconto extra (planos parcelados); cartão: valor total do plano
+    const valor = forma === 'pix' ? precoPix(plano) : precoFinal(plano), v = valorStr(valor);
 
     // Pix já gerado há pouco e ainda em aberto: devolve o mesmo, em vez de criar outro
     // (evita encher o Mercado Pago de cobranças se alguém apertar o botão várias vezes)

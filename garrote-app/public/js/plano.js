@@ -8,6 +8,9 @@ export const precoFinal = p => { if (!p) return 0; const v = +p.valor || 0, d = 
   return Math.max(0, r2(p.descontoTipo === 'valor' ? v - d : v * (1 - d / 100))); };
 export const nParc = p => Math.max(1, (p && p.parcelas) | 0 || 1);
 export const parcelaDe = p => r2(precoFinal(p) / nParc(p));
+/* Pix com desconto extra: só nos planos que podem ser parcelados (padrão 10%, ajustável no cadastro do plano) */
+export const pctPix = p => !p || p.categoria === 'totalpass' || nParc(p) <= 1 ? 0 : Math.min(100, Math.max(0, p.descontoPix == null || p.descontoPix === '' ? 10 : +p.descontoPix || 0));
+export const precoPix = p => r2(precoFinal(p) * (1 - pctPix(p) / 100));
 export const mensalDe = p => p ? precoFinal(p) / (p.periodo || 1) : 0;          // quanto o plano vale por mês
 const num = n => Number(n).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 export const descTxt = p => !p || !(+p.desconto) ? '' : p.descontoTipo === 'valor' ? `${brl(p.desconto)} de desconto` : `${num(p.desconto)}% de desconto`;

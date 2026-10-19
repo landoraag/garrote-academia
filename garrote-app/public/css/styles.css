@@ -626,3 +626,8 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 [data-theme=dark] .pg-aguarda{color:#F5C55B}
 [data-theme=dark] .pg-res.ok{background:rgba(47,179,107,.18);color:#5FD394}[data-theme=dark] .pg-res.ruim{background:rgba(217,30,38,.18);color:#FF8A8F}
 [data-theme=dark] .pg-selo{color:#3CC274}
+
+.pg-precos{display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-align:right}
+.pg-precos small{font:600 12px var(--b);color:#1F8A4C}[data-theme=dark] .pg-precos small{color:#5FD394}
+.pg-pixdesc{margin:0;font:400 14px var(--b);text-align:center}.pg-pixdesc b{font:700 18px var(--d)}.pg-pixdesc s{color:var(--muted)}
+[data-area=pix]{display:flex;flex-direction:column;gap:10px}

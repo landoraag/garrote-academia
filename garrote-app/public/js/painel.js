@@ -2,7 +2,7 @@
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn } from './ui.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
-import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc } from './plano.js';
+import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
 
 const ATIVO = [['sim', 'Ativo'], ['nao', 'Inativo']];
 const ICONES = [['db', 'Halter'], ['bolt', 'Raio (lutas)'], ['note', 'Música (dança)'], ['grid', 'Grade'], ['user', 'Pessoa']];
@@ -69,6 +69,7 @@ function schema(tab, D, E) {
         { k: 'descontoTipo', l: 'Desconto em', type: 'select', opts: () => [['pct', 'Porcentagem (%)'], ['valor', 'Valor (R$)']], def: () => 'pct' },
         { k: 'desconto', l: 'Desconto', type: 'money', ph: 'Ex.: 10' },
         { k: 'parcelas', l: 'Parcelas', type: 'number', num: 1, ph: '1', def: () => 1 },
+        { k: 'descontoPix', l: 'Desconto extra no Pix (%) · só planos parcelados', type: 'money', ph: '10', def: () => 10 },
         { k: '_calc', type: 'calc', full: 1 },
         { k: 'familia', l: 'Quem usa', type: 'select', opts: () => [['nao', 'Individual (1 pessoa)'], ['sim', 'Plano família']], def: () => 'nao' },
         { k: 'membros', l: 'Pessoas no plano família', type: 'number', num: 1, ph: '3' },
@@ -76,11 +77,13 @@ function schema(tab, D, E) {
       before: d => {
         if (d.descontoTipo === 'pct' && d.desconto > 100) fail('O desconto em porcentagem vai até 100%.');
         if (d.descontoTipo === 'valor' && d.desconto > d.valor) fail('O desconto não pode ser maior que o valor cheio.');
+        if (d.descontoPix > 100) fail('O desconto no Pix vai até 100%.');
         return { ...d, parcelas: Math.max(1, Math.min(48, Math.round(d.parcelas) || 1)), membros: d.familia === 'sim' ? Math.max(2, d.membros || 2) : 1 };
       },
       calc: f => { const p = { valor: parseMoney(f.valor.value) || 0, descontoTipo: f.descontoTipo.value, desconto: parseMoney(f.desconto.value) || 0, parcelas: Math.max(1, +f.parcelas.value || 1), periodo: +f.periodo.value || 1 };
-        return p.valor > 0 ? 'Valor final: ' + precoTxt(p) : 'Digite o valor cheio para ver o valor final e as parcelas.'; },
-      cols: [['Nome', r => r.nome], ['Cobrança', r => r.categoria === 'totalpass' ? 'Total Pass' : perLabel(r.periodo)], ['Valor cheio', r => brl(+r.valor || 0)], ['Desconto', r => descTxt(r) ? descTxt(r).replace(' de desconto', '') : '—'], ['Valor total', r => brl(precoFinal(r))], ['Parcelas', r => parcTxt(r)], ['Por mês', r => brl(mensalDe(r))],
+        p.descontoPix = f.descontoPix ? parseMoney(f.descontoPix.value) : 10;
+        return p.valor > 0 ? 'Valor final: ' + precoTxt(p) + (pctPix(p) ? ` · no Pix: ${brl(precoPix(p))} (${pctPix(p)}% a menos)` : '') : 'Digite o valor cheio para ver o valor final e as parcelas.'; },
+      cols: [['Nome', r => r.nome], ['Cobrança', r => r.categoria === 'totalpass' ? 'Total Pass' : perLabel(r.periodo)], ['Valor cheio', r => brl(+r.valor || 0)], ['Desconto', r => descTxt(r) ? descTxt(r).replace(' de desconto', '') : '—'], ['Valor total', r => brl(precoFinal(r))], ['No Pix', r => pctPix(r) ? `${brl(precoPix(r))} (-${pctPix(r)}%)` : r.categoria === 'totalpass' ? '—' : brl(precoFinal(r))], ['Parcelas', r => parcTxt(r)], ['Por mês', r => brl(mensalDe(r))],
         ['Tipo', r => r.familia === 'sim' ? `Família (${r.membros || 2})` : 'Individual'], ['Alunos', r => D.users.filter(u => u.planoId === r.id).length]] },
     categorias: { col: 'categorias', title: 'Categorias', one: 'categoria', rows: T.tops.flatMap(c => [c, ...T.subs(c.id)]),
       fields: [{ k: 'nome', l: 'Nome', req: 1, full: 1, ph: 'Ex.: Peito ou Peito superior' },

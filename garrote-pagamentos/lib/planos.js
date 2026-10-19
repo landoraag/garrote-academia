@@ -7,6 +7,9 @@ export const precoFinal = p => {
 };
 export const nParc = p => Math.max(1, (p && p.parcelas) | 0 || 1);
 export const periodo = p => Math.max(1, (p && p.periodo) | 0 || 1);
+/* Pix com desconto extra: só nos planos que podem ser parcelados (padrão 10%, ajustável no cadastro) — mesma regra do app */
+export const pctPix = p => !p || p.categoria === 'totalpass' || nParc(p) <= 1 ? 0 : Math.min(100, Math.max(0, p.descontoPix == null || p.descontoPix === '' ? 10 : +p.descontoPix || 0));
+export const precoPix = p => r2(precoFinal(p) * (1 - pctPix(p) / 100));
 export const valorStr = n => n.toFixed(2); // a API de Orders pede "120.00"
 
 /* Quem é renovado por este pagamento: a família toda (plano família com grupo) ou só o aluno. */

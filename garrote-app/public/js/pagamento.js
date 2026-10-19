@@ -3,7 +3,7 @@
    os dados do cartão ficam em campos do próprio Mercado Pago e nunca passam pela academia. */
 import { api } from './api.js';
 import { PAGAMENTOS_URL } from './pagamento-config.js';
-import { perLabel, ptDate, precoFinal, nParc } from './plano.js';
+import { perLabel, ptDate, precoFinal, nParc, pctPix, precoPix } from './plano.js';
 import { $, $$, esc, brl, toast, openModal } from './ui.js';
 
 export const pagamentoAtivo = () => !!PAGAMENTOS_URL && api.mode === 'firebase';
@@ -35,15 +35,16 @@ const SELO = `<div class="pg-selo"><svg viewBox="0 0 24 24" width="26" height="2
 /* Abre a tela de pagamento. plano/aluno: os mesmos objetos que o card "Meu plano" já tem. */
 export function abrirPagamento({ plano, aluno, onPago }) {
   const familia = plano.familia === 'sim' && !!(aluno.familiaId || '').trim();
-  const valor = precoFinal(plano), maxParc = nParc(plano);
+  const valor = precoFinal(plano), maxParc = nParc(plano), pix = precoPix(plano), descPix = pctPix(plano);
   let poll, campos = [], mp, cfg, bin = null, metodoCartao = null, fechado = false;
 
   const html = `<div class="pg">
-    <div class="pg-resumo"><div><b>${esc(plano.nome)}</b><small class="muted">${perLabel(plano.periodo)}${familia ? ` · vale para a família toda (${esc(aluno.familiaId)})` : ''}</small></div><b class="pg-valor">${brl(valor)}</b></div>
+    <div class="pg-resumo"><div><b>${esc(plano.nome)}</b><small class="muted">${perLabel(plano.periodo)}${familia ? ` · vale para a família toda (${esc(aluno.familiaId)})` : ''}</small></div><div class="pg-precos"><b class="pg-valor">${brl(valor)}</b>${descPix ? `<small>ou ${brl(pix)} no Pix</small>` : ''}</div></div>
     ${aluno.vencimento ? `<p class="muted pg-nota">Vencimento atual: ${ptDate(aluno.vencimento)}. ${aluno.vencimento >= hojeK() ? 'O novo período começa depois dele.' : 'O novo período começa hoje.'}</p>` : ''}
     <div class="pg-abas" role="tablist"><button type="button" class="on" data-m="pix" role="tab">Pix</button><button type="button" data-m="cartao" role="tab">Cartão</button></div>
     <div data-area="pix">
-      <button type="button" class="btn red" data-pix>Gerar Pix</button>
+      ${descPix ? `<p class="pg-pixdesc"><b>${brl(pix)}</b> no Pix · ${descPix}% de desconto <s>${brl(valor)}</s></p>` : ''}
+      <button type="button" class="btn red" data-pix>Gerar Pix · ${brl(pix)}</button>
       <div class="pg-pix" hidden>
         <img alt="QR Code do Pix" data-qr>
         <div class="pg-copia"><input readonly data-cod aria-label="Pix copia e cola"><button type="button" class="btn red" data-copiar>Copiar</button></div>
