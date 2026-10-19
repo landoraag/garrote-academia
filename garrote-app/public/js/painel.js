@@ -1,11 +1,12 @@
 /* Painel do dono e do treinador (tela larga). Cadastros genéricos guiados por "schema". */
 import { api, mode } from './api.js';
-import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn } from './ui.js';
+import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora } from './ui.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
 
 const ATIVO = [['sim', 'Ativo'], ['nao', 'Inativo']];
 const ICONES = [['db', 'Halter'], ['bolt', 'Raio (lutas)'], ['note', 'Música (dança)'], ['grid', 'Grade'], ['user', 'Pessoa']];
+const semAc = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 const byName = (a, b) => String(a.nome || '').localeCompare(String(b.nome || ''), 'pt-BR');
 const genPass = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)]; return s; };
 /* Dono: pessoas, modalidades e financeiro. Treinador: alunos, treinos, exercícios e categorias. */
@@ -37,7 +38,8 @@ function schema(tab, D, E) {
   const exDe = c => D.exercicios.filter(e => T.isSub(c) ? e.categoriaId === c.id : T.top(e.categoriaId) === c.id).length;
   const planoOpts = (D.planos || []).map(p => [p.id, `${p.nome} · ${brl(precoFinal(p))}${nParc(p) > 1 ? ` (${parcTxt(p)})` : ''}`]), planoDe = id => (D.planos || []).find(p => p.id === id);
   const nm = (arr, id) => (arr.find(x => x.id === id) || {}).nome || '—';
-  const dias = r => (r.dias || []).map(n => DIAS[n]).join(' ') || '—';
+  const dias = r => [...(r.dias || [])].sort((a, b) => a - b).map(n => DIAS[n]).join(', ') || '—';
+  const profsDe = r => (r.profIds || []).length ? r.profIds.map(id => nm(trs, id)).filter(n => n !== '—').join(', ') || r.prof || '—' : r.prof || '—';
   const pessoa = { k: 'nome', l: 'Nome completo', req: 1, full: 1, ph: 'Ex.: Lucas Martins' };
   const acesso = [{ k: 'email', l: 'E-mail de acesso', type: 'email', req: 1, create: 1, ph: 'nome@email.com' }, { k: 'senha', l: 'Senha provisória', type: 'pass', req: 1, create: 1, def: genPass }];
   const S = {
@@ -56,11 +58,14 @@ function schema(tab, D, E) {
         ...(E.tid ? [['Situação', r => r.ativo === 'nao' ? 'Inativo' : 'Ativo']] : [['Plano', r => (planoDe(r.planoId) || {}).nome || '—'], ['Pagamento', r => situ(r, planoDe(r.planoId))[1]]])] },
     modalidades: { col: 'modalidades', title: 'Modalidades', one: 'modalidade', rows: D.modalidades,
       fields: [{ k: 'nome', l: 'Nome', req: 1, ph: 'Ex.: Muay Thai' }, { k: 'icone', l: 'Ícone', type: 'select', opts: () => ICONES, def: () => 'db' },
-        { k: 'prof', l: 'Professor', ph: 'Prof. Diego' }, { k: 'local', l: 'Local', ph: 'Tatame' },
-        { k: 'dias', l: 'Dias da semana', type: 'days', req: 1 }, { k: 'ini', l: 'Início', req: 1, ph: '19h' }, { k: 'fim', l: 'Fim', ph: '20h' }, { k: 'duracao', l: 'Duração', ph: '60 min' },
+        { k: 'local', l: 'Local', ph: 'Tatame' }, { k: 'profIds', l: 'Treinadores da modalidade', type: 'multi', full: 1, opts: () => trs.map(t => [t.id, t.nome]),
+          get: r => r.profIds || trs.filter(t => r.prof && semAc(r.prof).includes(semAc(firstName(t.nome)))).map(t => t.id) },   // cadastro antigo (texto): marca quem tem o nome lá
+        { k: 'dias', l: 'Dias da semana', type: 'days', req: 1, full: 1 }, { k: 'ini', l: 'Início', type: 'time', req: 1 }, { k: 'fim', l: 'Fim', type: 'time' }, { k: 'duracao', l: 'Duração', ph: '60 min' },
         { k: 'vagas', l: 'Vagas (texto)', ph: '6 vagas' }, { k: 'nivel', l: 'Nível', def: () => 'Todos os níveis' },
         { k: 'descricao', l: 'Descrição', type: 'textarea', full: 1 }, { k: 'foto', l: 'Foto (link da imagem)', type: 'url', full: 1, ph: 'https://...' }, { k: 'video', l: 'Vídeo (link do YouTube ou .mp4)', type: 'url', full: 1, ph: 'https://...' }],
-      cols: [['Nome', r => r.nome], ['Professor', r => r.prof || '—'], ['Dias', dias], ['Horário', r => `${r.ini || ''}${r.fim ? ' – ' + r.fim : ''}`]] },
+      /* vários treinadores por modalidade: o nome deles também fica gravado em "prof" (o aluno lê só a modalidade) */
+      before: d => ({ ...d, prof: d.profIds.map(id => nm(trs, id)).filter(n => n !== '—').join(', ') }),
+      cols: [['Nome', r => r.nome], ['Treinadores', profsDe], ['Dias', dias], ['Horário', r => `${fmtHora(r.ini)}${r.fim ? ' – ' + fmtHora(r.fim) : ''}`]] },
     planos: { col: 'planos', title: 'Planos', one: 'plano', rows: D.planos || [],
       fields: [{ k: 'nome', l: 'Nome do plano', req: 1, full: 1, ph: 'Ex.: Trimestral' },
         { k: 'categoria', l: 'Tipo', type: 'select', opts: () => [['academia', 'Academia (o aluno paga)'], ['totalpass', 'Total Pass (repasse mensal)']], def: () => 'academia' },
@@ -85,17 +90,15 @@ function schema(tab, D, E) {
         return p.valor > 0 ? 'Valor final: ' + precoTxt(p) + (pctPix(p) ? ` · no Pix: ${brl(precoPix(p))} (${pctPix(p)}% a menos)` : '') : 'Digite o valor cheio para ver o valor final e as parcelas.'; },
       cols: [['Nome', r => r.nome], ['Cobrança', r => r.categoria === 'totalpass' ? 'Total Pass' : perLabel(r.periodo)], ['Valor cheio', r => brl(+r.valor || 0)], ['Desconto', r => descTxt(r) ? descTxt(r).replace(' de desconto', '') : '—'], ['Valor total', r => brl(precoFinal(r))], ['No Pix', r => pctPix(r) ? `${brl(precoPix(r))} (-${pctPix(r)}%)` : r.categoria === 'totalpass' ? '—' : brl(precoFinal(r))], ['Parcelas', r => parcTxt(r)], ['Por mês', r => brl(mensalDe(r))],
         ['Tipo', r => r.familia === 'sim' ? `Família (${r.membros || 2})` : 'Individual'], ['Alunos', r => D.users.filter(u => u.planoId === r.id).length]] },
-    categorias: { col: 'categorias', title: 'Categorias', one: 'categoria', rows: T.tops.flatMap(c => [c, ...T.subs(c.id)]),
-      fields: [{ k: 'nome', l: 'Nome', req: 1, full: 1, ph: 'Ex.: Peito ou Peito superior' },
-        { k: 'paiId', l: 'Dentro de qual categoria?', type: 'select', blank: 1, blankL: 'Nenhuma: é uma categoria principal', full: 1, opts: () => T.tops.map(c => [c.id, c.nome]) },
-        { k: '_dica', type: 'hint', full: 1, txt: 'Para criar uma subcategoria (ex.: Peito superior), escolha a categoria principal dela (Peito).' }],
-      check: (d, row) => {
-        if (row && d.paiId === row.id) fail('Uma categoria não pode ficar dentro dela mesma.');
-        if (row && d.paiId && T.subs(row.id).length) fail('Esta categoria tem subcategorias, então ela precisa continuar como principal.');
-      },
+    /* lista mostra só as categorias principais; tocar numa delas abre as subcategorias logo abaixo */
+    categorias: { col: 'categorias', title: 'Categorias', one: 'categoria', rows: T.tops, all: D.categorias, tree: T, newSub: 1,
+      fields: [{ k: 'nome', l: 'Nome da categoria', req: 1, full: 1, ph: 'Ex.: Peito' }],
+      sub: { col: 'categorias', one: 'subcategoria', fields: [{ k: 'nome', l: 'Nome da subcategoria', req: 1, full: 1, ph: 'Ex.: Peito superior' },
+        { k: 'paiId', l: 'Dentro da categoria', type: 'select', req: 1, full: 1, blank: 1, blankL: 'Escolha a categoria', opts: () => T.tops.map(c => [c.id, c.nome]) }],
+        check: (d, row) => { if (row && d.paiId === row.id) fail('Uma subcategoria não pode ficar dentro dela mesma.'); } },
       delMsg: r => T.subs(r.id).length ? `Excluir “${r.nome}”? As subcategorias dela passam a ser categorias principais.` : '',
-      cols: [['Nome', r => T.isSub(r) ? '↳ ' + r.nome : r.nome], ['Tipo', r => T.isSub(r) ? 'Subcategoria de ' + T.nome(r.paiId) : 'Principal'],
-        ['Subcategorias', r => T.isSub(r) ? '—' : T.subs(r.id).map(s => s.nome).join(', ') || '—'], ['Exercícios', r => exDe(r)]] },
+      cols: [['Nome', r => r.nome], ['Tipo', r => T.isSub(r) ? 'Subcategoria de ' + T.nome(r.paiId) : 'Principal'],
+        ['Subcategorias', r => T.isSub(r) ? '—' : T.subs(r.id).length || '—'], ['Exercícios', r => exDe(r)]] },
     exercicios: { col: 'exercicios', title: 'Exercícios', one: 'exercício', rows: D.exercicios,
       fields: [{ k: 'nome', l: 'Nome do exercício', req: 1, full: 1, ph: 'Ex.: Supino reto com barra' }, { k: 'categoriaId', l: 'Categoria / subcategoria', type: 'catsel', req: 1 },
         { k: 'equip', l: 'Equipamento', ph: 'Barra' }, { k: 'video', l: 'Vídeo de como fazer (link do YouTube ou .mp4)', type: 'url', full: 1, ph: 'https://...' }, { k: 'descricao', l: 'Observações', type: 'textarea', full: 1 }],
@@ -112,39 +115,42 @@ function schema(tab, D, E) {
 }
 
 /* ---------- formulário ---------- */
-/* séries personalizadas: repetições (ou segundos, nos exercícios de tempo) editáveis por série;
-   a carga é só uma referência (placeholder), o aluno coloca a dele na hora */
+/* séries personalizadas: repetições (ou segundos, nos exercícios de tempo) por série, editadas num modal rápido.
+   Ficam guardadas na própria linha (data-sets); a carga é só uma referência (placeholder), o aluno coloca a dele na hora */
 const refKg = kg => kg ? Number(kg).toLocaleString('pt-BR') + ' kg' : 'Corpo';
-const srows = (vs, kg, tm) => `<div class="shead"><span>Série</span><span>${tm ? 'Tempo (s)' : 'Repetições'}</span><span>${tm ? '' : 'Carga (referência)'}</span></div>${vs.map((r, k) => `<div class="srow"><b>${k + 1}</b><input class="srep" type="number" min="1" max="${tm ? 3600 : 100}" value="${r}" aria-label="${tm ? 'Tempo em segundos' : 'Repetições'} da série ${k + 1}">${tm ? '<span></span>' : `<input class="sref" readonly tabindex="-1" placeholder="${refKg(kg)}" aria-label="Carga de referência da série ${k + 1}">`}</div>`).join('')}`;
-const setsHTML = it => { const tm = isTempo(it), on = it.sets && it.sets.length, n = Math.max(1, Math.min(12, it.series ?? 3)),
-  vs = Array.from({ length: n }, (_, k) => tm ? segAlvo(it, k) : (it.sets && it.sets[k] && it.sets[k].reps) || it.reps || 10);
-  return `<button type="button" class="psbtn" data-ps>${on ? 'Usar o mesmo para todas as séries' : 'Personalizar cada série'}</button><div class="setsbox">${srows(vs, it.kg, tm)}</div>`; };
-const syncSets = (r, fresh) => { const tm = r.classList.contains('tm'), n = Math.max(1, Math.min(12, +$('[name=series]', r).value || 1)),
-  main = Math.max(1, +$(tm ? '[name=val]' : '[name=reps]', r).value || 1), old = $$('.srep', r).map(i => i.value);
-  $('.setsbox', r).innerHTML = srows(Array.from({ length: n }, (_, k) => fresh || !old[k] ? main : old[k]), tm ? 0 : +$('[name=val]', r).value || 0, tm); };
-const itemOut = (r, o) => { if (r.classList.contains('ps')) { const sr = $$('.srep', r).map(i => Math.max(1, +i.value || 1));
+const nSer = r => Math.max(1, Math.min(12, +$('[name=series]', r).value || 1));
+const mainVal = r => Math.max(1, +$(r.classList.contains('tm') ? '[name=val]' : '[name=reps]', r).value || 1);
+const getSets = r => { try { return JSON.parse(r.dataset.sets || '[]'); } catch { return []; } };
+/* mantém a lista do tamanho do número de séries (as novas séries recebem o valor principal) */
+const fitSets = (r, fresh) => { const n = nSer(r), m = mainVal(r), old = fresh ? [] : getSets(r); r.dataset.sets = JSON.stringify(Array.from({ length: n }, (_, k) => +old[k] || m)); };
+const psLbl = r => r.classList.contains('ps') ? `Séries: ${getSets(r).join('/')}${r.classList.contains('tm') ? ' s' : ''}` : 'Personalizar séries';
+const psPaint = r => { const b = $('[data-ps]', r), on = r.classList.contains('ps'); b.textContent = psLbl(r); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); };
+const itemOut = (r, o) => { if (r.classList.contains('ps')) { fitSets(r); const sr = getSets(r).map(v => Math.max(1, Math.round(v) || 1));
   o.sets = sr.map(v => o.un === 's' ? { seg: v } : { reps: v }); o.series = sr.length; if (o.un === 's') o.seg = sr[0]; else o.reps = sr[0]; } return o; };
-/* escolha do exercício em cascata: categoria → subcategoria → exercício */
+/* escolha do exercício: categoria → subcategoria → exercício */
 const SEM = '_';                                                          // exercícios sem categoria válida
 const bucket = (T, e) => T.top(e.categoriaId) || SEM;
 const exOpts = (D, T, cat, sub, sel) => { if (!cat) return '<option value="">Escolha a categoria primeiro</option>';
   const l = D.exercicios.filter(e => bucket(T, e) === cat && (!sub || e.categoriaId === sub));
   return `<option value="">${l.length ? 'Escolha o exercício' : 'Nenhum exercício aqui'}</option>` + l.map(e => `<option value="${esc(e.id)}" ${e.id === sel ? 'selected' : ''}>${esc(e.nome)}${!sub && T.sub(e.categoriaId) ? ' · ' + esc(T.nome(e.categoriaId)) : ''}</option>`).join(''); };
-const subOpts = (T, cat, sub) => '<option value="">Todas as subcategorias</option>' + T.subs(cat).map(s => `<option value="${esc(s.id)}" ${s.id === sub ? 'selected' : ''}>${esc(s.nome)}</option>`).join('');
+const subOpts = (T, cat, sub) => !cat ? '<option value="">Escolha a categoria primeiro</option>' : !T.subs(cat).length ? '<option value="">Sem subcategorias</option>'
+  : '<option value="">Todas as subcategorias</option>' + T.subs(cat).map(s => `<option value="${esc(s.id)}" ${s.id === sub ? 'selected' : ''}>${esc(s.nome)}</option>`).join('');
 const exsel = (D, it) => { const T = catTree(D.categorias), e = D.exercicios.find(x => x.id === it.exId), cat = e ? bucket(T, e) : '', sub = e ? T.sub(e.categoriaId) : '', semCat = D.exercicios.some(x => bucket(T, x) === SEM);
   return `<div class="exsel"><label class="ii"><span>Categoria</span><select name="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${T.tops.map(c => `<option value="${esc(c.id)}" ${c.id === cat ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}${semCat ? `<option value="${SEM}" ${cat === SEM ? 'selected' : ''}>Sem categoria</option>` : ''}</select></label>
-    <label class="ii sb" ${cat && T.subs(cat).length ? '' : 'hidden'}><span>Subcategoria</span><select name="sub" aria-label="Subcategoria">${subOpts(T, cat, sub)}</select></label>
+    <label class="ii sb"><span>Subcategoria</span><select name="sub" aria-label="Subcategoria" ${cat && T.subs(cat).length ? '' : 'disabled'}>${subOpts(T, cat, sub)}</select></label>
     <label class="ii exn"><span>Exercício</span><select name="ex" aria-label="Exercício" ${cat ? '' : 'disabled'}>${exOpts(D, T, cat, sub, it.exId)}</select></label></div>`; };
-/* cada exercício fica fechado (só categoria, exercício e botões); ao tocar na barra abre o resto */
+/* cada exercício fica fechado (categoria, exercício e botões); tocar em qualquer parte da barra abre os detalhes, e só um fica aberto por vez */
 const isum = r => { const tm = $('[name=un]', r).value === 's', s = +$('[name=series]', r).value || 1, v = +$('[name=val]', r).value || 0, d = +$('[name=desc]', r).value || 0;
-  return `${s} × ${tm ? v + 's' : (+$('[name=reps]', r).value || 1)}${tm ? '' : ' · ' + (v ? v.toLocaleString('pt-BR') + ' kg' : 'Corpo')} · ${d}s descanso`; };
-const irow = (D, it = {}, open = false) => { const tm = isTempo(it);
-  return `<div class="irow${it.sets && it.sets.length ? ' ps' : ''}${tm ? ' tm' : ''}${open ? ' open' : ''}"><div class="itop" data-tg>${exsel(D, it)}
-  <span class="ibtns"><button type="button" data-up aria-label="Subir">↑</button><button type="button" data-dn aria-label="Descer">↓</button><button type="button" data-rm aria-label="Remover">×</button><button type="button" class="chev" data-tgb aria-label="Mostrar detalhes" aria-expanded="${open}">${ic('chev', 18, 'currentColor', 2.2)}</button></span><small class="isum"></small></div>
+  const reps = r.classList.contains('ps') ? getSets(r).join('/') + (tm ? ' s' : '') : tm ? v + 's' : (+$('[name=reps]', r).value || 1);
+  return `${s} × ${reps}${tm ? '' : ' · ' + (v ? v.toLocaleString('pt-BR') + ' kg' : 'Corpo')} · ${d}s descanso`; };
+const irow = (D, it = {}, open = false) => { const tm = isTempo(it), ps = it.sets && it.sets.length, n = Math.max(1, Math.min(12, it.series ?? 3));
+  const sets = ps ? Array.from({ length: n }, (_, k) => tm ? segAlvo(it, k) : (it.sets[k] && it.sets[k].reps) || it.reps || 10) : [];
+  return `<div class="irow${ps ? ' ps' : ''}${tm ? ' tm' : ''}${open ? ' open' : ''}" data-sets='${JSON.stringify(sets)}'><div class="itop" data-tg>${exsel(D, it)}
+  <span class="ibtns"><button type="button" data-up aria-label="Subir">${ic('up', 18, 'currentColor', 2.4)}</button><button type="button" data-dn aria-label="Descer">${ic('down', 18, 'currentColor', 2.4)}</button><button type="button" data-rm aria-label="Remover">${ic('close', 18, 'currentColor', 2.4)}</button></span><small class="isum"></small></div>
   <div class="ibody"><label class="ii"><span>Medida</span><select name="un" aria-label="Medida"><option value="kg">Carga (kg)</option><option value="s" ${tm ? 'selected' : ''}>Tempo (segundos)</option></select></label>
-  <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${it.series ?? 3}" aria-label="Séries"></label><label class="ii rp"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
+  <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${n}" aria-label="Séries"></label><label class="ii rp"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
   <label class="ii"><span class="vl">${tm ? 'Tempo (s)' : 'Carga (kg)'}</span><input name="val" type="number" min="0" step="${tm ? 5 : 0.5}" value="${tm ? it.seg ?? 30 : it.kg ?? 0}" aria-label="Carga ou tempo"></label><label class="ii"><span>Descanso (s)</span><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos"></label>
-  ${setsHTML(it)}</div></div>`; };
+  <div class="ii psw"><span>Cada série</span><button type="button" class="psbtn${ps ? ' on' : ''}" data-ps aria-pressed="${!!ps}">Personalizar séries</button></div></div></div>`; };
 function fieldHTML(f, v, D) {
   const cls = `field ${f.full ? 'full' : ''}`;
   if (f.type === 'select') return `<label class="${cls}">${f.l}<select name="${f.k}">${f.blank ? `<option value="">${esc(f.blankL || 'Nenhuma')}</option>` : ''}${f.opts().map(([o, l]) => `<option value="${esc(o)}" ${String(o) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
@@ -156,6 +162,7 @@ function fieldHTML(f, v, D) {
   if (f.type === 'days') return `<fieldset class="${cls} multi"><legend>${f.l}</legend><div class="checks">${[1, 2, 3, 4, 5, 6, 7].map(n => `<label class="chk day"><input type="checkbox" name="${f.k}" value="${n}" ${(v || []).includes(n) ? 'checked' : ''}><span>${DIAS[n]}</span></label>`).join('')}</div></fieldset>`;
   if (f.type === 'items') return `<div class="field full"><span>${f.l}</span>${D.exercicios.length ? `<div class="items">${(v || []).map(i => irow(D, i)).join('')}</div><button type="button" class="btn ghost" data-add style="height:44px">+ Adicionar exercício</button>` : '<p class="note">Cadastre exercícios antes de montar um treino.</p>'}</div>`;
   if (f.type === 'textarea') return `<label class="${cls}">${f.l}<textarea name="${f.k}" rows="3">${esc(v)}</textarea></label>`;
+  if (f.type === 'time') return `<label class="${cls}">${f.l}<input name="${f.k}" type="time" step="300" value="${esc(fmtHora(v))}"></label>`;
   return `<label class="${cls}">${f.l}<input name="${f.k}" type="${f.type === 'pass' || f.type === 'money' ? 'text' : f.type || 'text'}" value="${esc(f.type === 'money' && v ? String(v).replace('.', ',') : v)}" placeholder="${esc(f.ph || '')}" ${f.type === 'pass' ? 'autocomplete="off"' : ''} ${f.type === 'money' ? 'inputmode="decimal"' : ''}></label>`;
 }
 function collect(form, sc, isNew, D) {
@@ -181,27 +188,44 @@ function collect(form, sc, isNew, D) {
   return out;
 }
 const picker = sel => { sel.focus(); try { sel.showPicker && sel.showPicker(); } catch {} };   // já abre a próxima lista
+/* modal rápido para personalizar cada série */
+function openSeries(r) {
+  const tm = r.classList.contains('tm'), nome = ($('[name=ex]', r).selectedOptions[0] || {}).textContent || 'exercício', kg = +$('[name=val]', r).value || 0;
+  if (!r.classList.contains('ps')) fitSets(r, true); else fitSets(r);
+  const vs = getSets(r);
+  const m = openModal({ title: 'Personalizar séries', submit: 'Aplicar',
+    foot: r.classList.contains('ps') ? '<button type="button" class="btn ghost" data-same>Mesmo valor em todas</button>' : '',
+    html: `<p class="muted" style="margin:-6px 0 2px;font-size:14px">${esc($('[name=ex]', r).value ? nome : 'Exercício ainda não escolhido')} · ${vs.length} ${vs.length === 1 ? 'série' : 'séries'}${tm ? '' : ` · carga de referência ${refKg(kg)}`}</p>
+      <div class="psm"><div class="psh"><span>Série</span><span>${tm ? 'Tempo (segundos)' : 'Repetições'}</span></div>${vs.map((v, k) => `<label class="psr"><b>${k + 1}ª</b><input type="number" inputmode="numeric" min="1" max="${tm ? 3600 : 100}" value="${v}" aria-label="${tm ? 'Segundos' : 'Repetições'} da ${k + 1}ª série"></label>`).join('')}</div>
+      <p class="muted" style="margin:0;font-size:12px">Para mudar a quantidade de séries, altere o campo Séries do exercício.</p>`,
+    onSubmit: async f => { const nv = $$('.psr input', f).map(i => Math.round(+i.value)); if (nv.some(v => !(v >= 1))) fail('Preencha todas as séries com um número maior que zero.');
+      r.dataset.sets = JSON.stringify(nv); r.classList.add('ps'); psPaint(r); $('.isum', r).textContent = isum(r); } });
+  const b = $('[data-same]', m.form);
+  if (b) b.onclick = () => { r.classList.remove('ps'); r.dataset.sets = '[]'; psPaint(r); $('.isum', r).textContent = isum(r); m.close(); toast('Todas as séries com o mesmo valor.'); };
+}
 function bindItems(form, D) {
   const box = $('.items', form); if (!box) return;
   const T = catTree(D.categorias);
   if (!$('.irow', box)) box.insertAdjacentHTML('beforeend', irow(D, {}, true));
   const sum = r => { $('.isum', r).textContent = isum(r); };
-  const tog = (r, on) => { on = r.classList.toggle('open', on); $('[data-tgb]', r).setAttribute('aria-expanded', on); $('[data-tgb]', r).setAttribute('aria-label', on ? 'Esconder detalhes' : 'Mostrar detalhes'); if (!on) sum(r); };
-  $$('.irow', box).forEach(sum);
-  $('[data-add]', form).onclick = () => { box.insertAdjacentHTML('beforeend', irow(D, {}, true)); const r = box.lastElementChild; r.classList.add('new'); sum(r); $('[name=cat]', r).focus(); };
-  box.onchange = e => { const r = e.target.closest('.irow'); if (!r) return; const cat = $('[name=cat]', r).value, ex = $('[name=ex]', r);
+  const tog = (r, on) => { on = r.classList.toggle('open', on); if (on) $$('.irow.open', box).forEach(x => { if (x !== r) { x.classList.remove('open'); sum(x); } }); if (!on) sum(r); };
+  $$('.irow', box).forEach(r => { sum(r); psPaint(r); });
+  $('[data-add]', form).onclick = () => { box.insertAdjacentHTML('beforeend', irow(D, {})); const r = box.lastElementChild; r.classList.add('new'); sum(r); psPaint(r); tog(r, true); $('[name=cat]', r).focus(); };
+  box.onchange = e => { const r = e.target.closest('.irow'); if (!r) return; const cat = $('[name=cat]', r).value, ex = $('[name=ex]', r), sb = $('[name=sub]', r);
     if (e.target.name === 'cat') { const hasSub = !!cat && T.subs(cat).length > 0;
-      $('.sb', r).hidden = !hasSub; $('[name=sub]', r).innerHTML = subOpts(T, cat, ''); ex.disabled = !cat; ex.innerHTML = exOpts(D, T, cat, '', '');
-      if (cat) picker(hasSub ? $('[name=sub]', r) : ex); }
+      sb.innerHTML = subOpts(T, cat, ''); sb.disabled = !hasSub; ex.disabled = !cat; ex.innerHTML = exOpts(D, T, cat, '', '');
+      if (cat) picker(hasSub ? sb : ex); }
     else if (e.target.name === 'sub') { ex.innerHTML = exOpts(D, T, cat, e.target.value, ''); picker(ex); }
     else if (e.target.name === 'un') { const tm = e.target.value === 's', v = $('[name=val]', r);
-      r.classList.toggle('tm', tm); $('.vl', r).textContent = tm ? 'Tempo (s)' : 'Carga (kg)'; v.value = tm ? 30 : 0; v.step = tm ? 5 : 0.5; if (r.classList.contains('ps')) syncSets(r, true); } };
+      r.classList.toggle('tm', tm); $('.vl', r).textContent = tm ? 'Tempo (s)' : 'Carga (kg)'; v.value = tm ? 30 : 0; v.step = tm ? 5 : 0.5; if (r.classList.contains('ps')) { fitSets(r, true); psPaint(r); } } };
   box.addEventListener('change', e => { const r = e.target.closest('.irow'); if (r) sum(r); });
-  box.oninput = e => { const r = e.target.closest('.irow'); if (r) sum(r); if (r && r.classList.contains('ps') && e.target.matches('[name=series],[name=val]')) syncSets(r, r.classList.contains('tm') && e.target.name === 'val'); };
+  box.oninput = e => { const r = e.target.closest('.irow'); if (!r) return; if (r.classList.contains('ps') && e.target.name === 'series') { fitSets(r); psPaint(r); } sum(r); };
   box.onclick = e => { const r = e.target.closest('.irow'); if (!r) return;
-    if (e.target.closest('[data-tgb]') || (e.target.closest('[data-tg]') && !e.target.closest('.ii,button'))) { tog(r); return; }
-    if (e.target.closest('[data-ps]')) { const on = r.classList.toggle('ps'); $('[data-ps]', r).textContent = on ? 'Usar o mesmo para todas as séries' : 'Personalizar cada série'; if (on) syncSets(r, true); return; }
-    if (e.target.closest('[data-rm]')) r.remove(); else if (e.target.closest('[data-up]') && r.previousElementSibling) box.insertBefore(r, r.previousElementSibling); else if (e.target.closest('[data-dn]') && r.nextElementSibling) box.insertBefore(r.nextElementSibling, r); };
+    if (e.target.closest('[data-ps]')) return openSeries(r);
+    if (e.target.closest('[data-rm]')) { r.remove(); return; }
+    if (e.target.closest('[data-up]')) { if (r.previousElementSibling) box.insertBefore(r, r.previousElementSibling); return; }
+    if (e.target.closest('[data-dn]')) { if (r.nextElementSibling) box.insertBefore(r.nextElementSibling, r); return; }
+    if (e.target.closest('[data-tg]') && !e.target.closest('select,button')) tog(r); };
 }
 
 function showCreds(email, pass, nome) {
@@ -226,7 +250,7 @@ async function saveRow(sc, data, row, E) {
 }
 function openForm(sc, D, E, row, done) {
   const isNew = !row, fs = sc.fields.filter(f => !(f.create && !isNew) && !f.hide);
-  const html = `<div class="form">${fs.map(f => fieldHTML(f, row ? row[f.k] : f.def ? f.def() : f.type === 'items' || f.type === 'multi' || f.type === 'days' ? [] : '', D)).join('')}</div>`;
+  const html = `<div class="form">${fs.map(f => fieldHTML(f, row ? (f.get ? f.get(row) : row[f.k]) : f.def ? f.def() : f.type === 'items' || f.type === 'multi' || f.type === 'days' ? [] : '', D)).join('')}</div>`;
   const m = openModal({ title: `${isNew ? 'Novo' : 'Editar'} ${sc.one}`, html, wide: !!sc.wide, submit: isNew ? 'Criar' : 'Salvar',
     onSubmit: async form => { const data = collect(form, sc, isNew, D); await saveRow(sc, data, row, E); await Promise.race([done(), new Promise(r => setTimeout(r, 8000))]); toast(isNew ? 'Cadastro criado.' : 'Alterações salvas.'); } });
   bindItems(m.form, D);
@@ -248,13 +272,13 @@ function visaoHTML(D, E) {
   <div class="two"><section class="card"><h2 class="h2" style="margin-bottom:8px">Check-ins de hoje</h2>${ck.length ? ck.map(c => personRow(user(c.uid).nome, 'às ' + new Date(c.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), '', '')).join('') : '<p class="empty">Ninguém fez check-in ainda hoje.</p>'}</section>
   <section class="card"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px"><h2 class="h2">Aulas experimentais agendadas</h2><button type="button" class="lnk" id="hexp">Histórico${passadas ? ` (${passadas})` : ''}</button></div>${ag.length ? ag.map(a => personRow(user(a.uid).nome, expSub(D, a), a.slotKey === hoje ? 'Hoje' : 'Experimental', a.slotKey === hoje ? 'hj' : '')).join('') : '<p class="empty">Nenhuma aula experimental agendada.</p>'}</section></div>`;
 }
-const expSub = (D, a) => `${(D.modalidades.find(m => m.id === a.modId) || {}).nome || 'Modalidade'} · ${ptDate(a.slotKey).slice(0, 5)} às ${a.hora || ''}`;
+const expSub = (D, a) => `${(D.modalidades.find(m => m.id === a.modId) || {}).nome || 'Modalidade'} · ${ptDate(a.slotKey).slice(0, 5)} às ${fmtHora(a.hora)}`;
 /* histórico: todas as aulas experimentais que já passaram (as futuras ficam na visão geral) */
 function openExpHist(D, E) {
   const ids = new Set(D.users.filter(u => u.role === 'aluno' && (!E.tid || u.treinadorId === E.tid)).map(a => a.id)), hoje = dkey(new Date());
   const l = D.agend.filter(a => (!E.tid || ids.has(a.uid)) && (a.slotKey || '') < hoje).sort((a, b) => (b.slotKey || '').localeCompare(a.slotKey || ''));
   const nome = id => (D.users.find(u => u.id === id) || { nome: 'Aluno removido' }).nome;
-  openModal({ title: 'Histórico de aulas experimentais', html: l.length ? `<p class="muted" style="margin:0 0 4px;font-size:13px">${l.length === 1 ? '1 aula que já aconteceu' : l.length + ' aulas que já aconteceram'}</p><div class="hist">${l.map(a => personRow(nome(a.uid), `${(D.modalidades.find(m => m.id === a.modId) || {}).nome || 'Modalidade'} · ${ptDate(a.slotKey)} às ${a.hora || ''}`, 'Feita', 't')).join('')}</div>` : '<p class="empty">Nenhuma aula experimental no histórico ainda.</p>' });
+  openModal({ title: 'Histórico de aulas experimentais', html: l.length ? `<p class="muted" style="margin:0 0 4px;font-size:13px">${l.length === 1 ? '1 aula que já aconteceu' : l.length + ' aulas que já aconteceram'}</p><div class="hist">${l.map(a => personRow(nome(a.uid), `${(D.modalidades.find(m => m.id === a.modId) || {}).nome || 'Modalidade'} · ${ptDate(a.slotKey)} às ${fmtHora(a.hora)}`, 'Feita', 't')).join('')}</div>` : '<p class="empty">Nenhuma aula experimental no histórico ainda.</p>' });
 }
 /* ---------- paginação: 5 itens por página no celular, 10 no computador ---------- */
 const pageSize = () => matchMedia('(max-width:700px)').matches ? 5 : 10;
@@ -276,14 +300,18 @@ function pager(el, getTotal, paint) {
   };
   return render;
 }
-const rowHTML = (sc, r) => `<tr data-id="${esc(r.id)}">${sc.cols.map(c => `<td>${esc(c[1](r))}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`;
+const scDe = (sc, row) => sc.sub && row && sc.tree.isSub(row) ? { ...sc, ...sc.sub } : sc;   // subcategoria tem formulário próprio
+const nomeCell = (sc, r, sub, aberto) => !sc.tree ? esc(sc.cols[0][1](r)) : sub ? `<span class="cnm sub">↳ ${esc(r.nome)}</span>`
+  : `<button type="button" class="cnm" data-xp aria-expanded="${!!aberto}" ${sc.tree.subs(r.id).length ? '' : 'disabled'}>${sc.tree.subs(r.id).length ? ic('chev', 16, 'currentColor', 2.4, 'cxp') : '<i class="cxp0"></i>'}${esc(r.nome)}${sc.tree.subs(r.id).length ? `<small>${sc.tree.subs(r.id).length}</small>` : ''}</button>`;
+const rowHTML = (sc, r, sub = false, aberto = false) => `<tr data-id="${esc(r.id)}" class="${sub ? 'subr' : aberto ? 'aberta' : ''}">${sc.cols.map((c, i) => `<td>${i ? esc(c[1](r)) : nomeCell(sc, r, sub, aberto)}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`;
 function tableHTML(sc, D, E) {
   const rows = sc.rows;
   const head = `<div class="head"><div><h1 class="h1">${sc.title}</h1><p class="muted" style="margin-top:4px;font-size:14px">${rows.length} ${rows.length === 1 ? 'cadastro' : 'cadastros'}</p></div>
-    <div class="tools"><input id="q" type="search" placeholder="Buscar" aria-label="Buscar"><button class="btn red" id="new" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ Novo ${sc.one}</button></div></div>`;
-  if (!rows.length) return head + `<section class="card"><p class="empty">Nenhum ${sc.one} cadastrado. Clique em “Novo ${sc.one}” para começar.</p></section>`;
+    <div class="tools"><input id="q" type="search" placeholder="Buscar" aria-label="Buscar">${sc.catFilter && catTree(D.categorias).tops.length ? `<button type="button" class="advb" id="advb" aria-expanded="false" aria-controls="advp">${ic('sliders', 18)}<span>Busca avançada</span><em></em></button>` : ''}<button class="btn red" id="new" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ ${/a$/.test(sc.one) ? 'Nova' : 'Novo'} ${sc.one}</button>${sc.newSub ? '<button class="btn dark" id="newsub" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ Nova subcategoria</button>' : ''}</div></div>`;
+  if (!rows.length) return head + `<section class="card"><p class="empty">Nenhum cadastro ainda. Clique em “+ ${/a$/.test(sc.one) ? 'Nova' : 'Novo'} ${sc.one}” para começar.</p></section>`;
   const T = catTree(D.categorias), cnt = id => rows.filter(r => T.top(r.categoriaId) === id).length;
-  const filt = sc.catFilter && T.tops.length ? `<div class="catf"><div class="chips" id="cchips" aria-label="Filtrar por categoria"><button class="chip on" data-c="">Todas</button>${T.tops.map(c => `<button class="chip" data-c="${esc(c.id)}">${esc(c.nome)} <span>${cnt(c.id)}</span></button>`).join('')}</div><div class="chips subc" id="schips" hidden></div></div>` : '';
+  const filt = sc.catFilter && T.tops.length ? `<section class="card advp" id="advp" hidden><small class="advt">Categoria</small><div class="catgrid" role="group" aria-label="Filtrar por categoria">${T.tops.map(c => `<button type="button" class="catb" data-c="${esc(c.id)}">${esc(c.nome)}<span>${cnt(c.id)}</span></button>`).join('')}</div>
+    <label class="field subsel" hidden>Subcategoria<select id="ssel"></select></label></section>` : '';
   return head + filt + `<section class="card tblcard"><table class="tbl"><thead><tr>${sc.cols.map(c => `<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>
     ${rows.slice(0, pageSize()).map(r => rowHTML(sc, r)).join('')}</tbody></table></section><div id="pager">${pagerHTML(1, Math.ceil(rows.length / pageSize()))}</div>`;
 }
@@ -292,7 +320,7 @@ const detHTML = items => `<div class="det-list">${items.map(([l, v]) => `<div cl
 function openDet(sc, D, E, row, repaint) {
   const items = [...sc.cols.map(c => [c[0], c[1](row)]), ...(sc.extra ? sc.extra(row) : [])];
   const m = openModal({ title: row.nome || 'Detalhes', html: detHTML(items), foot: '<button type="button" class="btn dark" data-edit>Editar</button><button type="button" class="btn ghost del" data-del>Excluir</button>' });
-  $('[data-edit]', m.form).onclick = () => { m.close(); openForm(sc, D, E, row, repaint); };
+  $('[data-edit]', m.form).onclick = () => { m.close(); openForm(scDe(sc, row), D, E, row, repaint); };
   $('[data-del]', m.form).onclick = () => { m.close(); delRow(sc, row, repaint); };
 }
 async function delRow(sc, row, repaint) {
@@ -406,34 +434,44 @@ function bind(el, tab, D, E) {
   const sc = schema(tab, D, E); if (!sc) return;
   const create = () => openForm(sc, D, E, null, repaint);
   const nb = $('#new', el); if (nb) nb.onclick = create;
-  const q = $('#q', el), tb = $('tbody', el);
+  const ns = $('#newsub', el); if (ns) ns.onclick = () => sc.rows.length ? openForm({ ...sc, ...sc.sub }, D, E, null, repaint) : toast('Crie uma categoria antes da subcategoria.');
+  const q = $('#q', el), tb = $('tbody', el), T = catTree(D.categorias), all = sc.all || sc.rows;
   if (tb) {
-    const hay = new Map(sc.rows.map(r => [r.id, sc.cols.map(c => String(c[1](r))).join(' ').toLowerCase()]));
+    const hay = new Map(sc.rows.map(r => [r.id, [sc.cols.map(c => String(c[1](r))).join(' '), ...(sc.tree ? T.subs(r.id).map(x => x.nome) : [])].join(' ').toLowerCase()]));
     let list = sc.rows, term = '', fc = '', fsub = '';
+    const aberto = new Set();   // categorias abertas (mostrando as subcategorias)
+    const subsVis = r => !sc.tree ? [] : aberto.has(r.id) ? T.subs(r.id) : term ? T.subs(r.id).filter(x => x.nome.toLowerCase().includes(term)) : [];
     const render = pager(el, () => list.length, page => {
-      tb.innerHTML = list.slice((page - 1) * pageSize(), page * pageSize()).map(r => rowHTML(sc, r)).join('') || `<tr><td colspan="${sc.cols.length + 1}" class="empty">Nenhum resultado${fc ? ' nesta categoria' : ' para a busca'}.</td></tr>`;
+      tb.innerHTML = list.slice((page - 1) * pageSize(), page * pageSize()).map(r => { const sv = subsVis(r); return rowHTML(sc, r, false, sv.length > 0) + sv.map(x => rowHTML(sc, x, true)).join(''); }).join('')
+        || `<tr><td colspan="${sc.cols.length + 1}" class="empty">Nenhum resultado${fc ? ' nesta categoria' : ' para a busca'}.</td></tr>`;
     });
-    const T = catTree(D.categorias);
-    const apply = () => { list = sc.rows.filter(r => (!term || hay.get(r.id).includes(term)) && (!fc || T.top(r.categoriaId) === fc) && (!fsub || r.categoriaId === fsub)); render(false); };
+    const apply = (keep = false) => { list = sc.rows.filter(r => (!term || hay.get(r.id).includes(term)) && (!fc || T.top(r.categoriaId) === fc) && (!fsub || r.categoriaId === fsub)); render(keep); };
     if (q) q.oninput = () => { term = q.value.trim().toLowerCase(); apply(); };
-    /* busca avançada: categoria e, dentro dela, a subcategoria */
-    const cc = $('#cchips', el), scs = $('#schips', el);
-    if (cc) {
-      cc.onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return; fc = b.dataset.c; fsub = '';
-        $$('.chip', cc).forEach(c => c.classList.toggle('on', c === b));
+    /* busca avançada dos exercícios: categorias em grade (4 por linha); a escolhida fica vermelha e abre a lista de subcategorias */
+    const ab = $('#advb', el), ap = $('#advp', el);
+    if (ab && ap) {
+      const ssel = $('#ssel', ap), sl = $('.subsel', ap);
+      ab.onclick = () => { const on = ap.hidden; ap.hidden = !on; ab.classList.toggle('on', on); ab.setAttribute('aria-expanded', on); };
+      $('.catgrid', ap).onclick = e => { const b = e.target.closest('[data-c]'); if (!b) return;
+        fc = b.dataset.c === fc ? '' : b.dataset.c; fsub = '';
+        $$('[data-c]', ap).forEach(c => c.classList.toggle('on', c.dataset.c === fc));
         const subs = fc ? T.subs(fc) : [], n = id => sc.rows.filter(r => r.categoriaId === id).length;
-        scs.hidden = !subs.length;
-        scs.innerHTML = subs.length ? `<button class="chip on" data-s="">Todo ${esc(T.nome(fc))}</button>${subs.map(s => `<button class="chip" data-s="${esc(s.id)}">${esc(s.nome)} <span>${n(s.id)}</span></button>`).join('')}` : '';
-        apply(); };
-      scs.onclick = e => { const b = e.target.closest('[data-s]'); if (!b) return; fsub = b.dataset.s; $$('.chip', scs).forEach(c => c.classList.toggle('on', c === b)); apply(); };
+        sl.hidden = !subs.length;
+        ssel.innerHTML = `<option value="">Todas as subcategorias de ${esc(T.nome(fc))}</option>` + subs.map(x => `<option value="${esc(x.id)}">${esc(x.nome)} (${n(x.id)})</option>`).join('');
+        ab.querySelector('em').textContent = fc ? T.nome(fc) : '';
+        apply(); if (subs.length) picker(ssel); };
+      ssel.onchange = () => { fsub = ssel.value; ab.querySelector('em').textContent = fsub ? T.nome(fsub) : T.nome(fc); apply(); };
     }
+    tb.onclick = e => {
+      const tr = e.target.closest('tr'); if (!tr) return; const row = all.find(r => r.id === tr.dataset.id); if (!row) return;
+      if (sc.tree && !tr.classList.contains('subr') && (e.target.closest('[data-xp]') || !e.target.closest('button'))) {   // tocar na categoria abre/fecha as subcategorias
+        if (!T.subs(row.id).length) return;
+        aberto.has(row.id) ? aberto.delete(row.id) : aberto.add(row.id); return apply(true); }
+      if (e.target.closest('[data-det]')) openDet(scDe(sc, row), D, E, row, repaint);
+      else if (e.target.closest('[data-edit]')) openForm(scDe(sc, row), D, E, row, repaint);
+      else if (e.target.closest('[data-del]')) delRow(scDe(sc, row), row, repaint);
+    };
   }
-  if (tb) tb.onclick = async e => {
-    const tr = e.target.closest('tr'); if (!tr) return; const row = sc.rows.find(r => r.id === tr.dataset.id); if (!row) return;
-    if (e.target.closest('[data-det]')) openDet(sc, D, E, row, repaint);
-    else if (e.target.closest('[data-edit]')) openForm(sc, D, E, row, repaint);
-    else if (e.target.closest('[data-del]')) delRow(sc, row, repaint);
-  };
 }
 export async function painel(tab = 'visao') {
   const E = eff(); if (tab !== 'perfil' && !MENU[E.mode].some(m => m[0] === tab)) tab = 'visao';   // 'perfil' não está no menu: abre pela foto/nome

@@ -21,6 +21,9 @@ export const segAlvo = (it, i) => (it.sets && it.sets[i] && it.sets[i].seg) || i
 export const itemTxt = it => { const n = Math.max(1, it.series | 0), per = it.sets && it.sets.length;
   if (isTempo(it)) return per ? `${n} séries · ${it.sets.map((x, i) => segAlvo(it, i)).join('/')} s` : `${n} × ${segTxt(it.seg || 30)}`;
   return `${per ? n + ' séries · ' + it.sets.map(x => x.reps).join('/') + ' reps' : n + ' × ' + it.reps} · ${kgTxt(it.kg)}`; };
+/* horário sempre no formato 00:00 (aceita o que já estava salvo, como "19h", "18h30", "6:5") */
+export const fmtHora = s => { const m = String(s || '').trim().match(/^(\d{1,2})\s*(?:[h:.]\s*(\d{1,2})?)?\s*(?:min)?$/i);
+  return m ? `${String(Math.min(23, +m[1])).padStart(2, '0')}:${String(Math.min(59, +(m[2] || 0))).padStart(2, '0')}` : String(s || ''); };
 export const initials = n => String(n || '?').split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 export const firstName = n => String(n || '').trim().split(/\s+/)[0] || '';
 export const brl = n => Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -53,7 +56,7 @@ export function countUp(el, from, to, ms = 800) {
 export const ICON = {
   home: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z', db: 'M6 7v10M3 9v6M18 7v10M21 9v6M6 12h12',
   grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6',
-  bell: 'M6 9a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8zM10 21h4', check: 'M5 12l5 5 9-10', back: 'M15 5l-7 7 7 7', chev: 'M9 5l7 7-7 7',
+  bell: 'M6 9a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8zM10 21h4', check: 'M5 12l5 5 9-10', back: 'M15 5l-7 7 7 7', chev: 'M9 5l7 7-7 7', up: 'M12 19V5M6 11l6-6 6 6', down: 'M12 5v14M6 13l6 6 6-6', search: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3', sliders: 'M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0M14 4v4M8 10v4M16 16v4',
   list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01', bolt: 'M13 2L4 14h7l-1 8 9-12h-7z',
   note: 'M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM21 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',
   arrow: 'M5 12h14M13 6l6 6-6 6', plus: 'M12 5v14M5 12h14', pause: 'M8 5v14M16 5v14', menu: 'M4 6h16M4 12h16M4 18h16',
@@ -115,7 +118,7 @@ export function openModal({ title, html, submit = 'Salvar', onSubmit, wide = fal
   ov.innerHTML = `<form class="dlg ${wide ? 'wide' : ''}" role="dialog" aria-modal="true" aria-label="${esc(title)}" novalidate><h2 class="h2">${esc(title)}</h2><div class="dbody">${html}</div><p class="err" data-err aria-live="polite"></p><div class="dfoot">${foot}<button type="button" class="btn ghost" data-x>${esc(cancel || (onSubmit ? 'Cancelar' : 'Fechar'))}</button>${onSubmit ? `<button class="btn red" type="submit">${esc(submit)}</button>` : ''}</div></form>`;
   document.body.appendChild(ov); pwEyes(ov);
   const form = $('form', ov), prev = document.activeElement;
-  const onKey = e => { if (e.key === 'Escape') close(); };
+  const onKey = e => { if (e.key === 'Escape' && [...document.querySelectorAll('.ov')].pop() === ov) close(); };   // com um modal sobre outro, fecha só o de cima
   function close() { document.removeEventListener('keydown', onKey); ov.classList.add('out'); setTimeout(() => ov.remove(), 200); prev && prev.focus && prev.focus(); onClose && onClose(); }
   document.addEventListener('keydown', onKey);
   ov.addEventListener('mousedown', e => { if (e.target === ov) close(); });

@@ -4,7 +4,7 @@ import { perfilHTML, bindPerfil } from './perfil.js';
 import { perLabel, situ, ptDate, precoTxt } from './plano.js';
 import { pagamentoAtivo, abrirPagamento } from './pagamento.js';
 import { pedirNotif, agendar, cancelar, mostrar, limpar, hora } from './notif.js';
-import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly, confirmBox, openModal, fail, catTree, isTempo, itemTxt, segAlvo, segTxt, temaBtn } from './ui.js';
+import { $, $$, esc, avatar, toast, countUp, raf2, ic, playIc, logo, DIAS, LET, SEMANA, MESES, iso, dkey, fmt, kgTxt, initials, SESSION, sid, ro, go, friendly, confirmBox, openModal, fail, catTree, isTempo, itemTxt, segAlvo, segTxt, temaBtn, fmtHora } from './ui.js';
 
 const META_MES = 20;
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -118,14 +118,105 @@ export async function home() {
 
 /* ---------------- Meus treinos ---------------- */
 export async function treinos() {
-  const uid = sid(), list = await myTreinos(uid), mods = toMap(await api.list('modalidades'));
+  const uid = sid(), [list, modl, exs, cats, execs] = await Promise.all([myTreinos(uid), api.list('modalidades'), api.list('exercicios'), api.list('categorias'),
+    api.list('execucoes', [['uid', '==', uid]]).catch(e => { console.error('histórico', e); return []; })]), mods = toMap(modl);
   list.sort((a, b) => proxDia(a) - proxDia(b) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));   // na ordem da semana, a partir de hoje
   const cards = list.map(t => `<a class="card mcard tr" href="#/treino/${t.id}"><div class="top"><div class="mic">${ic('db', 26)}</div><div class="ttx"><h3>${esc(t.nome)}</h3><small>${esc((mods[t.modalidadeId] || {}).nome || 'Treino')} · ${(t.itens || []).length} exercícios</small>
     <p class="tdias">${diasTxt(t)}</p></div>${ic('chev', 20, '#B5B5BA')}</div></a>`).join('');
+  const H = histData(execs, list, exs, cats, mods);
   return { depth: 2, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
     <div class="body"><div><h1 class="h1">Meus treinos</h1><p class="muted" style="margin-top:4px;font-size:14px">Montados pelo seu professor</p></div>
-    <div class="cards">${cards || '<p class="empty">Você ainda não tem treino. Fale com seu professor.</p>'}</div></div><div style="height:16px;flex:none"></div>${nav('db')}` };
+    <div class="cards">${cards || '<p class="empty">Você ainda não tem treino. Fale com seu professor.</p>'}</div>
+    ${histHTML(H)}</div><div style="height:16px;flex:none"></div>${nav('db')}`,
+  after(el) { if (H.rows.length) bindHist(el, H); } };
 }
+
+/* ---------------- Histórico de treinos ---------------- */
+const semAcento = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const diaSem = k => { const [y, m, d] = k.split('-').map(Number); return SEMANA[new Date(y, m - 1, d).getDay()]; };
+function histData(execs, list, exs, cats, mods) {
+  const T = catTree(cats), tMap = toMap(list), exMap = toMap(exs);
+  EXN = Object.fromEntries(exs.map(e => [e.id, e.nome]));
+  const hoje = dkey(new Date());   // o treino de hoje só entra depois de finalizado
+  const rows = execs.filter(x => x.data && (x.fim || x.data < hoje) && Object.values(x.feitos || {}).some(a => (a || []).some(Boolean))).map(x => {
+    const t = tMap[x.tid], its = t ? t.itens || [] : [], st = its.map(it => statEx(x, it));
+    const feitos = Object.entries(x.feitos || {}).filter(([, a]) => (a || []).some(Boolean)).map(([id]) => id);
+    const grupos = [...new Set(feitos.map(id => T.nome(T.top((exMap[id] || {}).categoriaId))).filter(Boolean))];
+    const series = t ? st.reduce((s, o) => s + o.n, 0) : Object.values(x.feitos || {}).reduce((s, a) => s + (a || []).filter(Boolean).length, 0);
+    const r = { x, t, its, st, k: x.data, tid: x.tid, nome: t ? t.nome : 'Treino removido', mod: t ? (mods[t.modalidadeId] || {}).nome || '' : '', grupos, series,
+      vol: st.reduce((s, o) => s + o.vol, 0), dur: x.duracao || (x.inicio && x.fim ? Math.round((x.fim - x.inicio) / 1000) : 0), dif: x.dificuldade != null ? +x.dificuldade : null };
+    r.hay = semAcento([r.nome, r.mod, ...grupos, ...feitos.map(id => (exMap[id] || {}).nome), T.path((exMap[feitos[0]] || {}).categoriaId), diaSem(r.k), ptDate(r.k)].join(' '));
+    return r;
+  }).sort((a, b) => b.k.localeCompare(a.k) || (b.x.inicio || 0) - (a.x.inicio || 0));
+  const grupos = [...new Set(rows.flatMap(r => r.grupos))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const treinosH = [...new Map(rows.map(r => [r.tid, r.nome])).entries()].sort((a, b) => a[1].localeCompare(b[1], 'pt-BR'));
+  return { rows, grupos, treinosH };
+}
+const media = a => a.length ? a.reduce((s, n) => s + n, 0) / a.length : 0;
+/* números gerais de um conjunto de treinos: quantidade, médias e evolução do volume (últimos treinos x anteriores) */
+function histStats(rows) {
+  const durs = rows.map(r => r.dur).filter(Boolean), difs = rows.map(r => r.dif).filter(n => n != null), vols = rows.map(r => r.vol).filter(Boolean);
+  const mes = dkey(new Date()).slice(0, 7), n = Math.min(4, Math.floor(vols.length / 2));
+  const evo = n ? (media(vols.slice(0, n)) / (media(vols.slice(n, 2 * n)) || 1) - 1) * 100 : null;   // vols está do mais novo para o mais antigo
+  return { total: rows.length, mes: rows.filter(r => r.k.startsWith(mes)).length, dur: media(durs), dif: difs.length ? media(difs) : null, vol: media(vols), evo, series: rows.reduce((s, r) => s + r.series, 0) };
+}
+const evoTxt = e => e == null ? '—' : `<span class="${e > 0.5 ? 'up' : e < -0.5 ? 'down' : 'eq'}">${e > 0.5 ? '▲ +' : e < -0.5 ? '▼ −' : ''}${Math.abs(Math.round(e))}%</span>`;
+const hcard = (l, v, s = '') => `<div class="hc"><small>${l}</small><b>${v}</b>${s ? `<em>${s}</em>` : ''}</div>`;
+const statsHTML = S => `<div class="hstats">${hcard('Treinos feitos', S.total, `${S.mes} neste mês`)}${hcard('Duração média', S.dur ? fmtT(S.dur) : '—', 'por treino')}
+  ${hcard('Nota média', S.dif != null ? S.dif.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '<span>/10</span>' : '—', 'dificuldade')}${hcard('Volume médio', S.vol ? kgFmt(S.vol) : '—', 'carga × repetições')}
+  ${hcard('Evolução', evoTxt(S.evo), S.evo == null ? 'precisa de mais treinos' : 'volume, últimos treinos')}${hcard('Séries', S.series, 'no total')}</div>`;
+function histHTML(H) {
+  if (!H.rows.length) return `<section class="hist-sec"><h2 class="h2">Histórico</h2><p class="empty" style="padding:18px 8px">Seus treinos finalizados aparecem aqui, do mais recente para o mais antigo.</p></section>`;
+  return `<section class="hist-sec" id="hist"><div class="hhead"><h2 class="h2">Histórico</h2><span class="muted" style="font-size:13px">do mais recente ao mais antigo</span></div>
+    <div class="card hres">${statsHTML(histStats(H.rows))}</div>
+    <div class="hbusca"><label class="hq">${ic('search', 18)}<input id="hq" type="search" placeholder="Buscar: peito, treino A, 12/10..." aria-label="Buscar no histórico"></label>
+      <button type="button" class="hadv" id="hadv" aria-expanded="false">${ic('sliders', 18)}<span>Busca avançada</span></button></div>
+    <div class="card hpanel" id="hpanel" hidden><div class="hpf">
+      <label class="field">Treino<select id="ht"><option value="">Todos os treinos</option>${H.treinosH.map(([id, n]) => `<option value="${esc(id)}">${esc(n)}</option>`).join('')}</select></label>
+      <label class="field">Grupo muscular<select id="hg"><option value="">Todos os grupos</option>${H.grupos.map(g => `<option>${esc(g)}</option>`).join('')}</select></label>
+      <label class="field">De<input id="hd1" type="date"></label><label class="field">Até<input id="hd2" type="date"></label></div>
+      <button type="button" class="btn link" id="hclr" style="height:36px;align-self:flex-end">Limpar filtros</button></div>
+    <div id="hfoco"></div><div class="hlist" id="hlist"></div><button type="button" class="btn ghost" id="hmais" hidden style="height:46px">Mostrar mais</button></section>`;
+}
+const histRow = (r, i) => `<button type="button" class="hrow" data-i="${i}"><span class="hdt"><small>${DIAS[(new Date(r.k + 'T12:00').getDay() + 6) % 7 + 1]}</small><b>${r.k.slice(8)}/${r.k.slice(5, 7)}</b></span>
+  <span class="htx"><b>${esc(r.nome)}</b><small>${[r.grupos.join(', '), `${r.series} séries`, r.vol ? kgFmt(r.vol) : '', r.dur ? fmtT(r.dur) : '', r.dif != null ? `nota ${r.dif}` : ''].filter(Boolean).map(esc).join(' · ')}</small></span>${ic('chev', 18, '#B5B5BA')}</button>`;
+function bindHist(el, H) {
+  let lim = 10, adv = false, vis = H.rows;
+  const f = { q: '', t: '', g: '', d1: '', d2: '' };
+  const draw = () => {
+    const q = semAcento(f.q.trim()), dm = q.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+    vis = H.rows.filter(r => (!q || (dm ? (+r.k.slice(8) === +dm[1] && +r.k.slice(5, 7) === +dm[2] && (!dm[3] || r.k.slice(0, 4).endsWith(dm[3]))) : q.split(/\s+/).every(w => r.hay.includes(w))))
+      && (!adv || ((!f.t || r.tid === f.t) && (!f.g || r.grupos.includes(f.g)) && (!f.d1 || r.k >= f.d1) && (!f.d2 || r.k <= f.d2))));
+    const filtrado = q || (adv && (f.t || f.g || f.d1 || f.d2));
+    /* resumo do filtro: "como fui nos últimos treinos A" */
+    const foco = $('#hfoco', el);
+    if (filtrado && vis.length) { const S = histStats(vis), l = vis[0], p = vis[1], tN = adv && f.t ? (H.treinosH.find(x => x[0] === f.t) || [])[1] : '';
+      foco.innerHTML = `<div class="card hres"><h3 class="h2" style="font-size:18px;margin-bottom:10px">${tN ? `Como você foi nos treinos “${esc(tN)}”` : 'Resumo da busca'}</h3>${statsHTML(S)}
+        ${p && l.vol && p.vol ? `<p class="muted" style="margin:10px 0 0;font-size:13px">Último (${ptDate(l.k).slice(0, 5)}): ${kgFmt(l.vol)} · anterior (${ptDate(p.k).slice(0, 5)}): ${kgFmt(p.vol)} ${dif(l.vol, p.vol, kgFmt)}</p>` : ''}</div>`; }
+    else foco.innerHTML = '';
+    $('#hlist', el).innerHTML = vis.length ? vis.slice(0, lim).map(r => histRow(r, H.rows.indexOf(r))).join('') : '<p class="empty">Nenhum treino encontrado.</p>';
+    $('#hmais', el).hidden = vis.length <= lim;
+  };
+  $('#hq', el).oninput = e => { f.q = e.target.value; lim = 10; draw(); };
+  $('#hadv', el).onclick = e => { adv = !adv; $('#hpanel', el).hidden = !adv; e.currentTarget.classList.toggle('on', adv); e.currentTarget.setAttribute('aria-expanded', adv); draw(); };
+  [['#ht', 't'], ['#hg', 'g'], ['#hd1', 'd1'], ['#hd2', 'd2']].forEach(([s, k]) => { $(s, el).onchange = e => { f[k] = e.target.value; lim = 10; draw(); }; });
+  $('#hclr', el).onclick = () => { ['#ht', '#hg', '#hd1', '#hd2'].forEach(s => { $(s, el).value = ''; }); Object.assign(f, { t: '', g: '', d1: '', d2: '' }); draw(); };
+  $('#hmais', el).onclick = () => { lim += 10; draw(); };
+  $('#hlist', el).onclick = e => { const b = e.target.closest('.hrow'); if (b) diaHist(H.rows[+b.dataset.i]); };
+  draw();
+}
+/* resumo de um dia do histórico */
+function diaHist(r) {
+  const card = (l, v) => `<div class="hc"><small>${l}</small><b>${v}</b></div>`;
+  const exs = r.its.map((it, i) => [it, r.st[i]]).filter(([, a]) => a.n);
+  openModal({ title: `${r.nome} · ${ptDate(r.k)}`, html: `<p class="muted" style="margin:-6px 0 4px;font-size:13px">${cap(diaSem(r.k))}${r.x.inicio ? ' · começou às ' + hora(r.x.inicio).slice(0, 5) : ''}</p>
+    <div class="hstats">${card('Duração', r.dur ? fmtT(r.dur) : '—')}${card('Séries', r.series)}${card('Volume', r.vol ? kgFmt(r.vol) : '—')}${card('Nota', r.dif != null ? r.dif + '<span>/10</span>' : '—')}</div>
+    ${r.x.obs ? `<div class="hobs"><small>Sua observação</small><p>${esc(r.x.obs)}</p></div>` : ''}
+    ${exs.length ? `<div class="hdia">${exs.map(([it, a]) => `<div class="hdx"><b>${esc(nomeEx_(it.exId))}</b><small>${a.n}/${nSets(it)} séries</small><ol>${a.linhas.map(t => `<li class="${t ? '' : 'off'}">${t ? esc(t) : 'não feita'}</li>`).join('')}</ol></div>`).join('')}</div>`
+      : '<p class="muted" style="font-size:14px">Os detalhes deste treino não estão mais disponíveis.</p>'}` });
+}
+let EXN = {};   // nomes dos exercícios (preenchido ao montar o histórico)
+const nomeEx_ = id => EXN[id] || 'Exercício';
 
 /* ---------------- Lista do treino ---------------- */
 async function loadTreino(tid) {
@@ -290,7 +381,9 @@ export async function exercicio(tid, n) {
     const persist = async () => { D.feitos[it.exId] = sets.slice(); D.valores[it.exId] = vals.map(v => ({ ...v })); try { await salvarExec(D); } catch (e) { toast(friendly(e)); } };
     const mark = async i => {
       if (ro()) return blocked();
-      sets[i] = !sets[i]; $('#sets', el).innerHTML = setsHTML(); cta();
+      sets[i] = !sets[i];
+      if (sets[i] && !tm && !vals[i].kg && +it.kg) vals[i].kg = +it.kg;   // carga não anotada: vale a de referência do professor
+      $('#sets', el).innerHTML = setsHTML(); cta();
       if (sets[i]) comecar();
       if (sets[i]) { $(`.ck[data-i="${i}"]`, el).classList.add('pop'); if (sets.every(Boolean)) { stopRest(); setReady(false); drawRest(); toast('Exercício concluído.'); } else startRest(it.descanso); }
       if (tm) { cancelar('crono'); cr = novoCr(); bateu = false; salvarCr(); drawCr(); }
@@ -344,8 +437,8 @@ function statEx(x, it) {
     if (!f[i]) { o.linhas.push(null); continue; }
     o.n++;
     if (tm) { const sg = +s.seg || segAlvo(it, i); o.seg += sg; o.linhas.push(segTxt(sg)); }
-    else { const r = s.reps != null ? +s.reps : ((it.sets && it.sets[i] && it.sets[i].reps) || it.reps), kg = +s.kg || 0;
-      o.reps += r; o.vol += kg * r; o.max = Math.max(o.max, kg); o.linhas.push(`${kg ? kgFmt(kg) : it.kg ? 'carga não anotada' : 'peso do corpo'} × ${r}`); }
+    else { const r = s.reps != null ? +s.reps : ((it.sets && it.sets[i] && it.sets[i].reps) || it.reps), kg = +s.kg || +it.kg || 0;   // sem carga anotada: usa a de referência
+      o.reps += r; o.vol += kg * r; o.max = Math.max(o.max, kg); o.linhas.push(`${kg ? kgFmt(kg) : 'peso do corpo'} × ${r}`); }
   }
   return o;
 }
@@ -384,7 +477,7 @@ export async function resumo(tid) {
 /* ---------------- Modalidades ---------------- */
 let filtro = 'todas';
 const mCard = (m, mine) => `<a class="card mcard" href="#/modalidade/${m.id}"><div class="top"><div class="mic">${ic(m.icone || 'db', 26)}</div><div><h3>${esc(m.nome)}</h3><small>${esc(m.prof || '')}${m.local ? ' · ' + esc(m.local) : ''}</small></div>
-  <span class="st ${mine ? '' : 'try'}">${mine ? 'Matriculado' : 'Experimentar'}</span></div><div class="foot"><div class="dias">${[1, 2, 3, 4, 5, 6, 7].map(n => `<span class="${(m.dias || []).includes(n) ? 'on' : ''}">${LET[n]}</span>`).join('')}</div><b>${esc(m.ini || '')}${m.fim ? ' – ' + esc(m.fim) : ''}</b></div></a>`;
+  <span class="st ${mine ? '' : 'try'}">${mine ? 'Matriculado' : 'Experimentar'}</span></div><div class="foot"><div class="dias">${[1, 2, 3, 4, 5, 6, 7].map(n => `<span class="${(m.dias || []).includes(n) ? 'on' : ''}">${LET[n]}</span>`).join('')}</div><b>${esc(fmtHora(m.ini))}${m.fim ? ' – ' + esc(fmtHora(m.fim)) : ''}</b></div></a>`;
 export async function modalidades() {
   const [mods, prof] = await Promise.all([api.list('modalidades'), ro() ? api.get('users', sid()) : SESSION.me]), mine = new Set(prof.modalidades || []);
   return { depth: 1, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
@@ -411,10 +504,10 @@ export async function modalidade(id) {
   const achados = await Promise.all([`${uid}_${id}`, ...slots.map(x => docId(x.key))].map(d => api.get('agendamentos', d).then(r => r && { ...r, docId: d }).catch(() => null)));
   let ag = achados.find(a => a && (a.slotKey || '') >= hoje) || null;
   let sel = slots.find(s => ag && s.key === ag.slotKey) || slots[0], agended = !!ag;
-  const gravar = async () => { const novo = docId(sel.key); await api.set('agendamentos', novo, { uid, modId: id, slotKey: sel.key, hora: m.ini, ts: Date.now() });
+  const gravar = async () => { const novo = docId(sel.key); await api.set('agendamentos', novo, { uid, modId: id, slotKey: sel.key, hora: fmtHora(m.ini), ts: Date.now() });
     if (ag && ag.docId !== novo) await api.del('agendamentos', ag.docId).catch(() => {}); ag = { docId: novo, slotKey: sel.key }; };
   const slotHTML = () => slots.map(x => `<button class="slot ${sel === x ? 'on' : ''}" data-k="${x.key}"><div class="dt"><small>${DIAS[iso(x.dt)]}</small><b>${x.dt.getDate()}</b></div>
-    <div class="tm"><b>${esc(m.ini)}${m.fim ? ' – ' + esc(m.fim) : ''}</b><small>${esc(m.vagas || '')}</small></div><span class="sel">${sel === x ? ic('check', 20, '#fff', 2.4) : 'Escolher'}</span></button>`).join('');
+    <div class="tm"><b>${esc(fmtHora(m.ini))}${m.fim ? ' – ' + esc(fmtHora(m.fim)) : ''}</b><small>${esc(m.vagas || '')}</small></div><span class="sel">${sel === x ? ic('check', 20, '#fff', 2.4) : 'Escolher'}</span></button>`).join('');
   const ctaHTML = () => matr ? '<button class="btn dark" disabled>Você já treina aqui</button>' : !slots.length ? '' : agended ? `<button class="btn done" id="cta">${ic('check', 20, '#fff', 2.4)}Aula agendada. Toque para cancelar</button>` : '<button class="btn red" id="cta">Agendar aula experimental</button>';
   return { depth: 2, html: `
   <div class="dhero ${m.foto ? 'hasimg' : ''}" ${m.foto ? `style="background-image:url('${esc(m.foto)}')"` : ''}>${m.foto ? '' : '<div class="ph">FOTO DA MODALIDADE</div>'}
@@ -433,7 +526,7 @@ export async function modalidade(id) {
     wrap.onclick = async e => { const b = e.target.closest('#cta'); if (!b) return; if (ro()) return blocked();
       try {
         if (agended) { await api.del('agendamentos', ag.docId); ag = null; agended = false; toast('Aula cancelada.'); }
-        else { await gravar(); agended = true; toast(`Aula agendada: ${DIAS[iso(sel.dt)]} ${sel.dt.getDate()}, ${m.ini}.`); }
+        else { await gravar(); agended = true; toast(`Aula agendada: ${DIAS[iso(sel.dt)]} ${sel.dt.getDate()}, ${fmtHora(m.ini)}.`); }
       } catch (err) { return toast(friendly(err)); }
       wrap.innerHTML = ctaHTML(); const c = $('#cta', wrap); c && c.classList.add('pop'); };
   } };
