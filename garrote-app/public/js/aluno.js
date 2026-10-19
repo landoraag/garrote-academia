@@ -32,7 +32,7 @@ const blocked = () => toast('Modo visualização: só o aluno pode gravar.');
 
 function videoEl(url, label, tag) {
   const yt = url && url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/);
-  if (yt) return `<div class="video"><iframe src="https://www.youtube.com/embed/${yt[1]}" title="${esc(label)}" loading="lazy" allowfullscreen></iframe><span class="vtag">${tag}</span></div>`;
+  if (yt) return `<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/${yt[1]}" title="${esc(label)}" loading="lazy" allowfullscreen></iframe><span class="vtag">${tag}</span></div>`;
   if (url) return `<div class="video"><video src="${esc(url)}" controls playsinline preload="metadata"></video><span class="vtag">${tag}</span></div>`;
   return `<div class="video"><span class="vtag">${tag}</span><span class="vlabel">${esc(label)}</span><button class="play" data-soon="O professor ainda não anexou o vídeo." aria-label="Reproduzir vídeo">${playIc}</button><div class="vbar"></div></div>`;
 }

@@ -61,6 +61,7 @@ export function abrirPagamento({ plano, aluno, onPago }) {
     </div>
     <p class="pg-res" data-res hidden></p>
     ${SELO}
+    <p class="pg-termos">Ao pagar, você concorda com os <a href="#/termos" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="#/privacidade" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
   </div>`;
 
   const { close, form } = openModal({ title: 'Pagar mensalidade', html, cancel: 'Fechar', onClose: () => { fechado = true; clearInterval(poll); campos.forEach(c => { try { c.unmount(); } catch {} }); } });

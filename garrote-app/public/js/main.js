@@ -2,6 +2,7 @@
 import { api, mode } from './api.js';
 import * as A from './aluno.js';
 import { painel } from './painel.js';
+import { privacidade, termos, avisoPrivacidade, linksLegais } from './legal.js';
 import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce, dkey, pwEyes } from './ui.js';
 
 const app = $('#app');
@@ -24,6 +25,7 @@ const SCREENS = {
       <button class="btn red" type="submit">Entrar</button>
       ${mode === 'demo' ? `<div class="demo"><small>Modo demonstração. Toque para preencher:</small><div><button type="button" data-fill="dono@garrote.demo">Dono</button><button type="button" data-fill="treinador@garrote.demo">Treinador</button><button type="button" data-fill="aluno@garrote.demo">Aluno</button></div></div>` : ''}
       ${setupDone ? '<p class="small">Seu acesso é criado pela academia. Fale com a recepção.</p>' : '<a class="btn ghost" href="#/setup">Primeiro acesso: criar conta do dono</a>'}
+      ${linksLegais('small')}
     </form>`,
     after(el) {
       const set = (u, p) => { $('[name=u]', el).value = u; $('[name=p]', el).value = p; };
@@ -94,6 +96,7 @@ const SCREENS = {
   async semperfil() {
     return { depth: 0, dark: true, html: `<div class="login-top">${logo(52)}</div><div class="sheet"><h1 class="h1">Acesso ainda não liberado</h1><p class="muted" style="font-size:15px;line-height:1.5">Seu e-mail entrou, mas ainda não tem um perfil na academia. Peça para o dono ou seu professor liberar o seu acesso.</p><button class="btn dark" id="out">Sair</button></div>`, after(el) { $('#out', el).onclick = () => api.logout(); } };
   },
+  privacidade, termos,
   home: A.home, treinos: A.treinos, treino: A.treino, exercicio: A.exercicio, resumo: A.resumo, modalidades: A.modalidades, modalidade: A.modalidade, perfil: A.perfil, painel
 };
 
@@ -117,9 +120,10 @@ function chegada(el) {
 let cur = null, curDepth = null, curWide = false, cleanup = null, token = 0, busy = false;
 async function render() {
   if (busy) return;
-  const parts = (location.hash.slice(1) || '/login').split('/'), name = parts[1] || 'login', args = parts.slice(2), pub = ['login', 'setup'];
+  const parts = (location.hash.slice(1) || '/login').split('/'), name = parts[1] || 'login', args = parts.slice(2), pub = ['login', 'setup'], livre = ['privacidade', 'termos'];
   let target = SCREENS[name] ? name : 'login';
-  if (RESET && new URLSearchParams(location.search).get('oobCode')) target = 'redefinir';
+  if (livre.includes(target)) { /* páginas legais: abertas para todos, logado ou não */ }
+  else if (RESET && new URLSearchParams(location.search).get('oobCode')) target = 'redefinir';
   else if (!SESSION.user) { if (!pub.includes(target)) { location.replace('#/login'); target = 'login'; } }
   else if (!SESSION.me) { if (!pub.includes(target)) target = 'semperfil'; }
   else {
@@ -145,6 +149,7 @@ async function render() {
   app.appendChild(el); boot && boot.remove(); cur = el; curDepth = v.depth; curWide = !!v.wide;
   if (primeira) chegada(el);
   pwEyes(el); cleanup = (v.after && v.after(el)) || null;
+  avisoPrivacidade();
 }
 
 api.onAuth(async u => {
@@ -160,7 +165,7 @@ api.onAuth(async u => {
     if (me) try { localStorage.setItem('garrote:role', me.role); } catch {}
     if (SESSION.me && SESSION.me.ativo === 'nao') { toast('Seu acesso está inativo. Fale com a academia.'); SESSION.me = null; await api.logout(); return; }
   }
-  if (!u) { cur && cur.remove(); cur = null; curDepth = null; location.hash = '#/login'; }
+  if (!u && !/^#\/(privacidade|termos)/.test(location.hash)) { cur && cur.remove(); cur = null; curDepth = null; location.hash = '#/login'; }
   render();
 });
 document.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) { e.preventDefault(); toast(s.dataset.soon); } });

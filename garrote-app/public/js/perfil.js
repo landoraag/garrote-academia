@@ -1,4 +1,5 @@
 /* Perfil: foto, nome e senha. Vale para dono, treinador e aluno. */
+import { linksLegais } from './legal.js';
 import { api } from './api.js';
 import { $, esc, toast, avatar, SESSION, fail, friendly } from './ui.js';
 
@@ -18,7 +19,8 @@ export const perfilHTML = () => {
       <label class="field">Nova senha<input name="n1" type="password" autocomplete="new-password"></label>
       <label class="field">Confirmar nova senha<input name="n2" type="password" autocomplete="new-password"></label>
       <p class="err" id="pwe" aria-live="polite"></p>
-      <button class="btn dark" type="submit" style="height:48px">Alterar senha</button></form></section>`;
+      <button class="btn dark" type="submit" style="height:48px">Alterar senha</button></form></section>
+  <section class="card prof"><h2 class="h2" style="margin-bottom:8px">Privacidade</h2><p class="muted" style="font-size:14px;line-height:1.5;margin:0 0 6px">Veja como seus dados são usados e como pedir acesso, correção ou exclusão (LGPD).</p>${linksLegais()}</section>`;
 };
 
 function resize(file, max = 240) {
