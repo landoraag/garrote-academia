@@ -1,11 +1,11 @@
 #!/bin/bash
-cd /workspaces/garrote-academia
-ZIP=$(ls -t garrote-app*.zip 2>/dev/null | head -1)
-[ -z "$ZIP" ] && { echo "Nenhum garrote-app*.zip nesta pasta."; exit 1; }
-cp garrote-app/public/js/firebase-config.js /tmp/fb-config.js
-cp garrote-app/.firebaserc /tmp/firebaserc
-unzip -o "$ZIP"
-cp /tmp/fb-config.js garrote-app/public/js/firebase-config.js
-cp /tmp/firebaserc garrote-app/.firebaserc
-rm "$ZIP"
+# Atualiza o app publicado com a versão mais nova da main (rodar no Codespace).
+# Uso:  bash atualizar.sh
+set -e
+cd "$(dirname "$0")"
+echo "→ Baixando a versão mais nova do GitHub..."
+git checkout main
+git pull --ff-only origin main
+echo "→ Publicando o app e as regras de segurança no Firebase..."
 cd garrote-app && firebase deploy --only hosting,firestore:rules
+echo "✓ Pronto. Abra https://garrote-academia.web.app e aperte Ctrl+F5."
