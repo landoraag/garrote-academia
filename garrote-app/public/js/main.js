@@ -3,6 +3,7 @@ import { api, mode } from './api.js';
 import * as A from './aluno.js';
 import { painel } from './painel.js';
 import { privacidade, termos, avisoPrivacidade, linksLegais } from './legal.js';
+import { freioLogin, freioReset, ehCredencialErrada } from './freio.js';
 import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce, dkey, pwEyes } from './ui.js';
 
 const app = $('#app');
@@ -31,14 +32,15 @@ const SCREENS = {
       const set = (u, p) => { $('[name=u]', el).value = u; $('[name=p]', el).value = p; };
       $$('[data-fill]', el).forEach(b => b.onclick = () => set(b.dataset.fill, '123456'));
       $('#forgot', el).onclick = async e => { e.preventDefault(); const u = $('[name=u]', el).value.trim(); if (!u) return $('#e', el).textContent = 'Digite seu e-mail e toque de novo.';
-        try { await api.reset(u); toast(mode === 'demo' ? 'No modo demonstração nenhum e-mail é enviado.' : 'Enviamos um e-mail para redefinir a senha.'); } catch (err) { $('#e', el).textContent = friendly(err); } };
+        try { freioReset(u); await api.reset(u); toast(mode === 'demo' ? 'No modo demonstração nenhum e-mail é enviado.' : 'Enviamos um e-mail para redefinir a senha.'); } catch (err) { $('#e', el).textContent = friendly(err); } };
       $('#f', el).onsubmit = async e => {
         e.preventDefault();
         const u = $('[name=u]', el).value.trim(), p = $('[name=p]', el).value, b = $('.btn.red', el);
         if (!u || !p) { $('#e', el).textContent = 'Informe o e-mail e a senha.'; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); return; }
+        try { freioLogin.antes(); } catch (err) { $('#e', el).textContent = err.message; return; }
         b.disabled = true; b.innerHTML = '<i class="spin"></i>Entrando'; $('#e', el).textContent = '';
-        try { await api.login(u, p); }
-        catch (err) { $('#e', el).textContent = friendly(err); b.disabled = false; b.textContent = 'Entrar'; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
+        try { await api.login(u, p); freioLogin.ok(); }
+        catch (err) { if (ehCredencialErrada(err)) freioLogin.erro(); $('#e', el).textContent = friendly(err); b.disabled = false; b.textContent = 'Entrar'; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); }
       };
     } };
   },

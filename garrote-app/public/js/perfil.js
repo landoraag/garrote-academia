@@ -1,5 +1,6 @@
 /* Perfil: foto, nome e senha. Vale para dono, treinador e aluno. */
 import { linksLegais } from './legal.js';
+import { freioSenha, ehCredencialErrada } from './freio.js';
 import { api } from './api.js';
 import { $, esc, toast, avatar, SESSION, fail, friendly } from './ui.js';
 
@@ -54,7 +55,8 @@ export function bindPerfil(el, onSaved) {
     e.preventDefault(); const f = e.target, cur = f.cur.value, n1 = f.n1.value, n2 = f.n2.value, msg = $('#pwe', el); msg.textContent = '';
     try {
       if (!cur) fail('Digite a senha atual.'); if (n1.length < 6) fail('A nova senha precisa ter pelo menos 6 caracteres.'); if (n1 !== n2) fail('A confirmação não confere.');
-      await api.changePassword(cur, n1); f.reset(); toast('Senha alterada.');
-    } catch (err) { msg.textContent = /wrong-password|invalid-credential/.test((err && err.code) || '') ? 'Senha atual incorreta.' : friendly(err); }
+      freioSenha.antes();
+      await api.changePassword(cur, n1); freioSenha.ok(); f.reset(); toast('Senha alterada.');
+    } catch (err) { if (ehCredencialErrada(err)) { freioSenha.erro(); msg.textContent = 'Senha atual incorreta.'; } else msg.textContent = friendly(err); }
   };
 }

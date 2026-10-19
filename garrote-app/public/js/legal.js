@@ -112,6 +112,7 @@ export const privacidade = () => pagina('Política de Privacidade', `
 <tr><td>Tipo de conta (aluno ou equipe)</td><td>Abrir direto na tela certa</td><td>Funcional</td></tr>
 <tr><td>Tema claro/escuro</td><td>Lembrar sua preferência</td><td>Preferência</td></tr>
 <tr><td>Data da abertura em vídeo</td><td>Mostrar a abertura só uma vez por dia</td><td>Preferência</td></tr>
+<tr><td>Contador de tentativas de login e de senha</td><td>Proteger sua conta contra tentativas repetidas (não guarda o e-mail em texto)</td><td>Essencial (segurança)</td></tr>
 <tr><td>Aviso de privacidade lido</td><td>Não mostrar o aviso de novo</td><td>Preferência</td></tr>
 </tbody></table>
 <p>Ao abrir um vídeo do YouTube, o próprio YouTube pode gravar dados no seu navegador, conforme a política dele. Você pode apagar todos esses dados nas configurações do navegador; você só precisará entrar de novo no app.</p>
