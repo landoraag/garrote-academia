@@ -2,7 +2,7 @@
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn } from './ui.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
-import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt } from './plano.js';
+import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc } from './plano.js';
 
 const ATIVO = [['sim', 'Ativo'], ['nao', 'Inativo']];
 const ICONES = [['db', 'Halter'], ['bolt', 'Raio (lutas)'], ['note', 'Música (dança)'], ['grid', 'Grade'], ['user', 'Pessoa']];
@@ -35,7 +35,7 @@ function schema(tab, D, E) {
   const trs = D.users.filter(u => u.role === 'treinador'), als = D.users.filter(u => u.role === 'aluno' && (!E.tid || u.treinadorId === E.tid));
   const mods = D.modalidades.map(m => [m.id, m.nome]), T = catTree(D.categorias);
   const exDe = c => D.exercicios.filter(e => T.isSub(c) ? e.categoriaId === c.id : T.top(e.categoriaId) === c.id).length;
-  const planoOpts = (D.planos || []).map(p => [p.id, `${p.nome} · ${brl(precoFinal(p))}`]), planoDe = id => (D.planos || []).find(p => p.id === id);
+  const planoOpts = (D.planos || []).map(p => [p.id, `${p.nome} · ${brl(precoFinal(p))}${nParc(p) > 1 ? ` (${parcTxt(p)})` : ''}`]), planoDe = id => (D.planos || []).find(p => p.id === id);
   const nm = (arr, id) => (arr.find(x => x.id === id) || {}).nome || '—';
   const dias = r => (r.dias || []).map(n => DIAS[n]).join(' ') || '—';
   const pessoa = { k: 'nome', l: 'Nome completo', req: 1, full: 1, ph: 'Ex.: Lucas Martins' };
@@ -332,7 +332,7 @@ function openFinDet(a, D, repaint) {
   $('[data-hist]', m.form).onclick = () => { m.close(); openHist(a, D); };
 }
 function openPlano(a, D, done) {
-  const opts = ['<option value="">Sem plano</option>', ...D.planos.map(p => `<option value="${esc(p.id)}" ${p.id === a.planoId ? 'selected' : ''}>${esc(p.nome)} · ${brl(precoFinal(p))} (${p.categoria === 'totalpass' ? 'Total Pass' : perLabel(p.periodo)})</option>`)].join('');
+  const opts = ['<option value="">Sem plano</option>', ...D.planos.map(p => `<option value="${esc(p.id)}" ${p.id === a.planoId ? 'selected' : ''}>${esc(p.nome)} · ${brl(precoFinal(p))} (${p.categoria === 'totalpass' ? 'Total Pass' : perLabel(p.periodo) + (nParc(p) > 1 ? ', ' + parcTxt(p) : '')})</option>`)].join('');
   openModal({ title: `Plano de ${firstName(a.nome)}`, submit: 'Salvar', html: `<div class="form">${D.planos.length ? '' : '<p class="note full">Você ainda não criou planos. Crie em Planos.</p>'}
     <label class="field full">Plano<select name="planoId">${opts}</select></label>
     <label class="field full">Grupo familiar<input name="familiaId" value="${esc(a.familiaId || '')}" placeholder="Ex.: Família Lima"><small class="muted">Só para plano família: use o mesmo nome para todos da família.</small></label>
