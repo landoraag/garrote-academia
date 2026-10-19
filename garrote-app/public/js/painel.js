@@ -80,7 +80,7 @@ function schema(tab, D, E) {
       },
       calc: f => { const p = { valor: parseMoney(f.valor.value) || 0, descontoTipo: f.descontoTipo.value, desconto: parseMoney(f.desconto.value) || 0, parcelas: Math.max(1, +f.parcelas.value || 1), periodo: +f.periodo.value || 1 };
         return p.valor > 0 ? 'Valor final: ' + precoTxt(p) : 'Digite o valor cheio para ver o valor final e as parcelas.'; },
-      cols: [['Nome', r => r.nome], ['Cobrança', r => r.categoria === 'totalpass' ? 'Total Pass' : perLabel(r.periodo)], ['Valor', r => brl(precoFinal(r)) + (descTxt(r) ? ` (${descTxt(r)})` : '')], ['Parcelas', r => parcTxt(r)], ['Por mês', r => brl(mensalDe(r))],
+      cols: [['Nome', r => r.nome], ['Cobrança', r => r.categoria === 'totalpass' ? 'Total Pass' : perLabel(r.periodo)], ['Valor cheio', r => brl(+r.valor || 0)], ['Desconto', r => descTxt(r) ? descTxt(r).replace(' de desconto', '') : '—'], ['Valor total', r => brl(precoFinal(r))], ['Parcelas', r => parcTxt(r)], ['Por mês', r => brl(mensalDe(r))],
         ['Tipo', r => r.familia === 'sim' ? `Família (${r.membros || 2})` : 'Individual'], ['Alunos', r => D.users.filter(u => u.planoId === r.id).length]] },
     categorias: { col: 'categorias', title: 'Categorias', one: 'categoria', rows: T.tops.flatMap(c => [c, ...T.subs(c.id)]),
       fields: [{ k: 'nome', l: 'Nome', req: 1, full: 1, ph: 'Ex.: Peito ou Peito superior' },
