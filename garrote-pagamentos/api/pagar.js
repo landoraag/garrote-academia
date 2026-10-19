@@ -7,13 +7,13 @@ import { precoFinal, precoPix, nParc, periodo, valorStr, grupoDoAluno, bloqueio 
 import { criarOrder } from '../lib/mp.js';
 import { aplicarOrder } from '../lib/aplicar.js';
 import { ok, erro, metodo, corpoValido } from '../lib/http.js';
-import { limitar, ipDe } from '../lib/limite.js';
+import { limitar, limiteMemoria, ipDe } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   if (cors(req, res) || !metodo(req, res, 'POST')) return;
   let refCob;
   try {
-    await limitar(res, 'pagar-ip', ipDe(req), 15, 600);              // por aparelho/rede: 15 a cada 10 min
+    limiteMemoria(res, 'pagar-ip', ipDe(req), 15, 600);   // por aparelho/rede, antes do login (não toca no banco)
     const uid = await usuarioLogado(req);
     await limitar(res, 'pagar-uid', uid, 6, 600);                    // por aluno: 6 a cada 10 min
     if (!corpoValido(req)) return erro(res, new Error('Pedido inválido.'), 400);

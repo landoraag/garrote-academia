@@ -8,6 +8,23 @@ import crypto from 'node:crypto';
 import { Timestamp } from 'firebase-admin/firestore';
 import { db } from './firebase.js';
 
+/* Primeira barreira, na memória do servidor (não gasta nada do banco).
+   Barra enxurradas de quem nem está logado; cada instância da Vercel conta separado,
+   então é uma proteção aproximada. A contagem no Firestore (limitar) só roda depois
+   que a pessoa provou estar logada ou que o aviso veio assinado pelo Mercado Pago. */
+const MEM = new Map();
+export function limiteMemoria(res, nome, id, max, janelaSeg) {
+  const agora = Date.now(), k = nome + '|' + id, janela = janelaSeg * 1000;
+  if (MEM.size > 5000) for (const [kk, v] of MEM) if (agora - v.inicio >= janela) MEM.delete(kk);   // limpeza
+  if (MEM.size > 20000) MEM.clear();   // ataque de muitos IPs: não deixa a memória crescer sem fim
+  const d = MEM.get(k);
+  if (!d || agora - d.inicio >= janela) { MEM.set(k, { inicio: agora, n: 1 }); return; }
+  if (++d.n > max) {
+    res.setHeader('Retry-After', String(Math.ceil((d.inicio + janela - agora) / 1000)));
+    throw Object.assign(new Error('Muitas tentativas seguidas. Aguarde um pouco e tente de novo.'), { http: 429 });
+  }
+}
+
 export function ipDe(req) {
   const h = req.headers;
   return String(h['x-vercel-forwarded-for'] || h['x-real-ip'] || h['x-forwarded-for'] || req.socket?.remoteAddress || 'desconhecido')

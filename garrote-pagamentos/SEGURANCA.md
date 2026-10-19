@@ -2,7 +2,7 @@
 
 ## O que o código já faz
 
-**Limites de requisição (anti-bot)** — contados no Firestore (coleção `limites`, chave em hash, sem guardar IP):
+**Limites de requisição (anti-bot)** — em duas camadas: por IP na memória do servidor (barra quem nem está logado, sem gastar o banco) e, só depois do login ou da assinatura do Mercado Pago, por aluno no Firestore (coleção `limites`, chave em hash, sem guardar IP):
 
 | Rota | Limite |
 |---|---|

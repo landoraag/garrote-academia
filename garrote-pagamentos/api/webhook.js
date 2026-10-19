@@ -4,14 +4,14 @@
 import { buscarOrder, assinaturaValida } from '../lib/mp.js';
 import { aplicarOrder } from '../lib/aplicar.js';
 import { metodo, erro } from '../lib/http.js';
-import { limitar, ipDe } from '../lib/limite.js';
+import { limiteMemoria, ipDe } from '../lib/limite.js';
 
 export default async function handler(req, res) {
   if (!metodo(req, res, 'POST')) return;
   const tipo = req.query.type || req.body?.type;
   const dataId = req.query['data.id'] || req.query.data_id || req.body?.data?.id;
 
-  try { await limitar(res, 'webhook-ip', ipDe(req), 120, 60); } catch (e) { return erro(res, e); }
+  try { limiteMemoria(res, 'webhook-ip', ipDe(req), 120, 60); } catch (e) { return erro(res, e); }   // não toca no banco
   if (dataId && !/^[A-Za-z0-9]{6,64}$/.test(String(dataId))) return res.status(400).json({ erro: 'id inválido' });
   const assinatura = assinaturaValida({ xSignature: req.headers['x-signature'], xRequestId: req.headers['x-request-id'], dataId });
   if (!assinatura) {
@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     if (process.env.MP_WEBHOOK_ESTRITO === '1') return res.status(401).json({ erro: 'assinatura inválida' });
     console.warn('[webhook] assinatura não conferiu; seguindo pela consulta direta ao Mercado Pago', dataId);
     // sem assinatura, poucos avisos por IP (um bot não consegue nos fazer consultar o Mercado Pago sem parar)
-    try { await limitar(res, 'webhook-sem-assinatura', ipDe(req), 20, 60); } catch (e) { return erro(res, e); }
+    try { limiteMemoria(res, 'webhook-sem-assinatura', ipDe(req), 20, 60); } catch (e) { return erro(res, e); }
   }
   if (tipo !== 'order' || !dataId) return res.status(200).json({ ignorado: true });
 
