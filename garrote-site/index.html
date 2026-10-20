@@ -316,6 +316,13 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 
 /* ---------- avaliações: carrossel de vídeos ---------- */
 .rev-top{display:flex;gap:28px;align-items:center;flex-wrap:wrap;margin-bottom:32px}
+.score small a{color:var(--fg);text-decoration:underline;text-underline-offset:3px}
+.quotes{display:grid;gap:12px;grid-template-columns:1fr;margin-top:28px}
+@media(min-width:900px){.quotes{grid-template-columns:repeat(3,1fr)}}
+.q{margin:0;border-radius:var(--r);background:var(--s1);border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:12px}
+.q .stars svg{width:15px;height:15px}
+.q blockquote{margin:0;font-size:15.5px;line-height:1.6;color:var(--fg)}
+.q figcaption{margin-top:auto;font:600 11px var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .score{display:flex;align-items:center;gap:16px}
 .score b{font:900 68px/.85 var(--display)}
 .stars{display:flex;gap:3px;color:#FFB020}
@@ -453,7 +460,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 <main id="topo">
 <!-- ================= TOPO ================= -->
 <section class="hero">
-  <div class="bg ph" data-foto="hero-fundo" data-tag="fotos/hero-fundo.jpg · salão com as máquinas Cimerian"></div>
+  <div class="bg ph"></div>
   <div class="wrap title">
     <div class="title-in">
       <div class="hero-meta"><span>Musculação</span><span>Muay Thai</span><span>Boxe</span><span>Dança</span></div>
@@ -694,11 +701,19 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="wrap">
     <div class="sec-head rv"><span class="eyebrow">Quem treina aqui</span><h2 class="h2">Resultados de <em>verdade</em>.</h2></div>
     <div class="rev-top rv">
-      <div class="score"><b>4,91</b><div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><small>Média de 93 avaliações no Wellhub</small></div></div>
+      <div class="score"><b>5,0</b><div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><small>Nota no Google · <a href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">23 avaliações</a></small></div></div>
       <p class="lead" style="max-width:44ch">Alunos reais contando como foi a evolução treinando na Garrote. Toque num vídeo para assistir.</p>
     </div>
   </div>
   <div class="reel" id="reel"><div class="row" id="reel-row"></div></div>
+  <div class="wrap">
+    <div class="quotes">
+      <figure class="q rv"><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>A melhor academia da cidade, infraestrutura de ponta, professores atenciosos, ar condicionado para o nosso conforto e os vestiários amplos com chuveiro, excelente!</blockquote><figcaption>Avaliação no Google</figcaption></figure>
+      <figure class="q rv"><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Profissionais muito atenciosos e estrutura de alto padrão! A melhor academia que já visitei na região de Piraju</blockquote><figcaption>Avaliação no Google</figcaption></figure>
+      <figure class="q rv"><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Ambiente super agradável, limpo e bem estruturado. Os profissionais são atenciosos, capacitados e sempre dispostos a ajudar. Os equipamentos são modernos e bem cuidados, e os treinos são personalizados de acordo com os objetivos de cada aluno.</blockquote><figcaption>Avaliação no Google</figcaption></figure>
+    </div>
+    <a class="btn line" style="margin-top:16px" href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">Ver todas as avaliações no Google <svg><use href="#i-arrow"/></svg></a>
+  </div>
 </section>
 
 <!-- ================= HORÁRIOS + CONTATO ================= -->
@@ -917,6 +932,7 @@ const MODS={
   cascata('.plans .plan',{y:70,st:.1});
   cascata('.passes .pass',{y:30});
   cascata('.contact .ct',{y:30});
+  cascata('.quotes .q',{y:40,st:.1});
   cascata('.legend button',{y:14,st:.04,d:.5});
   cascata('.foot>div',{y:30});
   cascata('.addr, .nums',{y:40});
@@ -943,12 +959,12 @@ const MODS={
     gsap.to(ph,{'--ty':'0px',opacity:1,duration:1.2,ease:'power4.out',stagger:.14,scrollTrigger:{trigger:'#stage',start:'top 80%'},onComplete:()=>gsap.set(ph,{clearProps:'opacity'})});
     gsap.from('.cap span',{y:12,opacity:0,stagger:.08,duration:.6,scrollTrigger:{trigger:'#stage',start:'top 60%'}});}
 
-  /* horários: as barras crescem dia a dia; a nota 4,91 conta */
+  /* horários: as barras crescem dia a dia; a nota conta */
   const tr=$$('.track .open');
   if(tr.length&&baixo($('#week')))gsap.from(tr,{scaleX:0,duration:1,ease:E,stagger:.06,scrollTrigger:{trigger:'#week',start:'top 85%'}});
   const nota=$('.score b');
-  if(nota&&baixo(nota)){const o={v:0};gsap.to(o,{v:4.91,duration:1.6,ease:'power2.out',scrollTrigger:{trigger:nota,start:'top 90%'},
-    onUpdate:()=>nota.textContent=o.v.toFixed(2).replace('.',',')});nota.textContent='0,00';}
+  if(nota&&baixo(nota)){const o={v:0};gsap.to(o,{v:5,duration:1.6,ease:'power2.out',scrollTrigger:{trigger:nota,start:'top 90%'},
+    onUpdate:()=>nota.textContent=o.v.toFixed(1).replace('.',',')});nota.textContent='0,0';}
 
   /* chamada final: cresce ao entrar */
   const cl=$('.closing');
