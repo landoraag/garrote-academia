@@ -391,22 +391,24 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .stars{display:flex;gap:3px;color:#FFB020}
 .stars svg{width:18px;height:18px}
 .score small{display:block;color:var(--dim);font-size:14px;margin-top:6px}
-.reel{overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.reel{overflow:hidden;position:relative;contain:paint}
+.reel::before,.reel::after{content:"";position:absolute;top:0;bottom:0;width:6%;z-index:2;pointer-events:none}
+.reel::before{left:0;background:linear-gradient(90deg,var(--ink),transparent)}.reel::after{right:0;background:linear-gradient(270deg,var(--ink),transparent)}
 .reel .row{display:flex;gap:12px;width:max-content;padding-block:6px;will-change:transform;transform:translate3d(0,0,0)}
 .case{position:relative;flex:none;width:clamp(190px,19vw,240px);aspect-ratio:9/15;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:flex-end;padding:16px;isolation:isolate;cursor:pointer;text-align:left;transition:transform .4s var(--ease),border-color .3s}
-.case:hover{transform:translateY(-4px);border-color:rgba(255,45,54,.45)}
+@media(hover:hover){.case:hover{transform:translateY(-4px);border-color:rgba(255,45,54,.45)}}
+.case{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .case .ph{position:absolute;inset:0;z-index:-2}
 .case .ph .tag{top:14px;bottom:auto}
 .case::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(11,11,12,.25) 0%,rgba(11,11,12,.35) 40%,rgba(11,11,12,.96))}
 .case .ph.tem{background:var(--ink)}
 .case video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
-.case .play{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;margin-bottom:auto;align-self:flex-end;border:1px solid rgba(255,255,255,.25)}
+.case .play{width:48px;height:48px;border-radius:50%;background:rgba(20,20,22,.55);display:flex;align-items:center;justify-content:center;margin-bottom:auto;align-self:flex-end;border:1px solid rgba(255,255,255,.25)}
 .case .play svg{width:16px;height:16px;margin-left:3px}
 .case strong{font:800 28px/.95 var(--display);text-transform:uppercase}
 .case .ph>img.foto{transition:opacity .6s,transform .8s var(--ease)}
 .case .ph.tem>img.foto{opacity:.5;filter:brightness(.7) saturate(.85)}
-.case:hover .ph.tem>img.foto{opacity:.7}
-.case:hover .ph>img.foto{transform:scale(1.05)}
+@media(hover:hover){.case:hover .ph.tem>img.foto{opacity:.7}.case:hover .ph>img.foto{transform:scale(1.05)}}
 dialog.player{border:0;padding:0;margin:auto;width:min(860px,calc(100% - 24px));max-height:calc(100dvh - 32px);border-radius:24px;background:var(--s1);color:var(--fg);box-shadow:0 40px 120px -20px rgba(0,0,0,.9),0 0 0 1px var(--line);overflow:auto}
 dialog.player::backdrop{background:rgba(5,5,6,.8);backdrop-filter:blur(6px)}
 dialog.player[open]{display:grid;grid-template-columns:1fr;animation:sobe .4s var(--ease)}
@@ -918,20 +920,34 @@ const CASES=[
   $('#reel-row').innerHTML=CASES.map((c,i)=>card(c,i)).join('')+CASES.map((c,i)=>card(c,i,1)).join('');
   /* player: abre por cima do site, com som; ao fechar, para o vídeo e o carrossel volta a correr */
   const dlg=$('#player'),v=$('#pl-v');
-  const fecha=()=>{v.pause();v.removeAttribute('src');v.load();dlg.close();$('#reel').classList.remove('parado');};
-  $$('#reel-row .case').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,c=CASES[i];
-    $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=`https://www.instagram.com/reel/${c.u}/`;
-    v.poster=`site/fotos/case-${i+1}.webp`;v.src=`site/fotos/case-${i+1}.mp4`;$('#reel').classList.add('parado');
-    dlg.showModal?dlg.showModal():dlg.setAttribute('open','');v.play&&v.play().catch(()=>{});}));
+  const fecha=()=>{v.pause();v.removeAttribute('src');v.load();v.muted=false;dlg.open&&(dlg.close?dlg.close():dlg.removeAttribute('open'));$('#reel').classList.remove('parado');};
+  /* no computador, o vídeo começa a baixar quando o mouse passa no card: ao clicar, ele já sai tocando */
+  const fonte=i=>new URL(`site/fotos/case-${i+1}.mp4`,location.href).href;
+  const prepara=i=>{if(dlg.open||v.src===fonte(i))return;v.preload='auto';v.poster=`site/fotos/case-${i+1}.webp`;v.src=fonte(i);};
+  const abre=b=>{const i=+b.dataset.i,c=CASES[i],ig=`https://www.instagram.com/reel/${c.u}/`;
+    if(!dlg.showModal){window.open(ig,'_blank','noopener');return;}   // navegador antigo sem janela de diálogo: abre direto no Instagram
+    $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=ig;
+    prepara(i);$('#reel').classList.add('parado');
+    try{dlg.showModal();}catch(e){dlg.setAttribute('open','');}
+    const p=v.play();p&&p.catch(()=>{v.muted=true;v.play().catch(()=>{});});};   // se o navegador barrar o som, toca mudo (o aluno ativa nos controles)
+  $$('#reel-row .case').forEach(b=>{
+    b.addEventListener('click',()=>abre(b));
+    b.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')prepara(+b.dataset.i);});
+    /* no celular o carrossel para enquanto o dedo está nele, para o card não sair de baixo do toque */
+    b.addEventListener('pointerdown',e=>{if(e.pointerType!=='mouse')$('#reel').classList.add('toque');});});
+  addEventListener('pointerup',()=>setTimeout(()=>$('#reel').classList.remove('toque'),400),{passive:true});
+  addEventListener('pointercancel',()=>$('#reel').classList.remove('toque'),{passive:true});
   /* movimento do carrossel: começa assim que ele aparece na tela, com um impulso rápido que desacelera até a velocidade normal */
   (function(){const reel=$('#reel'),row=$('#reel-row');let x=0,vel=0,alvo=0,ult=0,visto=false,hover=false;
     const base=()=>row.scrollWidth/2/60;                       // meia faixa em 60 s, como antes
     reel.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')hover=true;});
     reel.addEventListener('pointerleave',()=>hover=false);
-    const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!visto){visto=true;vel=base()*5;}}),{threshold:.15});
+    let naTela=false;
+    const io=new IntersectionObserver(es=>es.forEach(e=>{naTela=e.isIntersecting;if(e.isIntersecting&&!visto){visto=true;vel=base()*5;}}),{threshold:.15});
     io.observe(reel);
     function passo(t){const dt=Math.min(.05,(t-(ult||t))/1000);ult=t;
-      const parado=hover||reel.classList.contains('parado')||!visto;
+      if(!naTela&&visto){ult=0;requestAnimationFrame(passo);return;}   // fora da tela não gasta nada
+      const parado=hover||reel.classList.contains('parado')||reel.classList.contains('toque')||!visto;
       alvo=parado?0:base();vel+=(alvo-vel)*Math.min(1,dt*(vel>alvo?1.6:4));
       if(!reduz){x-=vel*dt;const meio=row.scrollWidth/2;if(meio&&-x>=meio)x+=meio;row.style.transform=`translate3d(${x}px,0,0)`;}
       requestAnimationFrame(passo);}
