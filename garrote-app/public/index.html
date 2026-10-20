@@ -505,7 +505,9 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 .word h1 .ch{display:inline-block;will-change:transform}
 .iph{translate:0 var(--ty,0px)}
 .track .open{transform-origin:left center}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+/* quem pediu menos movimento no sistema (ex.: Windows com "Efeitos de animação" desligado) ainda vê as entradas suaves;
+   só ficam desligados o parallax, a aceleração da faixa e a inclinação 3D */
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:#fff;color:#0C0C0C;font:600 14px var(--body);padding:12px 18px;border-radius:999px;transition:all .3s var(--ease);z-index:70;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -979,7 +981,7 @@ const CASES=[
       if(!naTela&&visto){ult=0;requestAnimationFrame(passo);return;}   // fora da tela não gasta nada
       const parado=hover||reel.classList.contains('parado')||reel.classList.contains('toque')||!visto;
       alvo=parado?0:base();vel+=(alvo-vel)*Math.min(1,dt*(vel>alvo?1.6:4));
-      if(!reduz){x-=vel*dt;const meio=row.scrollWidth/2;if(meio&&-x>=meio)x+=meio;row.style.transform=`translate3d(${x}px,0,0)`;}
+      x-=vel*dt;{const meio=row.scrollWidth/2;if(meio&&-x>=meio)x+=meio;}row.style.transform=`translate3d(${x}px,0,0)`;
       requestAnimationFrame(passo);}
     requestAnimationFrame(passo);})();
   $('#pl-x').onclick=fecha;dlg.addEventListener('click',e=>{if(e.target===dlg)fecha();});dlg.addEventListener('cancel',e=>{e.preventDefault();fecha();});
@@ -1055,7 +1057,7 @@ const MODS={
 
 /* ---------- animações de rolagem ---------- */
 (function(){
-  if(reduz||!window.gsap||!window.ScrollTrigger)return;
+  if(!window.gsap||!window.ScrollTrigger)return;
   gsap.registerPlugin(ScrollTrigger);
   const E='power3.out', baixo=el=>el.getBoundingClientRect().top>innerHeight*.92;   // só anima o que ainda não está na tela
   const limpa={clearProps:'transform,opacity,clipPath'};
@@ -1070,8 +1072,8 @@ const MODS={
       .from('.hero-foot>*',{y:24,opacity:0,duration:.7,stagger:.1,...limpa},'-=.4');
     window.__intro=tl;
     // parallax: o título sobe e some devagar ao rolar
-    gsap.to('.title',{yPercent:-28,opacity:.25,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
-    gsap.to('.hero .bg',{yPercent:18,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    if(!reduz)gsap.to('.title',{yPercent:-28,opacity:.25,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    if(!reduz)gsap.to('.hero .bg',{yPercent:18,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
   }
 
   /* cabeçalhos das seções: selo, título e texto em sequência */
@@ -1131,7 +1133,7 @@ const MODS={
   if(cl&&baixo(cl))gsap.from(cl,{scale:.9,opacity:0,y:40,duration:1.1,ease:E,...limpa,scrollTrigger:{trigger:cl,start:'top 88%'}});
 
   /* faixa que corre acelera conforme a velocidade da rolagem */
-  const tk=$('#tk');
+  const tk=reduz?null:$('#tk');
   if(tk){const anim=tk.getAnimations?tk.getAnimations()[0]:null;
     if(anim)ScrollTrigger.create({onUpdate:self=>{const v=Math.min(4,1+Math.abs(self.getVelocity())/900);anim.playbackRate=v;gsap.to(anim,{playbackRate:1,duration:.8,overwrite:true});}});}
 
