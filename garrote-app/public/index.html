@@ -506,6 +506,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 .legal{border-top:1px solid var(--line);padding-block:20px 28px;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;color:var(--dim);font-size:13px}
 .legal nav{display:flex;gap:18px;flex-wrap:wrap}
 .legal a:hover{color:var(--fg)}
+.legal .dev{width:100%;text-align:center;font-size:12px;letter-spacing:.04em}.legal .dev b{color:var(--fg);font-weight:600}
 
 /* animações de rolagem (GSAP ScrollTrigger): estados finais são os do CSS; sem o script, tudo aparece normal */
 .word h1 .ch{display:inline-block;will-change:transform}
@@ -889,6 +890,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="wrap legal">
     <span>© 2026 Garrote Academia · Piraju-SP</span>
     <nav><a href="/privacidade">Política de privacidade</a><a href="/termos">Termos de uso</a></nav>
+    <span class="dev">Desenvolvido por <b>Landora®</b></span>
   </div>
 </footer>
 <dialog class="player" id="player" aria-labelledby="pl-n">
@@ -1018,7 +1020,7 @@ const MODS={
     b:['Ganho de força e massa muscular','Emagrecimento e condicionamento','Postura e prevenção de lesões','Resultado que você acompanha no app'],
     w:'Térreo · livre durante todo o horário de funcionamento.'},
   boxe:{t:'Boxe',d:'Base, guarda, deslocamento e combinações de socos. Treino intenso, com muito cardio e foco total, no tatame do 2º andar.',
-    a:['Corda e aquecimento','Fundamentos de guarda e deslocamento','Combinações na manopla e no saco','Condicionamento no fim da aula'],
+    a:['Corda e aquecimento','Fundamentos de guarda e deslocamento','Combinações no aparador e no saco de pancada','Condicionamento no fim da aula'],
     b:['Condicionamento cardiovascular','Força de core e ombros','Foco e disciplina','Defesa pessoal'],
     w:'Tatame do 2º andar · turmas em horários fixos (confirme com a recepção).'},
   danca:{t:'Dança',d:'Aula animada, com coreografias e ritmos variados, na sala de dança do 2º andar. Você gasta energia sem perceber e sai de bom humor.',
