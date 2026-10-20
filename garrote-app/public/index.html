@@ -415,6 +415,8 @@ dialog.player{border:0;padding:0;margin:auto;width:min(860px,calc(100% - 24px));
 dialog.player::backdrop{background:rgba(5,5,6,.8);backdrop-filter:blur(6px)}
 dialog.player[open]{display:grid;grid-template-columns:1fr;animation:sobe .4s var(--ease)}
 @media(min-width:720px){dialog.player[open]{grid-template-columns:minmax(0,360px) 1fr}}
+.player{position:relative}.pl-load{position:absolute;left:0;right:0;top:40%;text-align:center;font:700 13px var(--head);letter-spacing:.12em;text-transform:uppercase;color:#fff;text-shadow:0 2px 10px #000;pointer-events:none}
+@media(min-width:720px){.pl-load{right:auto;width:360px}}
 .player video{width:100%;aspect-ratio:9/16;max-height:calc(100dvh - 32px);background:#000;display:block;object-fit:contain}
 .pl-info{padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:flex-end}
 .pl-info .kk{padding:5px 10px;border-radius:999px;background:var(--red);font:700 11px var(--head);letter-spacing:.12em;text-transform:uppercase}
@@ -923,23 +925,37 @@ const CASES=[
   $('#reel-row').innerHTML=CASES.map((c,i)=>card(c,i)).join('')+CASES.map((c,i)=>card(c,i,1)).join('');
   /* player: abre por cima do site, com som; ao fechar, para o vídeo e o carrossel volta a correr */
   const dlg=$('#player'),v=$('#pl-v');
-  const fecha=()=>{atual=-1;v.pause();v.removeAttribute('src');v.load();v.muted=false;dlg.open&&(dlg.close?dlg.close():dlg.removeAttribute('open'));$('#reel').classList.remove('parado');};
+  const fecha=()=>{atual=-1;if(ctrl){ctrl.abort();ctrl=null;}v.pause();v.removeAttribute('src');v.load();if(blobUrl){URL.revokeObjectURL(blobUrl);blobUrl=null;}v.muted=false;dlg.open&&(dlg.close?dlg.close():dlg.removeAttribute('open'));$('#reel').classList.remove('parado');};
   /* no computador, o vídeo começa a baixar quando o mouse passa no card: ao clicar, ele já sai tocando */
-  /* o Firebase Hosting não entrega vídeo em pedaços (Range) e o iPhone se recusa a tocar; o jsDelivr (cópia do GitHub) entrega.
-     Ao trocar um vídeo, atualize VID_SHA com o commit em que ele foi enviado. */
-  const VID_SHA='7d64ff3ac568907bf80ad18beef6539b9e397db7';
-  const fonte=i=>`https://cdn.jsdelivr.net/gh/landoraag/garrote-academia@${VID_SHA}/garrote-app/public/site/fotos/case-${i+1}.mp4`;
+/* iPhone/iPad: o Safari só toca vídeo de servidor que entrega em pedaços (Range), e o Firebase Hosting não entrega.
+     Então no iPhone o vídeo é baixado inteiro (2 a 5 MB, com a porcentagem na tela) e toca da cópia baixada.
+     No computador e no Android ele toca direto do site, como sempre. */
+  const IOS=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   const local=i=>new URL(`site/fotos/case-${i+1}.mp4`,location.href).href;
-  let atual=-1;
-  v.addEventListener('error',()=>{if(atual<0||!dlg.open&&!v.src)return;
-    if(v.src===fonte(atual)){v.src=local(atual);v.play().catch(()=>{});}   // CDN fora do ar: tenta o arquivo do próprio site
-    else if(v.src===local(atual)&&dlg.open){const ig=$('#pl-ig').href;fecha();window.open(ig,'_blank','noopener');}});   // nada tocou: abre no Instagram
-  const prepara=i=>{if(dlg.open||v.src===fonte(i))return;atual=i;v.preload='auto';v.poster=`site/fotos/case-${i+1}.webp`;v.src=fonte(i);};
+  const prog=document.createElement('div');prog.className='pl-load';v.after(prog);
+  const blobs={};let atual=-1,ctrl=null,blobUrl=null;
+  const paraInsta=()=>{if(!dlg.open)return;const ig=$('#pl-ig').href;fecha();window.open(ig,'_blank','noopener');};
+  v.addEventListener('error',()=>{if(atual<0||!v.getAttribute('src'))return;if(IOS)return paraInsta();
+    if(dlg.open)paraInsta();});
+  function baixa(i){if(blobs[i])return Promise.resolve(blobs[i]);ctrl=new AbortController();const sinal=ctrl.signal;
+    return fetch(local(i),{signal:sinal}).then(async r=>{if(!r.ok)throw 0;const tot=+r.headers.get('content-length')||0;
+      if(!r.body||!r.body.getReader){return r.blob();}
+      const rd=r.body.getReader(),pedacos=[];let n=0;
+      for(;;){const{done,value}=await rd.read();if(done)break;pedacos.push(value);n+=value.length;
+        if(tot)prog.textContent='Carregando vídeo '+Math.min(99,Math.round(n/tot*100))+'%';}
+      return new Blob(pedacos,{type:'video/mp4'});}).then(b=>(blobs[i]=new Blob([b],{type:'video/mp4'})));}
+  const prepara=i=>{if(IOS||dlg.open||v.src===local(i))return;atual=i;v.preload='auto';v.poster=`site/fotos/case-${i+1}.webp`;v.src=local(i);};
   const abre=b=>{const i=+b.dataset.i,c=CASES[i],ig=`https://www.instagram.com/reel/${c.u}/`;
     if(!dlg.showModal){window.open(ig,'_blank','noopener');return;}   // navegador antigo sem janela de diálogo: abre direto no Instagram
     $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=ig;
-    prepara(i);$('#reel').classList.add('parado');
+    $('#reel').classList.add('parado');
     try{dlg.showModal();}catch(e){dlg.setAttribute('open','');}
+    if(IOS){atual=i;v.removeAttribute('src');v.poster=`site/fotos/case-${i+1}.webp`;prog.textContent='Carregando vídeo…';prog.hidden=false;
+      baixa(i).then(bl=>{if(atual!==i||!dlg.open)return;prog.hidden=true;blobUrl=URL.createObjectURL(bl);v.src=blobUrl;
+        v.play().catch(()=>{});})   // se o iPhone pedir, o aluno toca no play (com som)
+      .catch(e=>{if(e&&e.name==='AbortError')return;paraInsta();});
+      return;}
+    prog.hidden=true;prepara(i);
     const p=v.play();p&&p.catch(()=>{v.muted=true;v.play().catch(()=>{});});};   // se o navegador barrar o som, toca mudo (o aluno ativa nos controles)
   $$('#reel-row .case').forEach(b=>{
     b.addEventListener('click',()=>abre(b));
