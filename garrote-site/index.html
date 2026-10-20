@@ -347,6 +347,17 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .case .play{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;margin-bottom:auto;align-self:flex-end;border:1px solid rgba(255,255,255,.25)}
 .case .play svg{width:16px;height:16px;margin-left:3px}
 .case strong{font:800 28px/.95 var(--display);text-transform:uppercase}
+.case .ph>img.foto{transition:opacity .6s,transform .8s var(--ease)}
+.case:hover .ph>img.foto{transform:scale(1.05)}
+dialog.player{border:0;padding:0;margin:auto;width:min(860px,calc(100% - 24px));max-height:calc(100dvh - 32px);border-radius:24px;background:var(--s1);color:var(--fg);box-shadow:0 40px 120px -20px rgba(0,0,0,.9),0 0 0 1px var(--line);overflow:auto}
+dialog.player::backdrop{background:rgba(5,5,6,.8);backdrop-filter:blur(6px)}
+dialog.player[open]{display:grid;grid-template-columns:1fr;animation:sobe .4s var(--ease)}
+@media(min-width:720px){dialog.player[open]{grid-template-columns:minmax(0,360px) 1fr}}
+.player video{width:100%;aspect-ratio:9/16;max-height:calc(100dvh - 32px);background:#000;display:block;object-fit:contain}
+.pl-info{padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:flex-end}
+.pl-info .kk{padding:5px 10px;border-radius:999px;background:var(--red);font:700 11px var(--head);letter-spacing:.12em;text-transform:uppercase}
+.pl-info h3{font:900 clamp(32px,4vw,48px)/.9 var(--display);text-transform:uppercase}
+.pl-info p{color:var(--dim);font-size:15.5px;max-width:36ch}
 .case .ph{background:radial-gradient(120% 70% at 80% 0,rgba(217,30,38,.45),transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px),var(--s1)}
 .case .kk{display:inline-flex;align-self:flex-start;margin-bottom:8px;padding:5px 10px;border-radius:999px;background:var(--red);font:700 11px var(--head);letter-spacing:.12em;text-transform:uppercase}
 .case .ig{display:flex;align-items:center;gap:6px;margin-top:12px;font:600 12px var(--head);letter-spacing:.06em;color:rgba(255,255,255,.75)}
@@ -711,7 +722,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
     <div class="sec-head rv"><span class="eyebrow">Quem treina aqui</span><h2 class="h2">Resultados de <em>verdade</em>.</h2></div>
     <div class="rev-top rv">
       <div class="score"><b>5,0</b><div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><small>Nota no Google · <a href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">23 avaliações</a></small></div></div>
-      <p class="lead" style="max-width:44ch">Alunos reais contando como foi a evolução treinando na Garrote. Toque num card para assistir ao vídeo no Instagram.</p>
+      <p class="lead" style="max-width:44ch">Alunos reais contando como foi a evolução treinando na Garrote. Toque num card para assistir ao vídeo.</p>
     </div>
   </div>
   <div class="reel" id="reel"><div class="row" id="reel-row"></div></div>
@@ -797,6 +808,12 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
     <nav><a href="https://garrote-academia.web.app/#/privacidade" target="_blank" rel="noopener">Política de privacidade</a><a href="https://garrote-academia.web.app/#/termos" target="_blank" rel="noopener">Termos de uso</a></nav>
   </div>
 </footer>
+<dialog class="player" id="player" aria-labelledby="pl-n">
+  <button class="sh-x" type="button" id="pl-x" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
+  <video id="pl-v" controls playsinline preload="metadata"></video>
+  <div class="pl-info"><span class="kk" id="pl-k"></span><h3 id="pl-n"></h3><p id="pl-r"></p>
+    <a class="btn line" id="pl-ig" target="_blank" rel="noopener"><svg><use href="#i-ig"/></svg>Ver no Instagram</a></div>
+</dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -832,10 +849,18 @@ const CASES=[
   {n:'Dona Marlene',h:'',k:'Exemplo que inspira',r:'Treino que vai além do físico: qualidade de vida, bem-estar e amor-próprio.',u:'DPysk_eADrO'}
 ];
 (function(){
-  const card=(c,i,dup)=>`<a class="case" href="https://www.instagram.com/reel/${c.u}/" target="_blank" rel="noopener"${dup?' tabindex="-1" aria-hidden="true"':''}>
+  const card=(c,i,dup)=>`<button class="case" type="button" data-i="${i}"${dup?' tabindex="-1" aria-hidden="true"':''}>
     <div class="ph" data-foto="case-${i+1}"></div><span class="play"><svg><use href="#i-play"/></svg></span>
-    <span class="kk">${c.k}</span><strong>${c.n}</strong><p>${c.r}</p><span class="ig"><svg><use href="#i-ig"/></svg>${c.h?'@'+c.h:'Assistir no Instagram'}</span></a>`;
+    <span class="kk">${c.k}</span><strong>${c.n}</strong><p>${c.r}</p><span class="ig"><svg><use href="#i-ig"/></svg>${c.h?'@'+c.h:'@garroteacademia'}</span></button>`;
   $('#reel-row').innerHTML=CASES.map((c,i)=>card(c,i)).join('')+CASES.map((c,i)=>card(c,i,1)).join('');
+  /* player: abre por cima do site, com som; ao fechar, para o vídeo e o carrossel volta a correr */
+  const dlg=$('#player'),v=$('#pl-v');
+  const fecha=()=>{v.pause();v.removeAttribute('src');v.load();dlg.close();$('#reel').classList.remove('parado');};
+  $$('#reel-row .case').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,c=CASES[i];
+    $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=`https://www.instagram.com/reel/${c.u}/`;
+    v.poster=`fotos/case-${i+1}.jpg`;v.src=`fotos/case-${i+1}.mp4`;$('#reel').classList.add('parado');
+    dlg.showModal?dlg.showModal():dlg.setAttribute('open','');v.play&&v.play().catch(()=>{});}));
+  $('#pl-x').onclick=fecha;dlg.addEventListener('click',e=>{if(e.target===dlg)fecha();});dlg.addEventListener('cancel',e=>{e.preventDefault();fecha();});
 })();
 $$('.ph').forEach(encaixe);
 
