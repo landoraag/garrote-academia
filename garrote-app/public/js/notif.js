@@ -15,7 +15,7 @@ async function sw() {
   return reg && (navigator.serviceWorker.controller || reg.active);
 }
 const post = async m => { try { const w = await sw(); w && w.postMessage(m); } catch {} };
-const url = hash => location.origin + location.pathname + hash;
+const url = hash => location.origin + String(hash).replace(/^#/, '');
 
 /* aviso num horário futuro (fim do descanso, meta do cronômetro) */
 export const agendar = (tag, at, title, body, hash) => { if (notifOk()) post({ type: 'agendar', tag, at, title, body, url: url(hash) }); };

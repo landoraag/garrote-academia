@@ -1,7 +1,7 @@
 /* Service worker: abre o app na hora, a partir do cache, e atualiza em segundo plano.
    Não mexe nas chamadas do Firebase (login e banco de dados): só nos arquivos do app, fontes e SDK.
    Também mostra os avisos do treino (fim do descanso etc.), mesmo com o app em segundo plano. */
-const CACHE = 'garrote-v31';
+const CACHE = 'garrote-v32';
 const SHELL = ['index.html', 'app.html', 'css/styles.css', 'js/main.js', 'js/api.js', 'js/aluno.js', 'js/painel.js', 'js/perfil.js', 'js/plano.js', 'js/ui.js', 'js/notif.js', 'js/pagamento.js', 'js/legal.js', 'js/freio.js', 'js/pagamento-config.js', 'js/firebase-config.js', 'assets/logo.png', 'assets/favicon.png', 'assets/icon-180.png', 'manifest.webmanifest'];
 const FIXED = h => h === 'www.gstatic.com' || h === 'fonts.googleapis.com' || h === 'fonts.gstatic.com';   // versões fixas: cache primeiro
 
@@ -19,8 +19,8 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url), same = url.origin === location.origin;
   if (same && url.pathname.endsWith('.mp4')) return;   // vídeo: o navegador pede em pedaços (Range); passar direto evita travar no iPhone
   if (!same && !(FIXED(url.hostname) && (url.hostname !== 'www.gstatic.com' || url.pathname.startsWith('/firebasejs/')))) return;
-  /* cada página abre a si mesma: app.html é o app, o resto do site abre a vitrine (index.html) */
-  const pagina = req.mode === 'navigate' ? (/\/app\.html$/.test(url.pathname) ? 'app.html' : 'index.html') : null;
+  /* a raiz abre a vitrine (index.html); qualquer outro endereço (/login, /home, /painel/...) abre o app */
+  const pagina = req.mode === 'navigate' ? (/^\/(index\.html)?$/.test(url.pathname) ? 'index.html' : 'app.html') : null;
   const key = pagina ? new Request(new URL(pagina, self.registration.scope).href) : req;
   e.respondWith((async () => {
     const cache = await caches.open(CACHE), hit = await cache.match(key, { ignoreSearch: same });

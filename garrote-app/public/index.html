@@ -7,14 +7,15 @@
    - app instalado na tela inicial (o ícone antigo abre o endereço raiz)
    - link do e-mail de redefinição de senha (?mode=resetPassword&oobCode=...)
    - links antigos do app com rota (#/login, #/treino/... de avisos e favoritos) */
-(function(){var q=location.search,h=location.hash,app=/app\.html$/.test(location.pathname);
+(function(){var q=location.search,h=location.hash,app=!/^\/(index\.html)?$/.test(location.pathname);
   var instalado=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
-  if(app){ /* um service worker antigo entregou a vitrine no lugar do app: atualiza e recarrega uma vez */
+  if(app){ /* um service worker antigo entregou a vitrine num endereço do app: atualiza e recarrega uma vez */
     try{if(!sessionStorage.getItem('garrote:sw-fix')){sessionStorage.setItem('garrote:sw-fix','1');
       var go=function(){location.reload();};
       if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(function(r){return r&&r.update();}).then(go,go);else go();}}catch(e){}
     return;}
-  if(instalado||/[?&](mode|oobCode)=/.test(q)||/^#\//.test(h))location.replace('app.html'+q+(h||(instalado?'#/login':'')));
+  if(/^#\//.test(h))location.replace(h.slice(1)+q);
+  else if(instalado||/[?&](mode|oobCode)=/.test(q))location.replace('/login'+q);
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -532,7 +533,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <li><a href="#planos">Planos</a></li>
       <li><a href="#contato">Contato</a></li>
     </ul>
-    <a class="btn red" href="app.html#/login">Área do aluno <svg><use href="#i-arrow"/></svg></a>
+    <a class="btn red" href="/login">Área do aluno <svg><use href="#i-arrow"/></svg></a>
   </div>
 </header>
 
@@ -721,7 +722,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
         <li><span><b>Check-in e sequência de dias</b> para manter a constância.</span></li>
         <li><span><b>Resumo e evolução</b>: compare cada treino com o anterior.</span></li>
       </ul>
-      <a class="btn red" href="app.html#/login">Já sou aluno, entrar <svg><use href="#i-arrow"/></svg></a>
+      <a class="btn red" href="/login">Já sou aluno, entrar <svg><use href="#i-arrow"/></svg></a>
     </div>
     <div class="stage" id="stage" aria-label="Telas do app Garrote">
       <div class="rig" id="rig">
@@ -823,7 +824,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <p>Venha conhecer a Garrote, treinar nas máquinas Cimerian e sentir o ambiente. Agende pelo WhatsApp.</p>
       <div class="hero-cta">
         <a class="btn light" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Quero%20agendar%20uma%20aula%20experimental%20na%20Garrote." target="_blank" rel="noopener">Agendar aula experimental <svg><use href="#i-arrow"/></svg></a>
-        <a class="btn line" href="app.html#/login">Área do aluno</a>
+        <a class="btn line" href="/login">Área do aluno</a>
       </div>
     </div>
   </div>
@@ -853,7 +854,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
     <div>
       <h4>Alunos</h4>
       <div class="lk">
-        <a href="app.html#/login"><svg width="16" height="16"><use href="#i-user"/></svg>Área do aluno</a>
+        <a href="/login"><svg width="16" height="16"><use href="#i-user"/></svg>Área do aluno</a>
         <a href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Quero%20agendar%20uma%20aula%20experimental%20na%20Garrote." target="_blank" rel="noopener">Agendar aula experimental</a>
         <a href="https://wa.me/5514998048435" target="_blank" rel="noopener">(14) 99804-8435</a>
         <a href="https://www.instagram.com/garroteacademia/" target="_blank" rel="noopener">@garroteacademia</a>
@@ -862,7 +863,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   </div>
   <div class="wrap legal">
     <span>© 2026 Garrote Academia · Piraju-SP</span>
-    <nav><a href="app.html#/privacidade">Política de privacidade</a><a href="app.html#/termos">Termos de uso</a></nav>
+    <nav><a href="/privacidade">Política de privacidade</a><a href="/termos">Termos de uso</a></nav>
   </div>
 </footer>
 <dialog class="player" id="player" aria-labelledby="pl-n">

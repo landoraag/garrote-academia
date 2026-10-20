@@ -1,7 +1,7 @@
 {
   "name": "Garrote Academia",
   "short_name": "Garrote",
-  "start_url": "app.html",
+  "start_url": "login",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

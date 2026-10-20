@@ -28,7 +28,7 @@ async function makeFirebase() {
     login: (e, p) => A.signInWithEmailAndPassword(auth, e, p),
     logout: () => A.signOut(auth),
     /* o link do e-mail volta para o próprio app (tela "Criar nova senha"); depois de salvar, o botão leva ao login */
-    reset: e => A.sendPasswordResetEmail(auth, e, { url: location.origin + '/app.html' }),
+    reset: e => A.sendPasswordResetEmail(auth, e, { url: location.origin + '/login' }),
     checkReset: code => A.verifyPasswordResetCode(auth, code),          // devolve o e-mail da conta
     confirmReset: (code, pass) => A.confirmPasswordReset(auth, code, pass),
     async signUp(email, pass) { return (await A.createUserWithEmailAndPassword(auth, email, pass)).user.uid; },

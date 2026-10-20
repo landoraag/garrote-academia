@@ -5,7 +5,12 @@ export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const SESSION = { user: null, me: null, viewAs: null, view: { mode: 'dono', trainerId: '', alunoId: '' } };
 export const sid = () => SESSION.viewAs || SESSION.user.uid;
 export const ro = () => sid() !== SESSION.user.uid;
-export const go = p => { location.hash = p; };
+/* rotas com endereço de verdade (/login, /home, /painel/treinos...); aceita o formato antigo (#/login, app.html#/login) */
+export const rota = () => { const h = location.hash; if (h.startsWith('#/')) return h.slice(1);
+  const p = location.pathname.replace(/\/(app|index)\.html$/, '/').replace(/\/+$/, ''); return p || '/login'; };
+export const go = (p, trocar = false) => { p = String(p).replace(/^#/, '');
+  if (location.pathname !== p || location.hash) history[trocar ? 'replaceState' : 'pushState'](null, '', p);
+  dispatchEvent(new Event('hashchange')); };
 export const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 export const DIAS = ['', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'], LET = ['', 'S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
 export const SEMANA = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];

@@ -19,7 +19,7 @@ const f = v => v ? esc(v) : '<mark class="lg-falta">[a preencher]</mark>';
 const C = CONTROLADOR;
 const contato = () => C.emailPrivacidade ? `<a href="mailto:${esc(C.emailPrivacidade)}">${esc(C.emailPrivacidade)}</a>` : f('');
 
-const voltar = `<a class="lg-voltar" href="javascript:history.length>1?history.back():location.replace('#/login')">← Voltar</a>`;
+const voltar = `<a class="lg-voltar" href="#/login" onclick="if(history.length>1){event.preventDefault();history.back()}">← Voltar</a>`;
 const pagina = (titulo, corpo) => ({ depth: 3, html: `<div class="lg">
   <header class="lg-top">${voltar}${logo(30)}</header>
   <article class="lg-doc"><h1 class="h1">${titulo}</h1><p class="muted">Última atualização: ${ATUALIZADO}</p>${corpo}
@@ -172,7 +172,7 @@ export const termos = () => pagina('Termos de Uso', `
    não precisa de consentimento, mas a LGPD pede transparência. */
 export function avisoPrivacidade() {
   try { if (localStorage.getItem(AVISO_KEY)) return; } catch { return; }
-  if (document.querySelector('.lg-aviso') || /^#\/(privacidade|termos)/.test(location.hash)) return;   // quem já está lendo a política não precisa do aviso
+  if (document.querySelector('.lg-aviso') || /^\/(privacidade|termos)/.test(location.hash.slice(1) || location.pathname)) return;   // quem já está lendo a política não precisa do aviso
   const d = document.createElement('div');
   d.className = 'lg-aviso'; d.setAttribute('role', 'region'); d.setAttribute('aria-label', 'Aviso de privacidade');
   d.innerHTML = `<p>Este app usa apenas armazenamento essencial para funcionar (login, preferências e cronômetro). Não usamos cookies de publicidade nem de rastreamento. Saiba mais na <a href="#/privacidade">Política de Privacidade</a>.</p><button type="button" class="btn red">Entendi</button>`;

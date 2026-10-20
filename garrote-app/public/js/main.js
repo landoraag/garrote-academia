@@ -4,12 +4,12 @@ import * as A from './aluno.js';
 import { painel } from './painel.js';
 import { privacidade, termos, avisoPrivacidade, linksLegais } from './legal.js';
 import { freioLogin, freioReset, ehCredencialErrada } from './freio.js';
-import { $, $$, esc, toast, ic, logo, SESSION, go, friendly, fail, reduce, dkey, pwEyes } from './ui.js';
+import { $, $$, esc, toast, ic, logo, SESSION, go, rota, friendly, fail, reduce, dkey, pwEyes } from './ui.js';
 
 const app = $('#app');
 /* link do e-mail de redefinição: o Firebase abre o app com ?mode=resetPassword&oobCode=... */
 const Q = new URLSearchParams(location.search), RESET = Q.get('mode') === 'resetPassword' && Q.get('oobCode') ? Q.get('oobCode') : '';
-const limparURL = () => history.replaceState(null, '', location.pathname + '#/login');
+const limparURL = () => history.replaceState(null, '', '/login');
 const home = () => SESSION.me && SESSION.me.role === 'aluno' ? '/home' : '/painel/visao';
 
 const SCREENS = {
@@ -120,17 +120,18 @@ function chegada(el) {
 let cur = null, curDepth = null, curWide = false, cleanup = null, token = 0, busy = false;
 async function render() {
   if (busy) return;
-  const parts = (location.hash.slice(1) || '/login').split('/'), name = parts[1] || 'login', args = parts.slice(2), pub = ['login', 'setup'], livre = ['privacidade', 'termos'];
+  if (location.hash.startsWith('#/') || /\.html$/.test(location.pathname)) history.replaceState(null, '', rota() + location.search);   // endereço antigo -> novo
+  const parts = rota().split('/'), name = parts[1] || 'login', args = parts.slice(2), pub = ['login', 'setup'], livre = ['privacidade', 'termos'];
   let target = SCREENS[name] ? name : 'login';
   if (livre.includes(target)) { /* páginas legais: abertas para todos, logado ou não */ }
   else if (RESET && new URLSearchParams(location.search).get('oobCode')) target = 'redefinir';
-  else if (!SESSION.user) { if (!pub.includes(target)) { location.replace('#/login'); target = 'login'; } }
+  else if (!SESSION.user) { if (!pub.includes(target)) { history.replaceState(null, '', '/login'); target = 'login'; } }
   else if (!SESSION.me) { if (!pub.includes(target)) target = 'semperfil'; }
   else {
-    if (pub.includes(target)) { location.replace('#' + home()); return; }
+    if (pub.includes(target)) { go(home(), true); return; }
     const staff = SESSION.me.role !== 'aluno';
-    if (target === 'painel') { if (!staff) { location.replace('#/home'); return; } }
-    else if (staff) { location.replace('#/painel/' + (target === 'perfil' ? 'perfil' : 'visao')); return; }   // dono e treinador usam só o painel
+    if (target === 'painel') { if (!staff) { go('/home', true); return; } }
+    else if (staff) { go('/painel/' + (target === 'perfil' ? 'perfil' : 'visao'), true); return; }   // dono e treinador usam só o painel
   }
   const my = ++token;
   document.body.classList.add('loading');
@@ -158,15 +159,20 @@ api.onAuth(async u => {
     let last = ''; try { last = localStorage.getItem('garrote:role') || ''; } catch {}
     if (last === 'dono' || last === 'treinador') {   // painel: já pede as listas junto com o perfil, em vez de esperar
       ['users', 'modalidades', 'categorias', 'exercicios', 'treinos', ...(last === 'dono' ? ['planos'] : [])].forEach(c => api.list(c).catch(() => {}));
-      if (!/^#\/painel\/(?!visao)/.test(location.hash)) { api.list('checkins', [['data', '==', dkey(new Date())]]).catch(() => {}); api.list('agendamentos').catch(() => {}); }
+      if (!/^\/painel\/(?!visao)/.test(rota())) { api.list('checkins', [['data', '==', dkey(new Date())]]).catch(() => {}); api.list('agendamentos').catch(() => {}); }
     }
     const [me, f] = await Promise.all([api.get('users', u.uid).catch(e => { console.error(e); return null; }), api.get('fotos', u.uid).catch(() => null)]);   // em paralelo
     SESSION.me = me; if (me && f) me.foto = f.data;
     if (me) try { localStorage.setItem('garrote:role', me.role); } catch {}
     if (SESSION.me && SESSION.me.ativo === 'nao') { toast('Seu acesso está inativo. Fale com a academia.'); SESSION.me = null; await api.logout(); return; }
   }
-  if (!u && !/^#\/(privacidade|termos)/.test(location.hash)) { cur && cur.remove(); cur = null; curDepth = null; location.hash = '#/login'; }
+  if (!u && !/^\/(privacidade|termos)/.test(rota())) { cur && cur.remove(); cur = null; curDepth = null; history.replaceState(null, '', '/login'); }
   render();
 });
 document.addEventListener('click', e => { const s = e.target.closest('[data-soon]'); if (s) { e.preventDefault(); toast(s.dataset.soon); } });
 addEventListener('hashchange', render);
+addEventListener('popstate', render);
+/* links internos (href="#/...") viram navegação sem recarregar, com endereço limpo */
+document.addEventListener('click', e => { const a = e.target.closest('a[href^="#/"]');
+  if (!a || e.defaultPrevented || e.button || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+  e.preventDefault(); go(a.getAttribute('href')); });
