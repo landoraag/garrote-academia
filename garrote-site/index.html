@@ -366,7 +366,8 @@ dialog.player[open]{display:grid;grid-template-columns:1fr;animation:sobe .4s va
 .case .ig{display:flex;align-items:center;gap:6px;margin-top:12px;font:600 12px var(--head);letter-spacing:.06em;color:rgba(255,255,255,.75)}
 .case .ig svg{width:14px;height:14px}
 .case strong em{font-style:normal;color:var(--glow)}
-.case p{font-size:13px;color:rgba(255,255,255,.72);margin-top:5px}
+.case p{font-size:13px;line-height:1.6;color:rgba(255,255,255,.72);margin-top:5px;height:4.8em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.case strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ---------- horários e contato ---------- */
 .visit{display:grid;gap:12px;grid-template-columns:1fr}
@@ -846,8 +847,8 @@ function encaixe(p){
 const CASES=[
   {n:'Bruna',h:'bruna_basqueira',k:'1 ano de treino',r:'Venceu a hipertensão, a pré-diabetes e a obesidade com treino e acompanhamento.',u:'DQ9XBypgGI8'},
   {n:'Sirlene',h:'sirlen2_macieira',k:'−15 kg',r:'15 kg a menos e muito mais disposição, energia e saúde.',u:'DV_437DkziG'},
-  {n:'Aluna Garrote',h:'stheteshima',k:'Academia premium',r:'Equipamentos top, ambiente climatizado e lojinha com suplementos e marmitas.',u:'DLh5khEsq3n'},
-  {n:'Melhor idade',h:'',k:'Nunca é tarde',r:'Alunos da melhor idade contam como ganharam qualidade de vida e saúde.',u:'DKNx4lNsCkw'},
+  {n:'Sthe Teshima',h:'stheteshima',k:'Academia premium',r:'Equipamentos top, ambiente climatizado e lojinha com suplementos e marmitas.',u:'DLh5khEsq3n'},
+  {n:'Terceira idade',h:'',k:'Nunca é tarde',r:'Alunos da terceira idade contam como ganharam qualidade de vida e saúde.',u:'DKNx4lNsCkw'},
   {n:'Nossos alunos',h:'',k:'Não querem parar',r:'Eles começaram na Garrote e não querem mais parar.',u:'DJ41nG_BbHR'},
   {n:'Dona Marlene',h:'',k:'Exemplo que inspira',r:'Treino que vai além do físico: qualidade de vida, bem-estar e amor-próprio.',u:'DPysk_eADrO'}
 ];
