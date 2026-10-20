@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<script>document.documentElement.classList.add('carregando');setTimeout(function(){document.documentElement.classList.remove('carregando')},4000);</script>
 <script>
 /* A vitrine é a porta de entrada. Estes casos vão direto para o app:
    - app instalado na tela inicial (o ícone antigo abre o endereço raiz)
@@ -23,6 +24,7 @@
 <meta name="description" content="Garrote Academia, Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.">
 <meta name="theme-color" content="#0B0B0C">
 <link rel="icon" href="site/assets/favicon.png">
+<style>html.carregando body{visibility:hidden}html.carregando{background:#0B0B0C}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap">
@@ -881,8 +883,6 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
 document.documentElement.classList.add('js');
 const $=(s,e=document)=>e.querySelector(s), $$=(s,e=document)=>[...e.querySelectorAll(s)];
@@ -1018,10 +1018,11 @@ const MODS={
   const h1=$('.word h1');
   if(h1){const g=h1.querySelector('.g');const txt=h1.firstChild.textContent;
     h1.firstChild.replaceWith(...[...txt].map(c=>{const sp=document.createElement('span');sp.className='ch';sp.textContent=c;return sp;}));
-    gsap.timeline({defaults:{ease:E}})
+    const tl=gsap.timeline({paused:true,defaults:{ease:E}})
       .from('.word h1 .ch, .word h1 .g',{yPercent:110,opacity:0,duration:.9,stagger:.05})
       .from('.hero-meta span',{y:16,opacity:0,duration:.6,stagger:.06},'-=.6')
       .from('.hero-foot>*',{y:24,opacity:0,duration:.7,stagger:.1,...limpa},'-=.4');
+    window.__intro=tl;
     // parallax: o título sobe e some devagar ao rolar
     gsap.to('.title',{yPercent:-28,opacity:.25,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
     gsap.to('.hero .bg',{yPercent:18,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
@@ -1089,7 +1090,17 @@ const MODS={
     if(anim)ScrollTrigger.create({onUpdate:self=>{const v=Math.min(4,1+Math.abs(self.getVelocity())/900);anim.playbackRate=v;gsap.to(anim,{playbackRate:1,duration:.8,overwrite:true});}});}
 
   addEventListener('load',()=>ScrollTrigger.refresh());
+  document.addEventListener('garrote:pronto',()=>ScrollTrigger.refresh());
   document.fonts&&document.fonts.ready.then(()=>ScrollTrigger.refresh());
+})();
+
+/* ---------- abertura: só mostra a página quando fontes e foto do topo estiverem prontas ---------- */
+(function(){let feito=false;
+  const mostra=()=>{if(feito)return;feito=true;requestAnimationFrame(()=>{document.documentElement.classList.remove('carregando');
+    window.__intro&&window.__intro.play();document.dispatchEvent(new Event('garrote:pronto'));});};
+  const fontes=document.fonts?Promise.all(['900 64px "Barlow Condensed"','800 32px "Barlow Condensed"','400 16px Barlow','600 14px Rajdhani'].map(f=>document.fonts.load(f))).then(()=>document.fonts.ready):Promise.resolve();
+  const img=$('.hero .cut');const foto=img?(img.complete?Promise.resolve():new Promise(r=>{img.addEventListener('load',r);img.addEventListener('error',r);})).then(()=>img.decode&&img.decode().catch(()=>{})):Promise.resolve();
+  Promise.all([fontes,foto]).then(mostra,mostra);setTimeout(mostra,3500);
 })();
 
 /* ---------- maquete 3D: posições tiradas da planta (unidade = px da planta, 1 px ≈ 2,4 cm) ---------- */
@@ -1129,12 +1140,22 @@ const ZONAS0=[['Recepção e loja',335,1880,0xD91E26],['Salão de máquinas',290
 const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritório',585,912]];
 
 (function(){
+  const box=$('#maq');if(!box)return;
+  const libs=['https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js','https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/BufferGeometryUtils.js'];
+  const carrega=u=>new Promise((ok,err)=>{const sc=document.createElement('script');sc.src=u;sc.onload=ok;sc.onerror=err;document.head.appendChild(sc);});
+  let ini=false;const vai=()=>{if(ini)return;ini=true;libs.reduce((p,u)=>p.then(()=>carrega(u)),Promise.resolve()).then(maquete,maquete);};
+  if('IntersectionObserver' in window){const io=new IntersectionObserver(e=>{if(e[0].isIntersecting){io.disconnect();vai();}},{rootMargin:'900px 0px'});io.observe(box);}else vai();
+  // adianta o download quando o navegador estiver ocioso, sem atrapalhar a abertura
+  document.addEventListener('garrote:pronto',()=>setTimeout(()=>window.requestIdleCallback?requestIdleCallback(vai,{timeout:3000}):vai(),2500));
+})();
+function maquete(){
   const box=$('#maq');
   if(!window.THREE){$('#fb').style.display='flex';$('#help').remove();return;}
   const T=THREE,S=.024,BW=670,BL=1980, W=()=>box.clientWidth,Hh=()=>box.clientHeight;
   const X=py=>(py-BL/2)*S, Z=px=>(BW/2-px)*S, DZ=(a,b)=>Math.abs(Z(a)-Z(b)), ZB=BW*S/2;   // planta em pé → maquete deitada; esquerda da planta = esquerda de quem entra
   let r;try{r=new T.WebGLRenderer({antialias:true,alpha:true});}catch(e){$('#fb').style.display='flex';return;}
-  r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(W(),Hh());r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
+  r.setPixelRatio(Math.min(devicePixelRatio,1.5));r.setSize(W(),Hh());r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
+  r.shadowMap.autoUpdate=false;r.shadowMap.needsUpdate=true;   // a cena é parada: a sombra é calculada uma vez só
   box.prepend(r.domElement);
   const sc=new T.Scene();
   const cam=new T.PerspectiveCamera(34,W()/Hh(),.1,400);
@@ -1148,7 +1169,7 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritóri
   else $('#tap').remove();
 
   sc.add(new T.HemisphereLight(0xffffff,0x1a0a0b,.6));
-  const sun=new T.DirectionalLight(0xffffff,.85);sun.position.set(20,40,14);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  const sun=new T.DirectionalLight(0xffffff,.85);sun.position.set(20,40,14);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
   Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,far:120});sc.add(sun);
   const red=new T.PointLight(0xff2d36,1.2,36);red.position.set(10,7,0);sc.add(red);
 
@@ -1156,7 +1177,7 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritóri
   const mat={maq:M(0x1b1b1e,{metalness:.55,roughness:.35}),vermelho:M(0xD91E26,{metalness:.3,roughness:.4}),metal:M(0x9a9aa0,{metalness:.85,roughness:.25}),
     estofado:M(0x0e0e10,{roughness:.9}),branco:M(0xEDEBE8,{roughness:.5}),parede:M(0x2e2e33),madeira:M(0x7a5536,{roughness:.6}),
     balcao:M(0x232327,{metalness:.3}),tatame:M(0x6a0d18,{roughness:.95}),junta:M(0x3a060c,{roughness:1}),espelho:M(0xa9c0cc,{metalness:.25,roughness:.1,emissive:0x34444c,emissiveIntensity:.6})};
-  const pickables=[];
+  const pickables=[],ray=new T.Raycaster();
   function add(g,m,x,y,z,parent,nome){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;parent.add(o);if(nome){o.userData.nome=nome;pickables.push(o);}return o;}
   const B=(w,h,d)=>new T.BoxGeometry(w,h,d);
 
@@ -1255,13 +1276,32 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritóri
   let andar=0;
   function mostra(f){andar=f;$$('.floors button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.f===f));
     U.visible=f>=1;G0.visible=f!==1;T0.children.forEach(o=>{if(o!==G0&&o.material&&o.material.transparent===false){}});
-    sc.traverse(o=>{if(o.isMesh&&o.parent&&isChildOf(o,T0)&&o.material){o.material.opacity=f===1?.25:1;}});
+    if(typeof translucido==='function')translucido(f===1);r.shadowMap.needsUpdate=true;
     rotulos(f);foco=null;base(f);alvo.copy(cAlvo);camAlvo.copy(cCam);anim=true;}
   const cAlvo=new T.Vector3(),cCam=new T.Vector3();
   function base(f){if(f===1){cAlvo.set(X(536),Y1,0);cCam.set(X(536)+24,Y1+22,20);}else{cAlvo.set(0,0,0);cCam.copy(HOME);}}
   function isChildOf(o,p){while(o){if(o===p)return true;o=o.parent;}return false;}
   // materiais do térreo prontos para ficar translúcidos quando só o 2º andar estiver à vista
-  T0.traverse(o=>{if(o.isMesh&&!o.material.transparent){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=1;}});
+  /* desempenho: junta as ~1000 peças em poucas malhas (uma por material em cada grupo).
+     As peças originais ficam invisíveis na camada 1, só para o mouse achar o nome do aparelho. */
+  const opacos=[];
+  (function junta(){const BU=T.BufferGeometryUtils;if(!BU)return;sc.updateMatrixWorld(true);
+    const raizes=[T0,G0,U,...sc.children.filter(o=>o.isGroup&&o!==T0&&o!==U)];
+    raizes.forEach(raiz=>{const inv=new T.Matrix4().copy(raiz.matrixWorld).invert(),porMat=new Map(),tirar=[];
+      raiz.traverse(o=>{if(!o.isMesh)return;let p=o.parent;while(p&&!raizes.includes(p))p=p.parent;if(p!==raiz)return;
+        if(o.material.visible===false){o.layers.set(1);return;}
+        const g=o.geometry.clone().applyMatrix4(new T.Matrix4().multiplyMatrices(inv,o.matrixWorld));
+        if(!porMat.has(o.material))porMat.set(o.material,[]);porMat.get(o.material).push(g);
+        if(o.userData.nome){o.layers.set(1);}else tirar.push(o);});
+      tirar.forEach(o=>o.parent.remove(o));
+      raiz.traverse(o=>{if(o.isMesh&&o.layers.mask===2){o.visible=true;}});
+      porMat.forEach((gs,m)=>{const geo=BU.mergeBufferGeometries(gs,false);if(!geo)return;gs.forEach(g=>g.dispose());
+        const noTerreo=isChildOf(raiz,T0);const mm=noTerreo&&!m.transparent?m.clone():m;
+        const me=new T.Mesh(geo,mm);me.castShadow=me.receiveShadow=true;me.matrixAutoUpdate=false;raiz.add(me);
+        if(noTerreo&&!m.transparent)opacos.push(mm);});
+    });
+    ray.layers.set(1);})();
+  function translucido(on){opacos.forEach(m=>{m.transparent=on;m.opacity=on?.25:1;m.depthWrite=!on;m.needsUpdate=true;});}
   $$('.floors button').forEach(b=>b.onclick=()=>mostra(+b.dataset.f));
   mostra(0);
 
@@ -1269,26 +1309,30 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritóri
   $('#zout').onclick=()=>{anim=true;alvo.copy(ctl.target);const v=cam.position.clone().sub(ctl.target);if(v.length()<80)v.multiplyScalar(1.22);camAlvo.copy(v.add(ctl.target));};
 
   /* nome do aparelho ao passar o mouse (ou tocar) */
-  const ray=new T.Raycaster(),mp=new T.Vector2(),tip=$('#tip');
+  const mp=new T.Vector2(),tip=$('#tip');
   function pick(cx,cy){const rc=r.domElement.getBoundingClientRect();mp.set((cx-rc.left)/rc.width*2-1,-(cy-rc.top)/rc.height*2+1);ray.setFromCamera(mp,cam);
     const hit=ray.intersectObjects(pickables.filter(o=>vis(o)),false)[0];
     if(hit){tip.textContent=hit.object.userData.nome;tip.style.left=(cx-rc.left)+'px';tip.style.top=(cy-rc.top)+'px';tip.classList.add('on');r.domElement.style.cursor='pointer';}
     else{tip.classList.remove('on');r.domElement.style.cursor='';}}
   function vis(o){while(o){if(!o.visible)return false;o=o.parent;}return true;}
-  r.domElement.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')pick(e.clientX,e.clientY);});
+  let pm=null;r.domElement.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse')return;const fila=!pm;pm=e;
+    if(fila)requestAnimationFrame(()=>{pick(pm.clientX,pm.clientY);pm=null;});});
   r.domElement.addEventListener('pointerleave',()=>tip.classList.remove('on'));
   r.domElement.addEventListener('click',e=>pick(e.clientX,e.clientY));
-  if(ctl)ctl.addEventListener('start',()=>{anim=false;});
+  let sujo=true;
+  if(ctl){ctl.addEventListener('start',()=>{anim=false;});ctl.addEventListener('change',()=>{sujo=true;});}
 
   const v=new T.Vector3();let visivel=true;
-  if('IntersectionObserver' in window)new IntersectionObserver(e=>{visivel=e[0].isIntersecting;}).observe(box);
+  if('IntersectionObserver' in window)new IntersectionObserver(e=>{visivel=e[0].isIntersecting;sujo=true;}).observe(box);
+  /* só redesenha quando algo muda (girar, zoom, trocar de andar); parada, a maquete não gasta nada */
   function loop(){requestAnimationFrame(loop);if(!visivel)return;
-    if(anim&&ctl){ctl.target.lerp(alvo,.09);cam.position.lerp(camAlvo,.09);if(cam.position.distanceTo(camAlvo)<.05)anim=false;}
-    ctl&&ctl.update();r.render(sc,cam);
+    if(anim&&ctl){ctl.target.lerp(alvo,.09);cam.position.lerp(camAlvo,.09);if(cam.position.distanceTo(camAlvo)<.05)anim=false;sujo=true;}
+    if(ctl&&ctl.update())sujo=true;
+    if(!sujo&&!anim&&!r.shadowMap.needsUpdate)return;sujo=false;r.render(sc,cam);
     zonas.forEach(z=>{v.copy(z.pos).project(cam);z.lb.style.left=((v.x*.5+.5)*W())+'px';z.lb.style.top=((-v.y*.5+.5)*Hh())+'px';z.lb.style.opacity=v.z<1?1:0;});}
   loop();
-  addEventListener('resize',()=>{r.setSize(W(),Hh());cam.aspect=W()/Hh();cam.updateProjectionMatrix();});
-})();
+  addEventListener('resize',()=>{r.setSize(W(),Hh());cam.aspect=W()/Hh();cam.updateProjectionMatrix();sujo=true;});
+}
 </script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
