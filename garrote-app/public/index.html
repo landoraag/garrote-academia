@@ -143,7 +143,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .escudo{display:block;width:100%;height:100%;perspective:900px}
 .esc-in{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .2s ease-out;filter:drop-shadow(0 18px 26px rgba(0,0,0,.85))}
 .esc-in img{width:100%;height:100%;object-fit:contain;display:block;backface-visibility:hidden;transform:translateZ(0)}
-@media (hover:none),(pointer:coarse){.escudo{perspective:none}.esc-in{transform-style:flat;transition:none}.esc-in img{transform:none;backface-visibility:visible}}
+@media (hover:none),(pointer:coarse){.escudo{perspective:none;position:relative}.esc-in{transform-style:flat;transition:none;filter:none}.esc-in img{transform:none;backface-visibility:visible}
+  /* no celular a sombra é desenhada atrás (o iPhone corta o drop-shadow na borda da imagem depois da animação) */
+  .escudo::before{content:"";position:absolute;inset:-2% -6% -16%;background:radial-gradient(closest-side at 50% 56%,rgba(0,0,0,.8) 55%,transparent);pointer-events:none}}
 .esc-in .brilho{position:absolute;inset:0;pointer-events:none;
   -webkit-mask:url(site/assets/escudo-cimerian.webp) center/contain no-repeat;mask:url(site/assets/escudo-cimerian.webp) center/contain no-repeat;
   background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.38) 50%,transparent 60%) no-repeat;background-size:250% 100%;animation:brilho 5s ease-in-out infinite}
@@ -415,7 +417,8 @@ dialog.player{border:0;padding:0;margin:auto;width:min(860px,calc(100% - 24px));
 dialog.player::backdrop{background:rgba(5,5,6,.8);backdrop-filter:blur(6px)}
 dialog.player[open]{display:grid;grid-template-columns:1fr;animation:sobe .4s var(--ease)}
 @media(min-width:720px){dialog.player[open]{grid-template-columns:minmax(0,360px) 1fr}}
-.player{position:relative}.pl-load{position:absolute;left:0;right:0;top:40%;text-align:center;font:700 13px var(--head);letter-spacing:.12em;text-transform:uppercase;color:#fff;text-shadow:0 2px 10px #000;pointer-events:none}
+.pl-load[hidden]{display:none}.pl-load a{color:#fff;text-decoration:underline;pointer-events:auto}
+.pl-load{position:absolute;left:16px;right:16px;top:38%;z-index:2;text-align:center;font:700 13px var(--head);letter-spacing:.12em;text-transform:uppercase;color:#fff;text-shadow:0 2px 10px #000;pointer-events:none}
 @media(min-width:720px){.pl-load{right:auto;width:360px}}
 .player video{width:100%;aspect-ratio:9/16;max-height:calc(100dvh - 32px);background:#000;display:block;object-fit:contain}
 .pl-info{padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:flex-end}
@@ -934,11 +937,11 @@ const CASES=[
   const local=i=>new URL(`site/fotos/case-${i+1}.mp4`,location.href).href;
   const prog=document.createElement('div');prog.className='pl-load';v.after(prog);
   const blobs={};let atual=-1,ctrl=null,blobUrl=null;
-  const paraInsta=()=>{if(!dlg.open)return;const ig=$('#pl-ig').href;fecha();window.open(ig,'_blank','noopener');};
-  v.addEventListener('error',()=>{if(atual<0||!v.getAttribute('src'))return;if(IOS)return paraInsta();
-    if(dlg.open)paraInsta();});
+  const paraInsta=motivo=>{if(!dlg.open)return;prog.hidden=false;
+    prog.innerHTML='Não deu para tocar o vídeo aqui'+(motivo?' <small style="opacity:.6">('+motivo+')</small>':'')+'.<br><a href="'+$('#pl-ig').href+'" target="_blank" rel="noopener">Assistir no Instagram</a>';};
+  v.addEventListener('error',()=>{if(atual<0||!v.getAttribute('src'))return;const e=v.error;paraInsta('vídeo '+(e?e.code:'?')+(IOS?' ios':''));});
   function baixa(i){if(blobs[i])return Promise.resolve(blobs[i]);ctrl=new AbortController();const sinal=ctrl.signal;
-    return fetch(local(i),{signal:sinal}).then(async r=>{if(!r.ok)throw 0;const tot=+r.headers.get('content-length')||0;
+    return fetch(local(i),{signal:sinal,cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('http '+r.status);const tot=+r.headers.get('content-length')||0;
       if(!r.body||!r.body.getReader){return r.blob();}
       const rd=r.body.getReader(),pedacos=[];let n=0;
       for(;;){const{done,value}=await rd.read();if(done)break;pedacos.push(value);n+=value.length;
@@ -953,7 +956,7 @@ const CASES=[
     if(IOS){atual=i;v.removeAttribute('src');v.poster=`site/fotos/case-${i+1}.webp`;prog.textContent='Carregando vídeo…';prog.hidden=false;
       baixa(i).then(bl=>{if(atual!==i||!dlg.open)return;prog.hidden=true;blobUrl=URL.createObjectURL(bl);v.src=blobUrl;
         v.play().catch(()=>{});})   // se o iPhone pedir, o aluno toca no play (com som)
-      .catch(e=>{if(e&&e.name==='AbortError')return;paraInsta();});
+      .catch(e=>{if(e&&e.name==='AbortError')return;paraInsta('download: '+(e&&e.message||e));});
       return;}
     prog.hidden=true;prepara(i);
     const p=v.play();p&&p.catch(()=>{v.muted=true;v.play().catch(()=>{});});};   // se o navegador barrar o som, toca mudo (o aluno ativa nos controles)
