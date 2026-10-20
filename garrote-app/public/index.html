@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta name="color-scheme" content="dark">
+<style>html{background:#0B0B0C}#splash{position:fixed;inset:0;z-index:9999;background:#0B0B0C;display:flex;align-items:center;justify-content:center;transition:opacity .45s ease,visibility .45s}#splash img{width:170px;max-width:55%;height:auto;animation:pulsa 1.6s ease-in-out infinite}@keyframes pulsa{50%{opacity:.55}}html:not(.carregando) #splash{opacity:0;visibility:hidden;pointer-events:none}</style>
 <script>document.documentElement.classList.add('carregando');setTimeout(function(){document.documentElement.classList.remove('carregando')},4000);</script>
 <script>
 /* A vitrine é a porta de entrada. Estes casos vão direto para o app:
@@ -24,7 +26,7 @@
 <meta name="description" content="Garrote Academia, Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.">
 <meta name="theme-color" content="#0B0B0C">
 <link rel="icon" href="site/assets/favicon.png">
-<style>html.carregando body{visibility:hidden}html.carregando{background:#0B0B0C}</style>
+<style>html.carregando body>*:not(#splash){visibility:hidden}</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap">
@@ -504,6 +506,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"><img src="site/assets/logo.png" alt=""></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
@@ -920,10 +923,18 @@ const CASES=[
   $('#reel-row').innerHTML=CASES.map((c,i)=>card(c,i)).join('')+CASES.map((c,i)=>card(c,i,1)).join('');
   /* player: abre por cima do site, com som; ao fechar, para o vídeo e o carrossel volta a correr */
   const dlg=$('#player'),v=$('#pl-v');
-  const fecha=()=>{v.pause();v.removeAttribute('src');v.load();v.muted=false;dlg.open&&(dlg.close?dlg.close():dlg.removeAttribute('open'));$('#reel').classList.remove('parado');};
+  const fecha=()=>{atual=-1;v.pause();v.removeAttribute('src');v.load();v.muted=false;dlg.open&&(dlg.close?dlg.close():dlg.removeAttribute('open'));$('#reel').classList.remove('parado');};
   /* no computador, o vídeo começa a baixar quando o mouse passa no card: ao clicar, ele já sai tocando */
-  const fonte=i=>new URL(`site/fotos/case-${i+1}.mp4`,location.href).href;
-  const prepara=i=>{if(dlg.open||v.src===fonte(i))return;v.preload='auto';v.poster=`site/fotos/case-${i+1}.webp`;v.src=fonte(i);};
+  /* o Firebase Hosting não entrega vídeo em pedaços (Range) e o iPhone se recusa a tocar; o jsDelivr (cópia do GitHub) entrega.
+     Ao trocar um vídeo, atualize VID_SHA com o commit em que ele foi enviado. */
+  const VID_SHA='7d64ff3ac568907bf80ad18beef6539b9e397db7';
+  const fonte=i=>`https://cdn.jsdelivr.net/gh/landoraag/garrote-academia@${VID_SHA}/garrote-app/public/site/fotos/case-${i+1}.mp4`;
+  const local=i=>new URL(`site/fotos/case-${i+1}.mp4`,location.href).href;
+  let atual=-1;
+  v.addEventListener('error',()=>{if(atual<0||!dlg.open&&!v.src)return;
+    if(v.src===fonte(atual)){v.src=local(atual);v.play().catch(()=>{});}   // CDN fora do ar: tenta o arquivo do próprio site
+    else if(v.src===local(atual)&&dlg.open){const ig=$('#pl-ig').href;fecha();window.open(ig,'_blank','noopener');}});   // nada tocou: abre no Instagram
+  const prepara=i=>{if(dlg.open||v.src===fonte(i))return;atual=i;v.preload='auto';v.poster=`site/fotos/case-${i+1}.webp`;v.src=fonte(i);};
   const abre=b=>{const i=+b.dataset.i,c=CASES[i],ig=`https://www.instagram.com/reel/${c.u}/`;
     if(!dlg.showModal){window.open(ig,'_blank','noopener');return;}   // navegador antigo sem janela de diálogo: abre direto no Instagram
     $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=ig;
