@@ -2,7 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Garrote Academia</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Garrote Academia, Piraju-SP. Equipamentos Cimerian, musculação, muay thai, boxe e dança num só lugar.">
+<meta name="description" content="Garrote Academia, Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.">
 <meta name="theme-color" content="#0B0B0C">
 <link rel="icon" href="assets/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -37,6 +37,9 @@ img{max-width:100%;display:block}
 section{position:relative;scroll-margin-top:84px}
 .band{padding-block:clamp(64px,8vw,104px)}
 .flat{padding-top:0}
+#academia.band,#cimerian.band{padding-block:clamp(48px,6vw,80px)}
+#cimerian .sec-head{margin-bottom:clamp(24px,3vw,36px)}
+.plaque .escudo{width:min(230px,60vw)}
 
 /* tipografia */
 .eyebrow{font:600 12px/1 var(--head);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:10px}
@@ -127,13 +130,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 @keyframes corre{to{transform:translateX(-50%)}}
 
 /* ---------- quem somos ---------- */
-.about{display:grid;gap:clamp(36px,5vw,72px);grid-template-columns:1fr}
+.about{display:grid;gap:clamp(28px,4vw,56px);grid-template-columns:1fr}
 @media(min-width:960px){.about{grid-template-columns:1.05fr .95fr;align-items:center}}
-.about-photos{display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
+.about-photos{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;max-width:520px;width:100%;justify-self:end}
 .about-photos .ph{border-radius:var(--r);aspect-ratio:4/5}
-.about-photos .ph:nth-child(2){aspect-ratio:auto;margin-top:56px}
-.steps{list-style:none;padding:0;margin:28px 0 0;display:grid;counter-reset:s}
-.steps li{display:grid;grid-template-columns:48px 1fr;gap:14px;padding:16px 0;border-top:1px solid var(--line);counter-increment:s}
+.about-photos .ph:nth-child(2){aspect-ratio:auto;margin-top:40px}
+.steps{list-style:none;padding:0;margin:22px 0 0;display:grid;counter-reset:s}
+.steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:11px 0;border-top:1px solid var(--line);counter-increment:s}
 .steps li::before{content:"0" counter(s);font:800 28px/1 var(--display);color:var(--glow)}
 .steps b{font:700 18px/1.2 var(--head);display:block;margin-bottom:3px;letter-spacing:.02em}
 .steps p{color:var(--dim);font-size:15px}
@@ -143,15 +146,15 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cim::before{content:"";position:absolute;inset:auto -10% -40% -10%;height:80%;background:radial-gradient(50% 50% at 50% 50%,rgba(217,30,38,.3),transparent 70%);pointer-events:none}
 .cim-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);position:relative}
 .cim-grid .ph:nth-child(3){grid-column:auto}
-.cim-grid .ph{border-radius:16px;aspect-ratio:1}
+.cim-grid .ph{border-radius:16px;aspect-ratio:4/3}
 .cim-grid .ph.wide{grid-column:span 2;aspect-ratio:16/9}
-@media(min-width:900px){.cim-grid{grid-template-columns:1.5fr 1fr;grid-template-rows:repeat(2,minmax(260px,auto))}.cim-grid .ph.wide{grid-column:1;grid-row:span 2;aspect-ratio:auto}.cim-grid .ph:not(.wide){aspect-ratio:auto}}
+@media(min-width:900px){.cim-grid{grid-template-columns:1.5fr 1fr;grid-template-rows:repeat(2,190px)}.cim-grid .ph.wide{grid-column:1;grid-row:span 2;aspect-ratio:auto}.cim-grid .ph:not(.wide){aspect-ratio:auto}}
 .cim-feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px;position:relative}
 .cim-feats div{background:var(--s1);padding:20px 22px}
 .cim-feats b{font:700 17px/1.2 var(--head);display:block;margin-bottom:5px;letter-spacing:.02em}
 .cim-feats p{font-size:14px;color:var(--dim)}
-.plaque{margin-top:clamp(40px,5vw,64px);display:grid;gap:28px 48px;align-items:center;grid-template-columns:1fr;position:relative}
-@media(min-width:860px){.plaque{grid-template-columns:1fr 340px}}
+.plaque{margin-top:clamp(28px,4vw,44px);display:grid;gap:28px 48px;align-items:center;grid-template-columns:1fr;position:relative}
+@media(min-width:860px){.plaque{grid-template-columns:1fr 260px}}
 .plaque .escudo{width:min(300px,72vw);height:auto;aspect-ratio:1;justify-self:center}
 .plaque .txt{display:grid;gap:12px;justify-items:start;text-align:left}
 .plaque h3{font:800 clamp(26px,2.8vw,36px)/1 var(--display);text-transform:uppercase}
@@ -178,7 +181,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* ---------- modalidades ---------- */
 .mods-grid{display:grid;gap:12px;grid-template-columns:1fr}
 @media(min-width:640px){.mods-grid{grid-template-columns:repeat(2,1fr)}}
-@media(min-width:1080px){.mods-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:1080px){.mods-grid{grid-template-columns:repeat(3,1fr)}.mod{aspect-ratio:4/5}}
 .mod{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:3/4;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;isolation:isolate;border:1px solid var(--line);text-align:left;cursor:pointer}
 .mod .ph{position:absolute;inset:0;z-index:-2;transition:transform .8s var(--ease)}
 .mod::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,transparent 30%,rgba(11,11,12,.94) 85%)}
@@ -463,7 +466,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="bg ph"></div>
   <div class="wrap title">
     <div class="title-in">
-      <div class="hero-meta"><span>Musculação</span><span>Muay Thai</span><span>Boxe</span><span>Dança</span></div>
+      <div class="hero-meta"><span>Musculação</span><span>Boxe</span><span>Dança</span></div>
       <div class="word">
         <h1>Garrote<span class="g">.</span></h1>
         <div class="cut-slot" id="cutslot">fotos/hero-atleta.png<br>pessoa recortada<br>(sem fundo)</div>
@@ -490,8 +493,8 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="wrap about">
     <div class="rv">
       <span class="eyebrow">Quem somos</span>
-      <h2 class="h2">A academia <em>completa</em> de Piraju.</h2>
-      <p class="lead" style="margin-top:20px">A Garrote junta <b>musculação com equipamentos Cimerian</b>, <b>muay thai</b>, <b>boxe</b> e <b>dança</b> no mesmo endereço. Ambiente climatizado, vestiários com chuveiro, equipe acompanhando o seu treino e um app próprio para você treinar com direção.</p>
+      <h2 class="h2">A academia <em>mais completa</em> de Piraju.</h2>
+      <p class="lead" style="margin-top:20px">A Garrote junta <b>musculação com equipamentos Cimerian</b>, <b>boxe</b> e <b>dança</b> no mesmo endereço. Ambiente climatizado, vestiários com chuveiro, equipe acompanhando o seu treino e um app próprio para você treinar com direção.</p>
       <ol class="steps">
         <li><div><b>Venha para uma aula experimental</b><p>Agende pelo WhatsApp, conheça o espaço e treine com a gente.</p></div></li>
         <li><div><b>Escolha o seu plano</b><p>Avulsa, semanal, quinzenal, mensal, semestral, anual ou família. Também aceitamos Wellhub e TotalPass.</p></div></li>
@@ -539,16 +542,16 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 <section class="band" id="diferenciais">
   <div class="wrap">
     <div class="sec-head split rv">
-      <div><span class="eyebrow">Só na Garrote</span><h2 class="h2">O que nenhuma academia da região <em>junta</em>.</h2></div>
+      <div><span class="eyebrow">Só na Garrote</span><h2 class="h2">O que nenhuma academia da região entrega, <em>nós entregamos</em>.</h2></div>
       <p class="lead">Musculação, luta e dança no mesmo lugar, com estrutura pensada para quem treina todo dia.</p>
     </div>
     <div class="bento rv">
       <article class="tile big">
         <h3>Tudo num só lugar</h3>
         <p>Musculação, lutas e dança no mesmo endereço, com a mesma equipe e o mesmo app.</p>
-        <div class="mods"><span class="chip">Musculação</span><span class="chip">Muay Thai</span><span class="chip">Boxe</span><span class="chip">Dança</span></div>
+        <div class="mods"><span class="chip">Musculação</span><span class="chip">Boxe</span><span class="chip">Dança</span></div>
       </article>
-      <article class="tile"><div class="ic"><svg><use href="#i-snow"/></svg></div><h3>Climatizada inteira</h3><p>Ar-condicionado em todos os ambientes.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-snow"/></svg></div><h3>Climatizada</h3><p>Ar-condicionado em todos os ambientes.</p></article>
       <article class="tile"><div class="ic"><svg><use href="#i-shower"/></svg></div><h3>Vestiários com chuveiro</h3><p>Chuveiros, armários e secador.</p></article>
       <article class="tile"><div class="ic"><svg><use href="#i-access"/></svg></div><h3>Acessível</h3><p>Banheiro e chuveiro adaptados.</p></article>
       <article class="tile"><div class="ic"><svg><use href="#i-food"/></svg></div><h3>Comida fit</h3><p>Barrinhas e lanches no local.</p></article>
@@ -563,16 +566,14 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 <!-- ================= MODALIDADES ================= -->
 <section class="band flat" id="modalidades">
   <div class="wrap">
-    <div class="sec-head rv"><span class="eyebrow">Modalidades</span><h2 class="h2">Quatro jeitos de <em>treinar</em>.</h2></div>
+    <div class="sec-head rv"><span class="eyebrow">Modalidades</span><h2 class="h2">Três jeitos de <em>treinar</em>.</h2></div>
     <div class="mods-grid">
       <button class="mod rv" type="button" data-mod="musculacao"><div class="ph" data-foto="mod-musculacao" data-tag="fotos/mod-musculacao.jpg"></div>
         <span class="n">01</span><h3>Musculação</h3><p>Salão completo Cimerian, peso livre e cardio.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
-      <button class="mod rv" type="button" data-mod="muaythai"><div class="ph" data-foto="mod-muaythai" data-tag="fotos/mod-muaythai.jpg"></div>
-        <span class="n">02</span><h3>Muay Thai</h3><p>A arte das oito armas, no tatame do 2º andar.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
       <button class="mod rv" type="button" data-mod="boxe"><div class="ph" data-foto="mod-boxe" data-tag="fotos/mod-boxe.jpg"></div>
-        <span class="n">03</span><h3>Boxe</h3><p>Técnica, condicionamento e foco total.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
+        <span class="n">02</span><h3>Boxe</h3><p>Técnica, condicionamento e foco total.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
       <button class="mod rv" type="button" data-mod="danca"><div class="ph" data-foto="mod-danca" data-tag="fotos/mod-danca.jpg"></div>
-        <span class="n">04</span><h3>Dança</h3><p>Aula animada e coreografias para todas as idades.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
+        <span class="n">03</span><h3>Dança</h3><p>Aula animada e coreografias para todas as idades.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
     </div>
   </div>
 </section>
@@ -596,17 +597,17 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="wrap">
     <div class="sec-head split rv">
       <div><span class="eyebrow">O espaço</span><h2 class="h2">Conheça a academia <em>por dentro</em>.</h2></div>
-      <p class="lead">O térreo inteiro é salão de musculação, com recepção na entrada e vestiários no fundo. No 2º andar ficam a sala de dança e o tatame.</p>
+      <p class="lead">O térreo inteiro é um salão de musculação, com recepção na entrada e vestiários no fundo. No 2º andar ficam as salas de dança e o tatame.</p>
     </div>
     <div class="place">
       <div class="ph facade rv" data-foto="fachada" data-tag="fotos/fachada.jpg · fachada da Garrote"></div>
       <div class="loc">
         <div class="addr rv">
           <span class="eyebrow">Endereço</span>
-          <address>R. Maj. Mariano, 137<small>Vila Al Isa · Piraju - SP · 18800-009</small></address>
+          <address>Rua Major Mariano, 137<small>Vila Al Isa · Piraju - SP · 18800-009</small></address>
           <div class="btns">
             <a class="btn red" href="https://www.google.com/maps/search/?api=1&query=R.+Maj.+Mariano,+137+-+Vila+Al+Isa,+Piraju+-+SP,+18800-009" target="_blank" rel="noopener">Abrir no Maps <svg><use href="#i-arrow"/></svg></a>
-            <button class="btn line" type="button" data-copy="R. Maj. Mariano, 137 - Vila Al Isa, Piraju - SP, 18800-009"><svg><use href="#i-copy"/></svg>Copiar</button>
+            <button class="btn line" type="button" data-copy="Rua Major Mariano, 137 - Vila Al Isa, Piraju - SP, 18800-009"><svg><use href="#i-copy"/></svg>Copiar</button>
           </div>
         </div>
         <div class="ph drone rv" data-foto="drone" data-tag="fotos/drone.jpg · vista de cima"><svg class="pin"><use href="#i-pin"/></svg></div>
@@ -662,7 +663,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="wrap">
     <div class="sec-head split rv">
       <div><span class="eyebrow">Planos de musculação</span><h2 class="h2">Escolha como <em>começar</em>.</h2></div>
-      <p class="lead">Todos os planos dão <b>acesso total à musculação</b>, acompanhamento profissional, ambiente moderno e equipamentos de última geração. Para muay thai, boxe e dança, fale com a recepção.</p>
+      <p class="lead">Todos os planos dão <b>acesso total à musculação</b>, acompanhamento profissional, ambiente moderno e equipamentos de última geração. Para boxe e dança, fale com a recepção.</p>
     </div>
     <div class="plans">
       <article class="plan rv"><h3>Mensal</h3><p class="sub">Para começar sem compromisso longo.</p>
@@ -736,7 +737,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
           <a class="ct main" href="https://wa.me/5514998048435" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-wa"/></svg></span><span><small>WhatsApp</small><b>(14) 99804-8435</b></span><span class="go">Conversar</span></a>
           <a class="ct" href="https://www.instagram.com/garroteacademia/" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-ig"/></svg></span><span><small>Instagram</small><b>@garroteacademia</b></span><span class="go">Seguir</span></a>
           <div class="ct"><span class="ic"><svg><use href="#i-phone"/></svg></span><span><small>Telefone</small><b>(14) 99804-8435</b></span><button class="go" type="button" data-copy="(14) 99804-8435">Copiar</button></div>
-          <a class="ct" href="https://www.google.com/maps/search/?api=1&query=R.+Maj.+Mariano,+137+-+Vila+Al+Isa,+Piraju+-+SP,+18800-009" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-map"/></svg></span><span><small>Endereço</small><b>R. Maj. Mariano, 137</b></span><span class="go">Rota</span></a>
+          <a class="ct" href="https://www.google.com/maps/search/?api=1&query=R.+Maj.+Mariano,+137+-+Vila+Al+Isa,+Piraju+-+SP,+18800-009" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-map"/></svg></span><span><small>Endereço</small><b>Rua Major Mariano, 137</b></span><span class="go">Rota</span></a>
         </div>
       </div>
     </div>
@@ -757,7 +758,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
   <div class="wrap foot">
     <div class="brand">
       <img src="assets/logo.png" alt="Garrote Academia">
-      <p>Academia completa em Piraju-SP. Equipamentos Cimerian, musculação, muay thai, boxe e dança num só lugar.</p>
+      <p>Academia completa em Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.</p>
       <div class="social">
         <a href="https://www.instagram.com/garroteacademia/" target="_blank" rel="noopener" aria-label="Instagram"><svg><use href="#i-ig"/></svg></a>
         <a href="https://wa.me/5514998048435" target="_blank" rel="noopener" aria-label="WhatsApp"><svg><use href="#i-wa"/></svg></a>
@@ -770,7 +771,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
     </div>
     <div>
       <h4>Onde estamos</h4>
-      <address>R. Maj. Mariano, 137<br>Vila Al Isa · Piraju - SP<br>CEP 18800-009</address>
+      <address>Rua Major Mariano, 137<br>Vila Al Isa · Piraju - SP<br>CEP 18800-009</address>
       <div class="pays"><span>Pix</span><span>Cartão</span><span>Wellhub</span><span>TotalPass</span></div>
     </div>
     <div>
@@ -809,7 +810,7 @@ function encaixe(p){
 }
 
 /* faixa */
-(function(){const itens=['Equipamentos Cimerian','Musculação','Muay Thai','Boxe','Dança','Climatizada','Vestiários com chuveiro','App do aluno','Piraju · SP'];
+(function(){const itens=['Equipamentos Cimerian','Musculação','Boxe','Dança','Climatizada','Vestiários com chuveiro','App do aluno','Piraju · SP'];
   const h=itens.map(t=>`<span>${t}</span>`).join('');$('#tk').innerHTML=h+h;})();
 
 /* carrossel de vídeos dos alunos (fotos/case-N.jpg de capa e fotos/case-N.mp4) */
@@ -843,10 +844,6 @@ const MODS={
     a:['Treino individual montado pelo professor','Máquinas Cimerian, peso livre e cardio','Acompanhamento da equipe no salão','Treino, descanso e evolução no app'],
     b:['Ganho de força e massa muscular','Emagrecimento e condicionamento','Postura e prevenção de lesões','Resultado que você acompanha no app'],
     w:'Térreo · livre durante todo o horário de funcionamento.'},
-  muaythai:{t:'Muay Thai',d:'A arte das oito armas: socos, chutes, joelhadas e cotoveladas. Aula com técnica, condicionamento e muito suor, no tatame do 2º andar.',
-    a:['Aquecimento e preparo físico','Técnica em dupla, manopla e aparador','Combinações e condicionamento','Para iniciantes e graduados'],
-    b:['Queima calórica alta','Defesa pessoal e confiança','Coordenação e reflexo','Alívio do estresse'],
-    w:'Tatame do 2º andar · turmas em horários fixos (confirme com a recepção).'},
   boxe:{t:'Boxe',d:'Base, guarda, deslocamento e combinações de socos. Treino intenso, com muito cardio e foco total, no tatame do 2º andar.',
     a:['Corda e aquecimento','Fundamentos de guarda e deslocamento','Combinações na manopla e no saco','Condicionamento no fim da aula'],
     b:['Condicionamento cardiovascular','Força de core e ombros','Foco e disciplina','Defesa pessoal'],
@@ -1013,7 +1010,7 @@ const TERREO=[
  ['Mini vestiário (nichos)','a',201,1803,267,25],['Recepção','x',201,1835,267,48],['Roupas Garrote','a',0,1835,28,75],['Comidas e bebidas','x',0,1937,186,42],['Mesa e sofá','sf',480,1917,190,62]
 ];
 const ZONAS0=[['Recepção e loja',335,1880,0xD91E26],['Salão de máquinas',290,1350,0xD91E26],['Cardio',590,1690,0xD91E26],['Peso livre',335,740,0xD91E26],['Vestiários',335,200,0xD91E26],['Escada',32,1130,0xD91E26]];
-const ZONAS1=[['Sala de dança',167,456],['Tatame · Muay Thai e Boxe',502,378],['Escritório',585,912]];
+const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritório',585,912]];
 
 (function(){
   const box=$('#maq');
@@ -1121,7 +1118,7 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Muay Thai e Boxe',502,378],
   add(B(.12,2.6,DZ(670,499)),pw,X(830),1.3,(Z(499)+Z(670))/2,U);add(B(X(992)-X(830),2.6,.12),pw,(X(830)+X(992))/2,1.3,Z(499),U);   // escritório
   add(B(.12,1.1,DZ(70,670)),M(0x9fb6c4,{transparent:true,opacity:.3}),X(991),.55,(Z(70)+Z(670))/2,U);   // guarda-corpo de vidro, com a abertura da escada
   add(B(X(991)-X(82),1.2,.15),pw,(X(82)+X(991))/2,.6,ZB+.07,U);add(B(X(991)-X(82),1.2,.15),pw,(X(82)+X(991))/2,.6,-ZB-.07,U);add(B(.15,1.2,BW*S),pw,X(82)-.07,.6,0,U);
-  ['Sala de dança','Tatame · Muay Thai e Boxe','Escritório'].forEach((n,i)=>{const[x0,y0,x1,y1]=[[0,82,335,830],[335,82,670,673],[499,830,670,992]][i];
+  ['Sala de dança','Tatame · Boxe','Escritório'].forEach((n,i)=>{const[x0,y0,x1,y1]=[[0,82,335,830],[335,82,670,673],[499,830,670,992]][i];
     const hit=add(B(X(y1)-X(y0),.3,DZ(x1,x0)),new T.MeshBasicMaterial({visible:false}),(X(y0)+X(y1))/2,.2,(Z(x0)+Z(x1))/2,U);hit.userData.nome=n;hit.castShadow=false;pickables.push(hit);});
 
   /* rótulos das áreas e legenda */
