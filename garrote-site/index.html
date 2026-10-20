@@ -286,7 +286,15 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .iph.c{left:50%;top:5%;transform:translateX(-50%) translateZ(30px);z-index:3}
 .iph.l{left:0;top:15%;transform:translateZ(-40px) rotateY(18deg) scale(.88);z-index:2;filter:brightness(.82)}
 .iph.r{right:0;top:15%;transform:translateZ(-40px) rotateY(-18deg) scale(.88);z-index:1;filter:brightness(.82)}
-@media(max-width:640px){.iph.l{left:-14%}.iph.r{right:-14%}.cap{gap:10px;font-size:10px;letter-spacing:.1em}}
+@media(max-width:640px){
+  .stage{height:calc(36vw * 2.06 + 90px)}
+  .iph{--w:36vw}
+  .iph.c{top:2%}
+  .iph.l{left:1%;top:12%;transform:translateZ(-40px) rotateY(16deg) scale(.82)}
+  .iph.r{right:1%;top:12%;transform:translateZ(-40px) rotateY(-16deg) scale(.82)}
+  .cap{gap:8px;font-size:9.5px;letter-spacing:.08em;text-align:center}
+  .cap span{flex:1;justify-content:center}
+}
 .stage:hover .iph.l{transform:translateZ(-20px) translateX(-8%) rotateY(22deg) scale(.9)}
 .stage:hover .iph.r{transform:translateZ(-20px) translateX(8%) rotateY(-22deg) scale(.9)}
 .cap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:clamp(14px,4vw,48px);font:600 11px var(--head);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
@@ -297,6 +305,28 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .plans{display:grid;gap:12px;grid-template-columns:1fr}
 @media(min-width:760px){.plans{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1100px){.plans{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:759px){
+  .plans,.passes{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .plan,.pass{min-width:0}
+  .plan{padding:16px 14px;gap:9px}
+  .plan h3{font-size:21px}
+  .plan .sub{font-size:12.5px;line-height:1.4}
+  .plan .price{flex-wrap:wrap;gap:2px 4px}
+  .plan .price b{font-size:34px}
+  .plan .price small,.plan .price span{font-size:12px}
+  .plan .tot{font-size:11.5px;line-height:1.35}
+  .plan ul{font-size:12.5px;gap:6px;padding-top:10px}
+  .plan li::before{margin-top:7px}
+  .plan .btn{height:42px;font-size:13px;padding:0 10px;white-space:normal;text-align:center;line-height:1.15}
+  .plan .btn svg{display:none}
+  .plan .badge{left:14px;font-size:9.5px;padding:0 9px}
+  .pass{padding:14px;gap:8px;flex-direction:column;align-items:flex-start}
+  .pass h4{font-size:16px}
+  .pass p{font-size:12px}
+  .pass .price b{font-size:26px}
+  .pass .logos{flex-wrap:wrap;gap:6px}
+  .pass .logos span{height:28px;padding:0 10px;font-size:12px}
+}
 .plan{border-radius:var(--r);padding:24px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;position:relative}
 .plan.hot{background:radial-gradient(100% 70% at 50% 0,rgba(217,30,38,.36),transparent 70%),var(--s1);border-color:rgba(255,45,54,.5);box-shadow:0 30px 70px -30px rgba(217,30,38,.6)}
 .plan .badge{position:absolute;top:-12px;left:24px;height:24px;padding:0 12px;border-radius:999px;background:var(--red);font:700 11px/24px var(--head);letter-spacing:.14em;text-transform:uppercase}
@@ -1069,7 +1099,8 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritóri
   box.prepend(r.domElement);
   const sc=new T.Scene();
   const cam=new T.PerspectiveCamera(34,W()/Hh(),.1,400);
-  const HOME=new T.Vector3(40,30,30);cam.position.copy(HOME);
+  const HOME=new T.Vector3(40,30,30);if(innerWidth<640)HOME.multiplyScalar(1.45);   // no celular a maquete começa mais longe, inteira na tela
+  cam.position.copy(HOME);
   const ctl=T.OrbitControls?new T.OrbitControls(cam,r.domElement):null;
   if(ctl){ctl.enableDamping=true;ctl.dampingFactor=.08;ctl.enableZoom=false;ctl.enablePan=false;ctl.maxPolarAngle=1.3;ctl.minPolarAngle=.2;ctl.target.set(0,0,0);}
   const toque=matchMedia('(pointer: coarse)').matches;
