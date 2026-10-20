@@ -10,7 +10,6 @@ Coloque aqui as fotos com estes nomes. A página encontra cada uma sozinha; enqu
 | sobre-2.jpg | Quem somos | Equipe / professores |
 | cimerian-1.jpg | Cimerian, foto grande | Linha de máquinas Cimerian (horizontal) |
 | cimerian-2.jpg a cimerian-5.jpg | Cimerian, fotos menores | Máquinas e detalhes (quadradas) |
-| placa-cimerian.jpg | Selo oficial | Foto da placa de academia oficial Cimerian |
 | roupas-garrote.jpg | Diferenciais | Roupas da marca Garrote |
 | mod-musculacao.jpg, mod-muaythai.jpg, mod-boxe.jpg, mod-danca.jpg | Modalidades | Capa de cada modalidade (vertical 3:4) |
 | fachada.jpg | O espaço, foto grande | Fachada da Garrote (horizontal) |

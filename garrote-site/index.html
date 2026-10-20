@@ -106,10 +106,16 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .hero-foot p b{color:#fff}
 .hero-cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 @media(min-width:900px){.hero-foot{grid-template-columns:1fr auto auto}}
-.seal{width:96px;height:96px;flex:none;display:none}
+.seal{width:104px;height:104px;flex:none;display:none}
 @media(min-width:900px){.seal{display:block}}
-.seal svg{width:100%;height:100%}
-.seal .gira{animation:gira 22s linear infinite;transform-box:view-box;transform-origin:center}
+/* escudo Cimerian: imagem sem fundo, reflexo metálico passando e inclinação quando o mouse chega perto */
+.escudo{display:block;width:100%;height:100%;perspective:900px}
+.esc-in{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .2s ease-out;filter:drop-shadow(0 18px 26px rgba(0,0,0,.85))}
+.esc-in img{width:100%;height:100%;object-fit:contain;display:block;backface-visibility:hidden;transform:translateZ(0)}
+.esc-in .brilho{position:absolute;inset:0;pointer-events:none;
+  -webkit-mask:url(assets/escudo-cimerian.webp) center/contain no-repeat;mask:url(assets/escudo-cimerian.webp) center/contain no-repeat;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.38) 50%,transparent 60%) no-repeat;background-size:250% 100%;animation:brilho 5s ease-in-out infinite}
+@keyframes brilho{0%,30%{background-position:120% 0}70%,100%{background-position:-20% 0}}
 @keyframes gira{to{transform:rotate(360deg)}}
 
 /* faixa que corre */
@@ -142,11 +148,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cim-feats div{background:var(--s1);padding:20px 22px}
 .cim-feats b{font:700 17px/1.2 var(--head);display:block;margin-bottom:5px;letter-spacing:.02em}
 .cim-feats p{font-size:14px;color:var(--dim)}
-.plaque{margin-top:clamp(36px,5vw,56px);display:grid;gap:24px 48px;align-items:center;grid-template-columns:1fr;position:relative;padding:clamp(22px,3vw,36px);border-radius:var(--r);background:linear-gradient(120deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid var(--line)}
-@media(min-width:860px){.plaque{grid-template-columns:1fr 360px}}
+.plaque{margin-top:clamp(40px,5vw,64px);display:grid;gap:28px 48px;align-items:center;grid-template-columns:1fr;position:relative}
+@media(min-width:860px){.plaque{grid-template-columns:1fr 340px}}
+.plaque .escudo{width:min(300px,72vw);height:auto;aspect-ratio:1;justify-self:center}
 .plaque .txt{display:grid;gap:12px;justify-items:start;text-align:left}
 .plaque h3{font:800 clamp(26px,2.8vw,36px)/1 var(--display);text-transform:uppercase}
-.plaque .ph{width:100%;aspect-ratio:4/3;border-radius:14px}
 
 /* ---------- só na Garrote (compacto) ---------- */
 .bento{display:grid;gap:10px;grid-template-columns:1fr}
@@ -458,11 +464,8 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <a class="btn red" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Quero%20agendar%20uma%20aula%20experimental%20na%20Garrote." target="_blank" rel="noopener">Agendar aula experimental <svg><use href="#i-arrow"/></svg></a>
       <a class="btn line" href="#planos">Ver planos</a>
     </div>
-    <div class="seal" aria-label="Equipamentos oficiais Cimerian">
-      <svg viewBox="0 0 120 120"><defs><path id="circ" d="M60 60m-46 0a46 46 0 1 1 92 0a46 46 0 1 1-92 0"/></defs>
-        <circle cx="60" cy="60" r="58" fill="none" stroke="rgba(255,255,255,.18)"/>
-        <g class="gira"><text font-family="Rajdhani,sans-serif" font-weight="700" font-size="11.5" letter-spacing="3.4" fill="#fff"><textPath href="#circ">EQUIPAMENTOS OFICIAIS · CIMERIAN · </textPath></text></g>
-        <path d="M51 44h25l-6 13H45z" fill="#FF2D36"/><path d="M45 63h18l-4 14H41z" fill="#fff"/></svg>
+    <div class="seal" role="img" aria-label="Academia oficial Cimerian">
+      <span class="escudo" aria-hidden="true"><span class="esc-in"><img src="assets/escudo-cimerian.webp" alt=""><i class="brilho"></i></span></span>
     </div>
   </div>
 </section>
@@ -516,7 +519,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
         <h3>Academia oficial Cimerian</h3>
         <p class="lead">Pela quantidade de máquinas oficiais, a Garrote recebeu a placa de academia oficial Cimerian. Ela fica na entrada, para você conferir.</p>
       </div>
-      <div class="ph" data-foto="placa-cimerian" data-tag="fotos/placa-cimerian.jpg · placa oficial"></div>
+      <span class="escudo" role="img" aria-label="Escudo Academia oficial Cimerian"><span class="esc-in"><img src="assets/escudo-cimerian.webp" alt=""><i class="brilho"></i></span></span>
     </div>
   </div>
 </section>
@@ -856,6 +859,15 @@ const MODS={
   st.addEventListener('pointermove',e=>{const r=st.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
     rig.style.transform=`rotateY(${x*14}deg) rotateX(${-y*10}deg)`;});
   st.addEventListener('pointerleave',()=>rig.style.transform='');})();
+
+/* escudos: inclinam acompanhando o mouse quando ele está perto (até ~420 px do centro) */
+(function(){const es=$$('.escudo .esc-in');if(reduz||!es.length)return;const MAX=16,R=420;
+  addEventListener('pointermove',e=>es.forEach(el=>{const r=el.getBoundingClientRect();if(!r.width)return;
+    const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),d=Math.hypot(dx,dy);
+    if(d>R){el.style.transform='';return;}const f=1-d/R,x=Math.max(-1,Math.min(1,dx/(R*.5))),y=Math.max(-1,Math.min(1,dy/(R*.5)));
+    el.style.transform=`rotateY(${x*MAX*f}deg) rotateX(${-y*MAX*f}deg)`;}),{passive:true});
+  document.addEventListener('pointerleave',()=>es.forEach(el=>el.style.transform=''));
+})();
 
 /* entrada ao rolar */
 if(!reduz&&'IntersectionObserver' in window){
