@@ -299,9 +299,11 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .plan li{display:flex;gap:10px}
 .plan li::before{content:"";flex:none;width:6px;height:6px;margin-top:9px;background:var(--glow);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%);transform:scale(1.4)}
 .plan .btn{margin-top:auto;width:100%}
-.ex-note{display:inline-flex;gap:8px;align-items:center;font:600 12px var(--head);letter-spacing:.12em;text-transform:uppercase;color:#F5B33D;border:1px dashed rgba(245,179,61,.5);border-radius:999px;padding:7px 14px}
 .passes{display:grid;gap:12px;grid-template-columns:1fr;margin-top:12px}
-@media(min-width:900px){.passes{grid-template-columns:1fr 1fr 1.3fr}}
+@media(min-width:640px){.passes{grid-template-columns:1fr 1fr}}
+@media(min-width:1100px){.passes{grid-template-columns:1fr 1fr 1fr 1.35fr}}
+.plan .tot{font-size:13px;color:var(--dim);margin-top:-6px}
+@media(min-width:1100px){.plan .sub{min-height:3.2em}}
 .pass{border-radius:16px;padding:18px 22px;border:1px solid var(--line);background:var(--s1);display:flex;align-items:center;gap:18px;justify-content:space-between;flex-wrap:wrap}
 .pass h4{font:700 19px/1.1 var(--head);letter-spacing:.02em}
 .pass p{font-size:13.5px;color:var(--dim)}
@@ -481,7 +483,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <p class="lead" style="margin-top:20px">A Garrote junta <b>musculação com equipamentos Cimerian</b>, <b>muay thai</b>, <b>boxe</b> e <b>dança</b> no mesmo endereço. Ambiente climatizado, vestiários com chuveiro, equipe acompanhando o seu treino e um app próprio para você treinar com direção.</p>
       <ol class="steps">
         <li><div><b>Venha para uma aula experimental</b><p>Agende pelo WhatsApp, conheça o espaço e treine com a gente.</p></div></li>
-        <li><div><b>Escolha o seu plano</b><p>Mensal, trimestral, anual, família ou diária. Também aceitamos Wellhub e TotalPass.</p></div></li>
+        <li><div><b>Escolha o seu plano</b><p>Avulsa, semanal, quinzenal, mensal, semestral, anual ou família. Também aceitamos Wellhub e TotalPass.</p></div></li>
         <li><div><b>Receba o treino no app</b><p>O professor monta o seu treino e ele aparece no celular, com cargas, séries e descanso.</p></div></li>
         <li><div><b>Evolua com acompanhamento</b><p>Check-in, histórico e comparação com o treino anterior para você ver o progresso.</p></div></li>
       </ol>
@@ -650,32 +652,38 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 <section class="band flat" id="planos">
   <div class="wrap">
     <div class="sec-head split rv">
-      <div><span class="eyebrow">Planos</span><h2 class="h2">Escolha como <em>começar</em>.</h2></div>
-      <div style="display:grid;gap:14px;justify-items:start"><p class="lead">Todos os planos dão acesso ao salão de musculação, ao app e à estrutura completa. Pagamento por Pix ou cartão.</p><span class="ex-note">Valores de exemplo · confirmar com a academia</span></div>
+      <div><span class="eyebrow">Planos de musculação</span><h2 class="h2">Escolha como <em>começar</em>.</h2></div>
+      <p class="lead">Todos os planos dão <b>acesso total à musculação</b>, acompanhamento profissional, ambiente moderno e equipamentos de última geração. Para muay thai, boxe e dança, fale com a recepção.</p>
     </div>
     <div class="plans">
       <article class="plan rv"><h3>Mensal</h3><p class="sub">Para começar sem compromisso longo.</p>
-        <div class="price"><small>R$</small><b>129</b><span>,90/mês</span></div>
-        <ul><li>Musculação livre no horário</li><li>Treino no app</li><li>Vestiário e estrutura completa</li></ul>
-        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Tenho%20interesse%20no%20plano%20mensal." target="_blank" rel="noopener">Quero o mensal</a></article>
-      <article class="plan rv"><h3>Trimestral</h3><p class="sub">Três meses para criar o hábito.</p>
-        <div class="price"><small>3× R$</small><b>119</b><span>,90</span></div>
-        <ul><li>Tudo do mensal</li><li>Reavaliação no fim do período</li><li>Desconto sobre o mensal</li></ul>
-        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Tenho%20interesse%20no%20plano%20trimestral." target="_blank" rel="noopener">Quero o trimestral</a></article>
-      <article class="plan hot rv"><span class="badge">Mais escolhido</span><h3>Anual</h3><p class="sub">O melhor valor por mês.</p>
-        <div class="price"><small>12× R$</small><b>99</b><span>,90</span></div>
-        <ul><li>Tudo do trimestral</li><li>Menor mensalidade</li><li>Prioridade nas turmas</li></ul>
-        <a class="btn red" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Tenho%20interesse%20no%20plano%20anual." target="_blank" rel="noopener">Quero o anual <svg><use href="#i-arrow"/></svg></a></article>
-      <article class="plan rv"><h3>Família</h3><p class="sub">Treine junto com quem você mora.</p>
-        <div class="price"><small>a partir de R$</small><b>89</b><span>,90/pessoa</span></div>
-        <ul><li>Um pagamento para o grupo</li><li>Renova o grupo todo de uma vez</li><li>Cada um com seu treino no app</li></ul>
-        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Tenho%20interesse%20no%20plano%20fam%C3%ADlia." target="_blank" rel="noopener">Quero o família</a></article>
+        <div class="price"><small>R$</small><b>159</b><span>,90/mês</span></div>
+        <p class="tot">Renovação mensal</p>
+        <ul><li>Acesso total à musculação</li><li>Acompanhamento profissional</li><li>Treino no app</li></ul>
+        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20fazer%20minha%20matr%C3%ADcula%20no%20plano%20mensal%20de%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o mensal</a></article>
+      <article class="plan rv"><h3>Semestral</h3><p class="sub">Opção econômica para quem quer compromisso.</p>
+        <div class="price"><small>6× R$</small><b>139</b><span>,90</span></div>
+        <p class="tot">Total R$ 839,40 no cartão de crédito</p>
+        <ul><li>Matrícula garantida por 6 meses</li><li>Desconto sobre o mensal</li><li>Acompanhamento profissional</li></ul>
+        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20fazer%20minha%20matr%C3%ADcula%20no%20plano%20semestral%20de%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o semestral</a></article>
+      <article class="plan hot rv"><span class="badge">Maior desconto</span><h3>Anual</h3><p class="sub">Para quem quer resultado a longo prazo.</p>
+        <div class="price"><small>12× R$</small><b>129</b><span>,90</span></div>
+        <p class="tot">Total R$ 1.558,80 no cartão de crédito</p>
+        <ul><li>Matrícula garantida por 12 meses</li><li>Maior desconto e economia</li><li>Acompanhamento profissional</li></ul>
+        <a class="btn red" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20fazer%20minha%20matr%C3%ADcula%20no%20plano%20anual%20de%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o anual <svg><use href="#i-arrow"/></svg></a></article>
+      <article class="plan rv"><h3>Família</h3><p class="sub">Casal, filhos, pais e irmãos.</p>
+        <div class="price"><small>R$</small><b>149</b><span>,90/pessoa</span></div>
+        <p class="tot">Valor mensal individual</p>
+        <ul><li>Desconto especial para o grupo familiar</li><li>Acesso total à musculação</li><li>Cada um com seu treino no app</li></ul>
+        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20saber%20do%20plano%20mensal%20fam%C3%ADlia%20da%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o família</a></article>
     </div>
     <div class="passes">
-      <div class="pass rv"><div><h4>Diária</h4><p>Está de passagem por Piraju? Treine um dia.</p></div><div class="price"><small>R$</small><b>25</b></div></div>
-      <div class="pass rv"><div><h4>Semanal</h4><p>Sete dias seguidos de acesso livre.</p></div><div class="price"><small>R$</small><b>60</b></div></div>
-      <div class="pass rv"><div><h4>Wellhub e TotalPass</h4><p>Use o seu benefício da empresa na Garrote.</p></div><div class="logos"><span>Wellhub</span><span>TotalPass</span></div></div>
+      <div class="pass rv"><div><h4>Aula avulsa</h4><p>Treine um dia na Garrote.</p></div><div class="price"><small>R$</small><b>30</b><span>,00</span></div></div>
+      <div class="pass rv"><div><h4>Semanal</h4><p>Uma semana de acesso.</p></div><div class="price"><small>R$</small><b>85</b><span>,00</span></div></div>
+      <div class="pass rv"><div><h4>Quinzenal</h4><p>Quinze dias de acesso.</p></div><div class="price"><small>R$</small><b>105</b><span>,00</span></div></div>
+      <div class="pass rv"><div><h4>Wellhub e TotalPass</h4><p>Use o seu benefício da empresa.</p></div><div class="logos"><span>Wellhub</span><span>TotalPass</span></div></div>
     </div>
+  </div>
   </div>
 </section>
 
