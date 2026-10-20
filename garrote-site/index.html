@@ -84,8 +84,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* ---------- topo ---------- */
 .hero{min-height:min(820px,100svh);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;isolation:isolate;padding-top:120px}
 .hero .bg{position:absolute;inset:0;z-index:-2}
+.hero .bg>img.foto{object-position:50% 38%}
 .hero .bg::after{content:"";position:absolute;inset:0;background:
-  linear-gradient(180deg,rgba(11,11,12,.6) 0%,rgba(11,11,12,.2) 35%,rgba(11,11,12,.72) 74%,var(--ink) 100%),
+  linear-gradient(180deg,rgba(11,11,12,.72) 0%,rgba(11,11,12,.42) 35%,rgba(11,11,12,.8) 72%,var(--ink) 100%),
   radial-gradient(60% 55% at 50% 60%,rgba(217,30,38,.26),transparent 70%)}
 .hero .bg .tag{top:96px;bottom:auto;left:auto;right:var(--gutr)}
 .title{display:flex;justify-content:center}
@@ -220,8 +221,16 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .addr address small{display:block;font:500 15px/1.5 var(--body);color:var(--dim);margin-top:6px}
 .addr .btns{display:flex;gap:10px;flex-wrap:wrap}
 .addr .btn{height:44px;padding:0 18px;font-size:14px}
-.drone{border-radius:var(--r);min-height:200px}
-.drone .pin{position:absolute;left:50%;top:46%;transform:translate(-50%,-100%);width:30px;height:40px;color:var(--glow);filter:drop-shadow(0 8px 14px rgba(0,0,0,.6))}
+.facade::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(11,11,12,.85));pointer-events:none}
+.facade .area{position:absolute;left:22px;bottom:20px;z-index:2;display:grid;gap:2px;max-width:30ch}
+.facade .area b{font:900 clamp(34px,4vw,52px)/.9 var(--display);letter-spacing:.01em}
+.facade .area span{font:600 13px/1.35 var(--head);letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.8)}
+.facade.tem .tag{display:none}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.nums div{background:var(--s1);padding:18px 20px;display:grid;align-content:center;gap:4px}
+.nums b{font:800 clamp(30px,3vw,40px)/.95 var(--display);font-variant-numeric:tabular-nums}
+.nums b small{font-size:.5em;margin-left:3px;color:var(--glow)}
+.nums span{font:600 12px var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 /* maquete */
 .maq{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:radial-gradient(80% 70% at 50% 30%,#1b1112,var(--ink) 75%);height:clamp(380px,56vw,620px);max-width:100%}
 .maq canvas{display:block;width:100%!important;height:100%!important;touch-action:pan-y}
@@ -455,8 +464,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <div class="hero-meta"><span>Musculação</span><span>Muay Thai</span><span>Boxe</span><span>Dança</span></div>
       <div class="word">
         <h1>Garrote<span class="g">.</span></h1>
-        <div class="cut-slot" id="cutslot">fotos/hero-atleta.png<br>pessoa recortada<br>(sem fundo)</div>
-        <img class="cut" src="fotos/hero-atleta.png" alt="" onload="document.getElementById('cutslot').remove()" onerror="this.remove()">
+                <img class="cut" src="fotos/hero-atleta.png" alt="" onerror="this.remove()">
       </div>
     </div>
   </div>
@@ -590,7 +598,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <p class="lead">O térreo inteiro é salão de musculação, com recepção na entrada e vestiários no fundo. No 2º andar ficam a sala de dança e o tatame.</p>
     </div>
     <div class="place">
-      <div class="ph facade rv" data-foto="fachada" data-tag="fotos/fachada.jpg · fachada da Garrote"></div>
+      <div class="ph facade rv" data-foto="fachada" data-tag="fotos/fachada.jpg · vista de cima"><div class="area"><b>+1.200 m²</b><span>de estrutura pensada para uma experiência completa</span></div></div>
       <div class="loc">
         <div class="addr rv">
           <span class="eyebrow">Endereço</span>
@@ -600,7 +608,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
             <button class="btn line" type="button" data-copy="R. Maj. Mariano, 137 - Vila Al Isa, Piraju - SP, 18800-009"><svg><use href="#i-copy"/></svg>Copiar</button>
           </div>
         </div>
-        <div class="ph drone rv" data-foto="drone" data-tag="fotos/drone.jpg · vista de cima"><svg class="pin"><use href="#i-pin"/></svg></div>
+        <div class="nums rv"><div><b>Exclusivo</b><span>estacionamento para alunos</span></div><div><b>+40</b><span>aparelhos</span></div><div><b>2</b><span>andares</span></div><div><b>100%</b><span>climatizada</span></div></div>
       </div>
     </div>
     <div class="maq rv" id="maq">
