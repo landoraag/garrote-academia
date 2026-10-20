@@ -507,7 +507,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 .track .open{transform-origin:left center}
 /* quem pediu menos movimento no sistema (ex.: Windows com "Efeitos de animação" desligado) ainda vê as entradas suaves;
    só ficam desligados o parallax, a aceleração da faixa e a inclinação 3D */
-@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:#fff;color:#0C0C0C;font:600 14px var(--body);padding:12px 18px;border-radius:999px;transition:all .3s var(--ease);z-index:70;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -898,7 +898,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 <script>
 document.documentElement.classList.add('js');
 const $=(s,e=document)=>e.querySelector(s), $$=(s,e=document)=>[...e.querySelectorAll(s)];
-const reduz=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduz=false;   // todas as animações para todo mundo, mesmo com "menos movimento" ligado no sistema (muita gente nem sabe que está assim)
 const WA='https://wa.me/5514998048435?text=';
 
 /* fotos */
