@@ -39,7 +39,7 @@ section{position:relative;scroll-margin-top:84px}
 .flat{padding-top:0}
 #academia.band,#cimerian.band{padding-block:clamp(48px,6vw,80px)}
 #cimerian .sec-head{margin-bottom:clamp(24px,3vw,36px)}
-.plaque .escudo{width:min(230px,60vw)}
+.plaque .escudo{width:min(230px,60vw);height:auto;aspect-ratio:1;flex:none}
 
 /* tipografia */
 .eyebrow{font:600 12px/1 var(--head);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:10px}
@@ -160,7 +160,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cim-feats p{font-size:14px;color:var(--dim)}
 .plaque{margin-top:clamp(28px,4vw,44px);display:grid;gap:28px 48px;align-items:center;grid-template-columns:1fr;position:relative}
 @media(min-width:860px){.plaque{grid-template-columns:1fr 260px}}
-.plaque .escudo{width:min(300px,72vw);height:auto;aspect-ratio:1;justify-self:center}
+.plaque .escudo{justify-self:center}
 .plaque .txt{display:grid;gap:12px;justify-items:start;text-align:left}
 .plaque h3{font:800 clamp(26px,2.8vw,36px)/1 var(--display);text-transform:uppercase}
 
@@ -371,8 +371,7 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .stars svg{width:18px;height:18px}
 .score small{display:block;color:var(--dim);font-size:14px;margin-top:6px}
 .reel{overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-.reel .row{display:flex;gap:12px;width:max-content;animation:corre 60s linear infinite;padding-block:6px}
-.reel:hover .row,.reel.parado .row{animation-play-state:paused}
+.reel .row{display:flex;gap:12px;width:max-content;padding-block:6px;will-change:transform;transform:translate3d(0,0,0)}
 .case{position:relative;flex:none;width:clamp(190px,19vw,240px);aspect-ratio:9/15;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:flex-end;padding:16px;isolation:isolate;cursor:pointer;text-align:left;transition:transform .4s var(--ease),border-color .3s}
 .case:hover{transform:translateY(-4px);border-color:rgba(255,45,54,.45)}
 .case .ph{position:absolute;inset:0;z-index:-2}
@@ -539,7 +538,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <a class="btn line" href="#planos">Ver planos</a>
     </div>
     <div class="seal" role="img" aria-label="Academia oficial Cimerian">
-      <span class="escudo" aria-hidden="true"><span class="esc-in"><img src="assets/escudo-cimerian.webp" alt=""><i class="brilho"></i></span></span>
+      <span class="escudo" aria-hidden="true"><span class="esc-in"><img src="assets/escudo-cimerian.webp" alt="" width="800" height="800" decoding="async"><i class="brilho"></i></span></span>
     </div>
   </div>
 </section>
@@ -575,8 +574,8 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <p class="lead">A Cimerian é fabricante brasileira de equipamentos de alto padrão, feita em Londrina. Biomecânica que acompanha o movimento do corpo, ajustes finos e acabamento de academia premium. Aqui, o parque de máquinas é Cimerian.</p>
     </div>
     <div class="cim-grid rv">
-      <div class="ph wide" data-foto="cimerian-1" data-tag="fotos/cimerian-1.jpg · linha de máquinas"></div>
-      <div class="ph" data-foto="cimerian-2" data-tag="fotos/cimerian-2.jpg"></div>
+      <div class="ph wide" data-foto="cimerian-2" data-tag="fotos/cimerian-2.jpg"></div>
+      <div class="ph" data-foto="cimerian-1" data-tag="fotos/cimerian-1.jpg"></div>
       <div class="ph" data-foto="cimerian-3" data-tag="fotos/cimerian-3.jpg"></div>
     </div>
     <div class="cim-feats rv">
@@ -591,7 +590,7 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
         <h3>Academia oficial Cimerian</h3>
         <p class="lead">Pela quantidade de máquinas oficiais, a Garrote recebeu a placa de academia oficial Cimerian. Ela fica na entrada, para você conferir.</p>
       </div>
-      <span class="escudo" role="img" aria-label="Escudo Academia oficial Cimerian"><span class="esc-in"><img src="assets/escudo-cimerian.webp" alt=""><i class="brilho"></i></span></span>
+      <span class="escudo" role="img" aria-label="Escudo Academia oficial Cimerian"><span class="esc-in"><img src="assets/escudo-cimerian.webp" alt="" width="800" height="800" decoding="async"><i class="brilho"></i></span></span>
     </div>
   </div>
 </section>
@@ -899,6 +898,19 @@ const CASES=[
     $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=`https://www.instagram.com/reel/${c.u}/`;
     v.poster=`fotos/case-${i+1}.jpg`;v.src=`fotos/case-${i+1}.mp4`;$('#reel').classList.add('parado');
     dlg.showModal?dlg.showModal():dlg.setAttribute('open','');v.play&&v.play().catch(()=>{});}));
+  /* movimento do carrossel: começa assim que ele aparece na tela, com um impulso rápido que desacelera até a velocidade normal */
+  (function(){const reel=$('#reel'),row=$('#reel-row');let x=0,vel=0,alvo=0,ult=0,visto=false,hover=false;
+    const base=()=>row.scrollWidth/2/60;                       // meia faixa em 60 s, como antes
+    reel.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')hover=true;});
+    reel.addEventListener('pointerleave',()=>hover=false);
+    const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!visto){visto=true;vel=base()*5;}}),{threshold:.15});
+    io.observe(reel);
+    function passo(t){const dt=Math.min(.05,(t-(ult||t))/1000);ult=t;
+      const parado=hover||reel.classList.contains('parado')||!visto;
+      alvo=parado?0:base();vel+=(alvo-vel)*Math.min(1,dt*(vel>alvo?1.6:4));
+      if(!reduz){x-=vel*dt;const meio=row.scrollWidth/2;if(meio&&-x>=meio)x+=meio;row.style.transform=`translate3d(${x}px,0,0)`;}
+      requestAnimationFrame(passo);}
+    requestAnimationFrame(passo);})();
   $('#pl-x').onclick=fecha;dlg.addEventListener('click',e=>{if(e.target===dlg)fecha();});dlg.addEventListener('cancel',e=>{e.preventDefault();fecha();});
 })();
 $$('.ph').forEach(encaixe);
@@ -1020,7 +1032,7 @@ const MODS={
 
   /* escudo da placa: entra girando */
   const esc=$('.plaque .escudo');
-  if(esc&&baixo(esc))gsap.from(esc,{rotateY:-70,scale:.7,opacity:0,duration:1.3,ease:'back.out(1.4)',...limpa,scrollTrigger:{trigger:esc,start:'top 85%'}});
+  if(esc&&baixo(esc))gsap.from(esc,{rotateY:-70,opacity:0,duration:1.2,ease:'power3.out',...limpa,scrollTrigger:{trigger:esc,start:'top 85%'}});
 
   /* maquete: abre como uma cortina */
   const mq=$('#maq');
