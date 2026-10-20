@@ -325,6 +325,10 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .q{margin:0;border-radius:var(--r);background:var(--s1);border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:12px}
 .q .stars svg{width:15px;height:15px}
 .q blockquote{margin:0;font-size:15.5px;line-height:1.6;color:var(--fg)}
+.who{display:flex;align-items:center;gap:12px}
+.who b{display:block;font:700 16px/1.2 var(--head);letter-spacing:.02em}
+.who small{font-size:12.5px;color:var(--dim)}
+.av{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:500 18px var(--body);color:#fff;object-fit:cover}
 .q figcaption{margin-top:auto;font:600 11px var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
 .score{display:flex;align-items:center;gap:16px}
 .score b{font:900 68px/.85 var(--display)}
@@ -342,7 +346,11 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .case video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
 .case .play{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;margin-bottom:auto;align-self:flex-end;border:1px solid rgba(255,255,255,.25)}
 .case .play svg{width:16px;height:16px;margin-left:3px}
-.case strong{font:800 24px/.95 var(--display);text-transform:uppercase}
+.case strong{font:800 28px/.95 var(--display);text-transform:uppercase}
+.case .ph{background:radial-gradient(120% 70% at 80% 0,rgba(217,30,38,.45),transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px),var(--s1)}
+.case .kk{display:inline-flex;align-self:flex-start;margin-bottom:8px;padding:5px 10px;border-radius:999px;background:var(--red);font:700 11px var(--head);letter-spacing:.12em;text-transform:uppercase}
+.case .ig{display:flex;align-items:center;gap:6px;margin-top:12px;font:600 12px var(--head);letter-spacing:.06em;color:rgba(255,255,255,.75)}
+.case .ig svg{width:14px;height:14px}
 .case strong em{font-style:normal;color:var(--glow)}
 .case p{font-size:13px;color:rgba(255,255,255,.72);margin-top:5px}
 
@@ -703,15 +711,15 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
     <div class="sec-head rv"><span class="eyebrow">Quem treina aqui</span><h2 class="h2">Resultados de <em>verdade</em>.</h2></div>
     <div class="rev-top rv">
       <div class="score"><b>5,0</b><div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><small>Nota no Google · <a href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">23 avaliações</a></small></div></div>
-      <p class="lead" style="max-width:44ch">Alunos reais contando como foi a evolução treinando na Garrote. Toque num vídeo para assistir.</p>
+      <p class="lead" style="max-width:44ch">Alunos reais contando como foi a evolução treinando na Garrote. Toque num card para assistir ao vídeo no Instagram.</p>
     </div>
   </div>
   <div class="reel" id="reel"><div class="row" id="reel-row"></div></div>
   <div class="wrap">
     <div class="quotes">
-      <figure class="q rv"><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>A melhor academia da cidade, infraestrutura de ponta, professores atenciosos, ar condicionado para o nosso conforto e os vestiários amplos com chuveiro, excelente!</blockquote><figcaption>Avaliação no Google</figcaption></figure>
-      <figure class="q rv"><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Profissionais muito atenciosos e estrutura de alto padrão! A melhor academia que já visitei na região de Piraju</blockquote><figcaption>Avaliação no Google</figcaption></figure>
-      <figure class="q rv"><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Ambiente super agradável, limpo e bem estruturado. Os profissionais são atenciosos, capacitados e sempre dispostos a ajudar. Os equipamentos são modernos e bem cuidados, e os treinos são personalizados de acordo com os objetivos de cada aluno.</blockquote><figcaption>Avaliação no Google</figcaption></figure>
+      <figure class="q rv"><div class="who"><span class="av" style="background:#5C6BC0">F</span><div><b>Fabio Felix Menezes</b><small>Google · nov. de 2025</small></div></div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>A melhor academia da cidade, infraestrutura de ponta, professores atenciosos, ar condicionado para o nosso conforto e os vestiários amplos com chuveiro, excelente!</blockquote></figure>
+      <figure class="q rv"><div class="who"><span class="av" style="background:#00796B">F</span><div><b>Fernando Ferreira Lopes</b><small>Google · nov. de 2025</small></div></div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Profissionais muito atenciosos e estrutura de alto padrão! A melhor academia que já visitei na região de Piraju</blockquote></figure>
+      <figure class="q rv"><div class="who"><img class="av" src="assets/avaliacoes/douglas.jpg" alt="" width="40" height="40"><div><b>Douglas Lobeiro</b><small>Google · nov. de 2025</small></div></div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Ambiente super agradável, limpo e bem estruturado. Os profissionais são atenciosos, capacitados e sempre dispostos a ajudar. Os equipamentos são modernos e bem cuidados, e os treinos são personalizados de acordo com os objetivos de cada aluno.</blockquote></figure>
     </div>
     <a class="btn line" style="margin-top:16px" href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">Ver todas as avaliações no Google <svg><use href="#i-arrow"/></svg></a>
   </div>
@@ -813,16 +821,21 @@ function encaixe(p){
 (function(){const itens=['Equipamentos Cimerian','Musculação','Boxe','Dança','Climatizada','Vestiários com chuveiro','App do aluno','Piraju · SP'];
   const h=itens.map(t=>`<span>${t}</span>`).join('');$('#tk').innerHTML=h+h;})();
 
-/* carrossel de vídeos dos alunos (fotos/case-N.jpg de capa e fotos/case-N.mp4) */
+/* carrossel de cases: dados dos reels da Garrote; cada card abre o reel no Instagram.
+   Capa opcional: fotos/case-N.jpg (vertical). Sem ela, o card mostra o fundo da marca. */
+const CASES=[
+  {n:'Bruna',h:'bruna_basqueira',k:'1 ano de treino',r:'Venceu a hipertensão, a pré-diabetes e a obesidade com treino e acompanhamento.',u:'DQ9XBypgGI8'},
+  {n:'Sirlene',h:'sirlen2_macieira',k:'−15 kg',r:'15 kg a menos e muito mais disposição, energia e saúde.',u:'DV_437DkziG'},
+  {n:'Aluna Garrote',h:'stheteshima',k:'Academia premium',r:'Equipamentos top, ambiente climatizado e lojinha com suplementos e marmitas.',u:'DLh5khEsq3n'},
+  {n:'Melhor idade',h:'',k:'Nunca é tarde',r:'Alunos da melhor idade contam como ganharam qualidade de vida e saúde.',u:'DKNx4lNsCkw'},
+  {n:'Nossos alunos',h:'',k:'Não querem parar',r:'Eles começaram na Garrote e não querem mais parar.',u:'DJ41nG_BbHR'},
+  {n:'Dona Marlene',h:'',k:'Exemplo que inspira',r:'Treino que vai além do físico: qualidade de vida, bem-estar e amor-próprio.',u:'DPysk_eADrO'}
+];
 (function(){
-  const cs=[1,2,3,4,5,6].map(n=>`<button class="case" type="button" data-video="case-${n}"><div class="ph" data-foto="case-${n}" data-tag="fotos/case-${n}.mp4"></div><span class="play"><svg><use href="#i-play"/></svg></span><strong>Nome do <em>aluno</em></strong><p>Resultado em poucas palavras.</p></button>`).join('');
-  $('#reel-row').innerHTML=cs+cs.replace(/<button /g,'<button tabindex="-1" aria-hidden="true" ');
-  $$('#reel-row .case').forEach(c=>c.addEventListener('click',()=>{
-    let v=$('video',c);
-    if(!v){v=document.createElement('video');v.src='fotos/'+c.dataset.video+'.mp4';v.playsInline=true;v.controls=true;
-      v.onerror=()=>{v.remove();$('.play',c).style.display='';$('#reel').classList.remove('parado');toast('O vídeo deste aluno ainda não foi adicionado.');};c.prepend(v);}
-    $('#reel').classList.add('parado');v.play&&v.play().catch(()=>{});$('.play',c).style.display='none';
-  }));
+  const card=(c,i,dup)=>`<a class="case" href="https://www.instagram.com/reel/${c.u}/" target="_blank" rel="noopener"${dup?' tabindex="-1" aria-hidden="true"':''}>
+    <div class="ph" data-foto="case-${i+1}"></div><span class="play"><svg><use href="#i-play"/></svg></span>
+    <span class="kk">${c.k}</span><strong>${c.n}</strong><p>${c.r}</p><span class="ig"><svg><use href="#i-ig"/></svg>${c.h?'@'+c.h:'Assistir no Instagram'}</span></a>`;
+  $('#reel-row').innerHTML=CASES.map((c,i)=>card(c,i)).join('')+CASES.map((c,i)=>card(c,i,1)).join('');
 })();
 $$('.ph').forEach(encaixe);
 
