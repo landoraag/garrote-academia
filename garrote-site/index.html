@@ -84,6 +84,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* ---------- topo ---------- */
 .hero{min-height:min(820px,100svh);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;isolation:isolate;padding-top:120px}
 .hero .bg{position:absolute;inset:0;z-index:-2}
+.hero:has(.bg.tem) .cut-slot{display:none}
 .hero .bg::after{content:"";position:absolute;inset:0;background:
   linear-gradient(180deg,rgba(11,11,12,.6) 0%,rgba(11,11,12,.2) 35%,rgba(11,11,12,.72) 74%,var(--ink) 100%),
   radial-gradient(60% 55% at 50% 60%,rgba(217,30,38,.26),transparent 70%)}
@@ -141,9 +142,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cim{background:var(--s1);overflow:hidden;border-block:1px solid var(--line)}
 .cim::before{content:"";position:absolute;inset:auto -10% -40% -10%;height:80%;background:radial-gradient(50% 50% at 50% 50%,rgba(217,30,38,.3),transparent 70%);pointer-events:none}
 .cim-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);position:relative}
+.cim-grid .ph:nth-child(3){grid-column:auto}
 .cim-grid .ph{border-radius:16px;aspect-ratio:1}
 .cim-grid .ph.wide{grid-column:span 2;aspect-ratio:16/9}
-@media(min-width:900px){.cim-grid{grid-template-columns:repeat(4,1fr)}.cim-grid .ph.wide{grid-row:span 2;aspect-ratio:auto}}
+@media(min-width:900px){.cim-grid{grid-template-columns:1.5fr 1fr;grid-template-rows:repeat(2,minmax(260px,auto))}.cim-grid .ph.wide{grid-column:1;grid-row:span 2;aspect-ratio:auto}.cim-grid .ph:not(.wide){aspect-ratio:auto}}
 .cim-feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px;position:relative}
 .cim-feats div{background:var(--s1);padding:20px 22px}
 .cim-feats b{font:700 17px/1.2 var(--head);display:block;margin-bottom:5px;letter-spacing:.02em}
@@ -220,7 +222,8 @@ dialog.sheet[open]{animation:sobe .4s var(--ease)}
 .addr address small{display:block;font:500 15px/1.5 var(--body);color:var(--dim);margin-top:6px}
 .addr .btns{display:flex;gap:10px;flex-wrap:wrap}
 .addr .btn{height:44px;padding:0 18px;font-size:14px}
-.drone{border-radius:var(--r);min-height:200px}
+.drone{border-radius:var(--r);min-height:260px}
+.drone.tem .pin{display:none}
 .drone .pin{position:absolute;left:50%;top:46%;transform:translate(-50%,-100%);width:30px;height:40px;color:var(--glow);filter:drop-shadow(0 8px 14px rgba(0,0,0,.6))}
 /* maquete */
 .maq{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:radial-gradient(80% 70% at 50% 30%,#1b1112,var(--ink) 75%);height:clamp(380px,56vw,620px);max-width:100%}
@@ -507,8 +510,6 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
       <div class="ph wide" data-foto="cimerian-1" data-tag="fotos/cimerian-1.jpg · linha de máquinas"></div>
       <div class="ph" data-foto="cimerian-2" data-tag="fotos/cimerian-2.jpg"></div>
       <div class="ph" data-foto="cimerian-3" data-tag="fotos/cimerian-3.jpg"></div>
-      <div class="ph" data-foto="cimerian-4" data-tag="fotos/cimerian-4.jpg"></div>
-      <div class="ph" data-foto="cimerian-5" data-tag="fotos/cimerian-5.jpg"></div>
     </div>
     <div class="cim-feats rv">
       <div><b>Movimento mais natural</b><p>Trajetórias desenhadas para a articulação, com menos sobrecarga.</p></div>
