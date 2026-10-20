@@ -973,7 +973,7 @@ const TERREO=[
  ['Pia e espelho','v',153,92,40,105],['Pia e espelho','v',153,200,40,105],['Pia e espelho','v',477,92,40,105],['Pia e espelho','v',477,200,40,105],['Bebedouro','v',258,212,152,42],
  ['Banco do vestiário','b',0,372,28,90],['Banco do vestiário','b',65,408,152,42],['Banco do vestiário','b',453,408,152,42],['Banco do vestiário','b',641,372,28,90],
  ['Armários · vestiário masculino','a',0,475,260,28],['Armários · vestiário feminino','a',409,475,260,28],
- ['','p',0,505,262,6],['','p',408,505,262,6],['','p',262,290,6,221],['','p',402,290,6,221],['','p',193,92,5,206],['','p',472,92,5,206],['','p',193,204,284,5],
+ ['','p',0,505,262,6],['','p',408,505,262,6],['','p',262,290,6,221],['','p',402,290,6,221],['','p',193,92,5,206],['','p',472,92,5,206],['','p',193,204,284,5],['','t',193,88,284,121],
  ['Halteres de 10 a 45 kg','r',15,515,155,62],['Torre de halteres 1 a 10 kg','r',172,515,36,62],['Torre de halteres 1 a 10 kg','r',212,515,38,62],
  ['Colchonetes','a',608,515,45,55],['Steps','b',612,572,40,48],['Caneleiras','a',348,595,26,85],['Anilhas','r',321,652,26,25],['Elevação pélvica livre','b',555,620,98,68],
  ['Banco ajustável','b',32,642,86,38],['Banco ajustável','b',32,727,86,38],['Banco ajustável','b',32,807,86,38],['Banco reto','b',32,873,86,38],
@@ -1036,6 +1036,7 @@ const ZONAS1=[['Sala de dança',167,456],['Tatame · Muay Thai e Boxe',502,378],
       const it=new T.Group();it.position.set(cx,0,cz);g.add(it);
       const p=o=>{if(nm){o.userData.nome=nm;pickables.push(o);}return o;};
       if(tp==='p'){add(B(w,2.6,d),mat.parede,0,1.4,0,it);return;}
+      if(tp==='t'){add(B(w,.12,d),mat.parede,0,2.76,0,it);return;}   // teto da área vazia entre as pias
       if(tp==='m'){p(add(B(w*.92,.28,d*.92),mat.maq,0,.24,0,it));p(add(B(w*.5,.55,d*.5),mat.estofado,w*.1,.65,0,it));
         const tw=Math.min(w,d)*.28;p(add(B(tw,2,tw),mat.maq,-w*.32,1.1,0,it));p(add(B(tw*1.1,.18,d*.7),mat.vermelho,-w*.32,2.15,0,it));return;}
       if(tp==='g'){const hh=tp==='g'?2.3:2;[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([a,b])=>p(add(B(.09,hh,.09),mat.metal,a*w*.42,hh/2+.1,b*d*.42,it)));
