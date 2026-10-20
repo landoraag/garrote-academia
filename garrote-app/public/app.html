@@ -49,38 +49,6 @@ ap();var f=function(){ap();dispatchEvent(new Event('garrote:tema'))};m.addEventL
 (function(){setTimeout(function(){var a=document.getElementById('app');if(!a||a.querySelector('.screen'))return;
 a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;background:#0C0C0C;min-height:100%"><b style="font-size:20px">Conexão lenta</b><p style="color:#9A9AA0">O app está demorando para abrir. Confira sua internet e tente novamente.</p><button onclick="location.reload()" style="height:48px;padding:0 24px;border:0;border-radius:14px;background:#D91E26;color:#fff;font:600 15px sans-serif">Tentar novamente</button></div>';},25000);})();
 </script>
-<script>
-/* abertura em vídeo: toca na primeira vez que o app é aberto no dia (celular e computador),
-   enquanto o app carrega por baixo. Sai com fade quando o logo terminou de montar (~5 s) e a primeira tela
-   já está pronta; tocar/clicar pula. Se o app demorar, depois do fim do vídeo a abertura sai mesmo assim.
-   Se o vídeo não conseguir tocar (ex.: modo pouca energia do iPhone), fica só o logo e o app abre normal. */
-(function(){
-  var W=window.__intro={ativa:false,fim:null},K='garrote:abertura:v2',d=new Date(),
-      hoje=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-  try{if(localStorage.getItem(K)===hoje)return;}catch(e){}
-  if(navigator.connection&&navigator.connection.saveData)return;
-  var o=document.createElement('div');o.id='intro';o.setAttribute('aria-hidden','true');
-  o.innerHTML='<img src="assets/logo.png" alt=""><video muted playsinline autoplay preload="auto" src="assets/abertura.mp4"></video>';
-  document.body.appendChild(o);W.ativa=true;
-  var v=o.querySelector('video');v.muted=true;
-  var pronto=false,viu=false,saiu=false,MIN=5;
-  function marca(){try{localStorage.setItem(K,hoje)}catch(e){}}
-  function sair(){if(saiu)return;saiu=true;o.classList.add('sai');W.ativa=false;
-    dispatchEvent(new Event('garrote:intro-fim'));setTimeout(function(){o.remove()},700);}
-  function ver(){if(pronto&&viu)sair();}
-  W.fim=function(){pronto=true;ver();};                     // chamado pelo app quando a primeira tela aparece
-  v.addEventListener('timeupdate',function(){if(v.currentTime>=MIN){if(!viu)marca();viu=true;ver();}});   // só conta o dia quando o logo foi visto montado
-  v.addEventListener('ended',function(){if(!viu)marca();viu=true;ver();setTimeout(sair,2500);});
-  var tocou=false;
-  function semVideo(){if(tocou)return;o.classList.add('semvideo');viu=true;ver();setTimeout(sair,1500);}
-  v.addEventListener('playing',function(){if(saiu)return;tocou=true;o.classList.add('tocando');});
-  v.addEventListener('error',semVideo);
-  setTimeout(semVideo,6000);                                // em 6 s nem começou (internet ruim, autoplay bloqueado): segue sem vídeo
-  setTimeout(function(){viu=true;ver();setTimeout(sair,1500);},14000);   // trava de segurança: nunca segura o app além disso
-  o.addEventListener('click',function(){viu=true;sair();});
-  var p=v.play&&v.play();p&&p.catch&&p.catch(function(){});
-})();
-</script>
 <div id="toast" role="status" aria-live="polite"></div>
 <script type="module" src="js/main.js"></script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>

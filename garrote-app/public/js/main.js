@@ -103,7 +103,7 @@ const SCREENS = {
 };
 
 /* ---------- chegada: os itens da primeira tela entram em sequência ----------
-   No celular a abertura em vídeo está por cima: os itens entram junto com o fade do vídeo. */
+ */
 const ENTRA = '.login-top,.sheet>*,.hero>*,.body>*,.cards>*,.stats>*,.dgrid>*,.nav,.bnav,.wk>*,.dhero>*,.mtop,.side>*,.main>*,.kpis>*,.two>*';
 function entra(el) {
   const all = [...el.querySelectorAll(ENTRA)], set = new Set(all), alto = innerHeight;
@@ -113,9 +113,7 @@ function entra(el) {
   setTimeout(() => itens.forEach(x => { x.classList.remove('entra'); x.style.removeProperty('--d'); }), 1700);
 }
 function chegada(el) {
-  const I = window.__intro;
-  if (I && I.ativa) { addEventListener('garrote:intro-fim', () => entra(el), { once: true }); I.fim(); }
-  else entra(el);
+  entra(el);
 }
 
 /* ---------- roteador com transição ---------- */

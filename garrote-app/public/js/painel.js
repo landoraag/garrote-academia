@@ -139,14 +139,14 @@ const exsel = (D, it) => { const T = catTree(D.categorias), e = D.exercicios.fin
   return `<div class="exsel"><label class="ii"><span>Categoria</span><select name="cat" aria-label="Categoria"><option value="">Escolha a categoria</option>${T.tops.map(c => `<option value="${esc(c.id)}" ${c.id === cat ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}${semCat ? `<option value="${SEM}" ${cat === SEM ? 'selected' : ''}>Sem categoria</option>` : ''}</select></label>
     <label class="ii sb"><span>Subcategoria</span><select name="sub" aria-label="Subcategoria" ${cat && T.subs(cat).length ? '' : 'disabled'}>${subOpts(T, cat, sub)}</select></label>
     <label class="ii exn"><span>Exercício</span><select name="ex" aria-label="Exercício" ${cat ? '' : 'disabled'}>${exOpts(D, T, cat, sub, it.exId)}</select></label></div>`; };
-/* cada exercício fica fechado (categoria, exercício e botões); tocar em qualquer parte da barra abre os detalhes, e só um fica aberto por vez */
+/* cada exercício fica fechado (categoria, exercício e botões); o botão de detalhes abre séries, carga e descanso, e só um fica aberto por vez */
 const isum = r => { const tm = $('[name=un]', r).value === 's', s = +$('[name=series]', r).value || 1, v = +$('[name=val]', r).value || 0, d = +$('[name=desc]', r).value || 0;
   const reps = r.classList.contains('ps') ? getSets(r).join('/') + (tm ? ' s' : '') : tm ? v + 's' : (+$('[name=reps]', r).value || 1);
   return `${s} × ${reps}${tm ? '' : ' · ' + (v ? v.toLocaleString('pt-BR') + ' kg' : 'Corpo')} · ${d}s descanso`; };
 const irow = (D, it = {}, open = false) => { const tm = isTempo(it), ps = it.sets && it.sets.length, n = Math.max(1, Math.min(12, it.series ?? 3));
   const sets = ps ? Array.from({ length: n }, (_, k) => tm ? segAlvo(it, k) : (it.sets[k] && it.sets[k].reps) || it.reps || 10) : [];
-  return `<div class="irow${ps ? ' ps' : ''}${tm ? ' tm' : ''}${open ? ' open' : ''}" data-sets='${JSON.stringify(sets)}'><div class="itop" data-tg>${exsel(D, it)}
-  <span class="ibtns"><button type="button" data-up aria-label="Subir">${ic('up', 18, 'currentColor', 2.4)}</button><button type="button" data-dn aria-label="Descer">${ic('down', 18, 'currentColor', 2.4)}</button><button type="button" data-rm aria-label="Remover">${ic('close', 18, 'currentColor', 2.4)}</button></span><small class="isum"></small></div>
+  return `<div class="irow${ps ? ' ps' : ''}${tm ? ' tm' : ''}${open ? ' open' : ''}" data-sets='${JSON.stringify(sets)}'><div class="itop">${exsel(D, it)}
+  <span class="ibtns"><button type="button" class="det" data-idet aria-label="Detalhes do exercício" aria-expanded="${open}" title="Detalhes">${ic('ajustes', 18, 'currentColor', 2.2)}</button><button type="button" data-up aria-label="Subir">${ic('up', 18, 'currentColor', 2.4)}</button><button type="button" data-dn aria-label="Descer">${ic('down', 18, 'currentColor', 2.4)}</button><button type="button" data-rm aria-label="Remover">${ic('close', 18, 'currentColor', 2.4)}</button></span><small class="isum"></small></div>
   <div class="ibody"><label class="ii"><span>Medida</span><select name="un" aria-label="Medida"><option value="kg">Carga (kg)</option><option value="s" ${tm ? 'selected' : ''}>Tempo (segundos)</option></select></label>
   <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${n}" aria-label="Séries"></label><label class="ii rp"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
   <label class="ii"><span class="vl">${tm ? 'Tempo (s)' : 'Carga (kg)'}</span><input name="val" type="number" min="0" step="${tm ? 5 : 0.5}" value="${tm ? it.seg ?? 30 : it.kg ?? 0}" aria-label="Carga ou tempo"></label><label class="ii"><span>Descanso (s)</span><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos"></label>
@@ -208,7 +208,8 @@ function bindItems(form, D) {
   const T = catTree(D.categorias);
   if (!$('.irow', box)) box.insertAdjacentHTML('beforeend', irow(D, {}, true));
   const sum = r => { $('.isum', r).textContent = isum(r); };
-  const tog = (r, on) => { on = r.classList.toggle('open', on); if (on) $$('.irow.open', box).forEach(x => { if (x !== r) { x.classList.remove('open'); sum(x); } }); if (!on) sum(r); };
+  const tog = (r, on) => { on = r.classList.toggle('open', on); $('[data-idet]', r).setAttribute('aria-expanded', on);
+    if (on) $$('.irow.open', box).forEach(x => { if (x !== r) { x.classList.remove('open'); $('[data-idet]', x).setAttribute('aria-expanded', false); sum(x); } }); if (!on) sum(r); };
   $$('.irow', box).forEach(r => { sum(r); psPaint(r); });
   $('[data-add]', form).onclick = () => { box.insertAdjacentHTML('beforeend', irow(D, {})); const r = box.lastElementChild; r.classList.add('new'); sum(r); psPaint(r); tog(r, true); $('[name=cat]', r).focus(); };
   box.onchange = e => { const r = e.target.closest('.irow'); if (!r) return; const cat = $('[name=cat]', r).value, ex = $('[name=ex]', r), sb = $('[name=sub]', r);
@@ -225,7 +226,7 @@ function bindItems(form, D) {
     if (e.target.closest('[data-rm]')) { r.remove(); return; }
     if (e.target.closest('[data-up]')) { if (r.previousElementSibling) box.insertBefore(r, r.previousElementSibling); return; }
     if (e.target.closest('[data-dn]')) { if (r.nextElementSibling) box.insertBefore(r.nextElementSibling, r); return; }
-    if (e.target.closest('[data-tg]') && !e.target.closest('select,button')) tog(r); };
+    if (e.target.closest('[data-idet]')) tog(r); };
 }
 
 function showCreds(email, pass, nome) {

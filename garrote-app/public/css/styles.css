@@ -568,18 +568,6 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 .side .thmline .thm,.side .thmline button.thm{width:36px;height:36px;padding:0!important;background:var(--s2)}
 @media (max-width:900px){.side .thmline{margin-top:auto}}
 
-/* ---------- abertura em vídeo ---------- */
-/* vídeo original em 1920×1080, sem recompressão. Na tela em pé ele fica mais largo que a tela
-   (as bordas são só fundo escuro), assim o logo ocupa ~80% da largura sem perder qualidade */
-#intro{position:fixed;inset:0;z-index:100;background:#0A0A07;display:flex;align-items:center;justify-content:center;transition:opacity .6s var(--ease),visibility .6s}
-#intro video{position:absolute;left:50%;top:50%;translate:-50% -50%;width:min(100%,1280px);height:auto;max-width:none;opacity:0;transition:opacity .25s;
-  -webkit-mask-image:radial-gradient(closest-side,#000 70%,transparent);mask-image:radial-gradient(closest-side,#000 70%,transparent)}
-#intro img{width:min(62vw,260px);height:auto;opacity:0;transition:opacity .4s}
-#intro.semvideo img{opacity:1}#intro.semvideo video{display:none}
-#intro.tocando video{opacity:1}
-#intro.sai{opacity:0;visibility:hidden;pointer-events:none}
-#intro.sai video{transform:scale(1.06);transition:transform .7s var(--ease)}
-@media (max-aspect-ratio:1/1){#intro video{width:140vw}}
 
 /* entrada dos itens da primeira tela */
 @keyframes entra{from{opacity:0;translate:0 16px}to{opacity:1;translate:0 0}}
@@ -588,7 +576,6 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 @keyframes entra-calmo{from{opacity:0}to{opacity:1}}
 @media (prefers-reduced-motion:reduce){
   .entra{animation:entra-calmo .45s ease backwards!important;animation-delay:var(--d,0ms)!important}
-  #intro,#intro video,#intro img{transition-duration:.5s!important}
 }
 
 /* tema escuro: o topo é quase da cor do fundo; um tom mais fundo e um contorno sutil desenham a forma dele */
@@ -737,7 +724,7 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 
 /* montagem do treino */
 .items .irow{display:flex;flex-direction:column;gap:0;padding:0;overflow:hidden}
-.items .irow .itop{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ex btn" "sum sum";gap:6px 10px;align-items:end;padding:12px;cursor:pointer;transition:background .2s}
+.items .irow .itop{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"ex btn" "sum sum";gap:6px 10px;align-items:end;padding:12px}
 .items .irow .itop .exsel{grid-area:ex;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .items .irow .itop .exsel .exn,.items .irow .itop .exsel .ii.sb+.exn{grid-column:auto}
 .items .irow .itop .ibtns{grid-area:btn;display:flex;gap:6px;justify-self:end}
@@ -746,12 +733,14 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 .items .irow .ibtns button svg{display:block}
 .items .irow .ibtns button:active{transform:scale(.92)}
 [data-theme=dark] .items .irow .ibtns button,[data-theme=dark] .items .irow .ibtns button[data-rm]{color:#fff}
-.items .irow.open .itop{background:var(--red);color:#fff}
-.items .irow.open .itop .ii span{color:rgba(255,255,255,.85)}
 .items .irow.open .itop .isum{display:none}
 .items .irow.open .itop{grid-template-areas:"ex btn"}
-.items .irow.open .ibtns button{background:rgba(0,0,0,.22);box-shadow:inset 0 0 0 1px rgba(255,255,255,.35)}
-.items .irow.open .itop select{border-color:transparent}
+/* exercício aberto: fundo normal e borda vermelha em volta de tudo */
+.items .irow{transition:border-color .2s,box-shadow .2s}
+.items .irow.open{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+.items .irow .ibtns .det{background:var(--line);color:var(--fg)}
+.items .irow.open .ibtns .det{background:var(--red);color:#fff}
+[data-theme=dark] .items .irow .ibtns .det{background:var(--solid);color:#fff}[data-theme=dark] .items .irow.open .ibtns .det{background:var(--red)}
 .items .irow .ibody{display:none;gap:8px;align-items:end;padding:12px;border-top:0}
 .items .irow.open .ibody{display:flex}
 .items .irow .ibody>.ii{flex:1 1 0;min-width:0}
@@ -777,6 +766,4 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 .psr b{font:700 18px var(--d)}
 .psr input{height:46px;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:0 14px;font:500 16px var(--b);width:100%}
 .psr input:focus{border-color:var(--red);outline:0;box-shadow:0 0 0 3px rgba(217,30,38,.15)}
-.items .irow.open .itop select{color:var(--fg);background-color:var(--card)}
-.items .irow.open .itop select:disabled{opacity:.75}
 .tools .btn{white-space:nowrap}
