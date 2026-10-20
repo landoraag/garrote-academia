@@ -34,6 +34,12 @@ Todo campo de senha tem um olho para mostrar ou ocultar o que foi digitado. Em t
 - Firebase: Authentication, Firestore (versão lite, mais leve) e Hosting
 - Service worker para abrir rápido e funcionar como app instalado (PWA)
 
+## Vitrine
+
+O endereço principal abre a vitrine da academia (`index.html`): Cimerian, diferenciais, modalidades, maquete 3D da academia, telas do app, planos, cases em vídeo, avaliações do Google, horários e contato. Os botões **Área do aluno** e **Já sou aluno** abrem o app em `app.html`, que funciona como antes.
+
+Vão direto para o app, sem passar pela vitrine: o app instalado na tela inicial do celular, o link do e-mail de redefinição de senha e links antigos com rota (ex.: `/#/treino/...`).
+
 ## Estrutura
 
 ```
@@ -42,7 +48,9 @@ garrote-app/
   firestore.rules        regras de acesso ao Firestore
   .firebaserc            projeto do Firebase
   public/
-    index.html
+    index.html           vitrine da academia (página de entrada); "Área do aluno" leva ao app
+    app.html             o app (login, aluno, treinador e dono)
+    site/                fotos, vídeos dos cases e imagens da vitrine
     manifest.webmanifest
     sw.js                service worker: cache e notificações (a constante CACHE muda a cada atualização)
     css/styles.css

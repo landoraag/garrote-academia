@@ -229,10 +229,10 @@ function bindItems(form, D) {
 }
 
 function showCreds(email, pass, nome) {
-  const m = openModal({ title: 'Acesso criado', html: `<p style="font:400 15px/1.5 var(--b);margin:0 0 12px">Passe estes dados para <b>${esc(nome)}</b>. A pessoa entra em <b>${esc(location.origin)}</b>.</p>
+  const m = openModal({ title: 'Acesso criado', html: `<p style="font:400 15px/1.5 var(--b);margin:0 0 12px">Passe estes dados para <b>${esc(nome)}</b>. A pessoa entra em <b>${esc(location.origin)}</b> e toca em Área do aluno.</p>
     <div class="creds"><div><small>E-mail</small><b>${esc(email)}</b></div><div><small>Senha provisória</small><b>${esc(pass)}</b></div></div>`,
     foot: '<button type="button" class="btn dark" data-copy>Copiar dados</button><button type="button" class="btn ghost" data-mail>E-mail para definir senha</button>' });
-  $('[data-copy]', m.form).onclick = () => { navigator.clipboard && navigator.clipboard.writeText(`Garrote Academia\nEndereço: ${location.origin}\nE-mail: ${email}\nSenha provisória: ${pass}`); toast('Dados copiados.'); };
+  $('[data-copy]', m.form).onclick = () => { navigator.clipboard && navigator.clipboard.writeText(`Garrote Academia\nEndereço: ${location.origin}/app.html\nE-mail: ${email}\nSenha provisória: ${pass}`); toast('Dados copiados.'); };
   $('[data-mail]', m.form).onclick = async () => { try { await api.reset(email); toast(mode === 'demo' ? 'No modo demonstração nenhum e-mail é enviado.' : `E-mail enviado para ${email}.`); } catch (e) { toast('Não foi possível enviar o e-mail.'); } };
 }
 async function saveRow(sc, data, row, E) {

@@ -1,8 +1,8 @@
 /* Service worker: abre o app na hora, a partir do cache, e atualiza em segundo plano.
    Não mexe nas chamadas do Firebase (login e banco de dados): só nos arquivos do app, fontes e SDK.
    Também mostra os avisos do treino (fim do descanso etc.), mesmo com o app em segundo plano. */
-const CACHE = 'garrote-v29';
-const SHELL = ['index.html', 'css/styles.css', 'js/main.js', 'js/api.js', 'js/aluno.js', 'js/painel.js', 'js/perfil.js', 'js/plano.js', 'js/ui.js', 'js/notif.js', 'js/pagamento.js', 'js/legal.js', 'js/freio.js', 'js/pagamento-config.js', 'js/firebase-config.js', 'assets/logo.png', 'assets/favicon.png', 'assets/icon-180.png', 'manifest.webmanifest'];
+const CACHE = 'garrote-v30';
+const SHELL = ['index.html', 'app.html', 'css/styles.css', 'js/main.js', 'js/api.js', 'js/aluno.js', 'js/painel.js', 'js/perfil.js', 'js/plano.js', 'js/ui.js', 'js/notif.js', 'js/pagamento.js', 'js/legal.js', 'js/freio.js', 'js/pagamento-config.js', 'js/firebase-config.js', 'assets/logo.png', 'assets/favicon.png', 'assets/icon-180.png', 'manifest.webmanifest'];
 const FIXED = h => h === 'www.gstatic.com' || h === 'fonts.googleapis.com' || h === 'fonts.gstatic.com';   // versões fixas: cache primeiro
 
 self.addEventListener('install', e => {
@@ -19,7 +19,9 @@ self.addEventListener('fetch', e => {
   const url = new URL(req.url), same = url.origin === location.origin;
   if (same && url.pathname.endsWith('.mp4')) return;   // vídeo: o navegador pede em pedaços (Range); passar direto evita travar no iPhone
   if (!same && !(FIXED(url.hostname) && (url.hostname !== 'www.gstatic.com' || url.pathname.startsWith('/firebasejs/')))) return;
-  const key = req.mode === 'navigate' ? new Request(new URL('index.html', self.registration.scope).href) : req;
+  /* cada página abre a si mesma: app.html é o app, o resto do site abre a vitrine (index.html) */
+  const pagina = req.mode === 'navigate' ? (/\/app\.html$/.test(url.pathname) ? 'app.html' : 'index.html') : null;
+  const key = pagina ? new Request(new URL(pagina, self.registration.scope).href) : req;
   e.respondWith((async () => {
     const cache = await caches.open(CACHE), hit = await cache.match(key, { ignoreSearch: same });
     if (hit && !same) return hit;
@@ -31,7 +33,7 @@ self.addEventListener('fetch', e => {
       }
       return r;
     });
-    /* a página (index.html) vem da internet primeiro, para uma versão nova valer já na primeira abertura;
+    /* a página (index.html ou app.html) vem da internet primeiro, para uma versão nova valer já na primeira abertura;
        se a internet demorar mais de 3 s ou falhar, abre a cópia guardada */
     if (hit && req.mode === 'navigate') {
       e.waitUntil(net.catch(() => {})); const lenta = new Promise(r => setTimeout(() => r(hit), 3000));

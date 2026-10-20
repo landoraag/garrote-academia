@@ -2,87 +2,1293 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0C0C0C">
-<meta name="color-scheme" content="light dark">
 <script>
-/* tema: segue o claro/escuro do aparelho, a não ser que a pessoa tenha escolhido no botão do app */
-(function(){var k='garrote:tema',m=matchMedia('(prefers-color-scheme: dark)');
-function ap(){var s=null;try{s=localStorage.getItem(k)}catch(e){}document.documentElement.dataset.theme=(s?s==='dark':m.matches)?'dark':'light';}
-ap();var f=function(){ap();dispatchEvent(new Event('garrote:tema'))};m.addEventListener?m.addEventListener('change',f):m.addListener&&m.addListener(f);})();
-</script>
-<title>Garrote Academia</title>
-<link rel="icon" href="assets/favicon.png">
-<link rel="apple-touch-icon" href="assets/icon-180.png?v=2">
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Garrote">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
-<link rel="preload" as="image" href="assets/logo.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap"></noscript>
-<link rel="stylesheet" href="css/styles.css">
-<link rel="modulepreload" href="js/main.js">
-<link rel="modulepreload" href="js/api.js">
-<link rel="modulepreload" href="js/ui.js">
-<link rel="modulepreload" href="js/aluno.js">
-<link rel="modulepreload" href="js/painel.js">
-<link rel="modulepreload" href="js/perfil.js">
-<link rel="modulepreload" href="js/plano.js">
-<link rel="modulepreload" href="js/notif.js">
-<link rel="modulepreload" href="js/firebase-config.js">
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js" crossorigin>
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js" crossorigin>
-<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-lite.js" crossorigin>
-</head>
-<body>
-<div id="app" class="device"><div id="boot" style="position:absolute;inset:0;background:#0C0C0C;display:flex;align-items:center;justify-content:center"><img src="assets/logo.png" alt="Garrote Academia" width="170" height="34" style="height:auto;max-width:60%"></div></div>
-<script>
-/* abertura lenta: nada de mensagem de erro por falhas rápidas. Só se o app passar de 25 s sem abrir
-   aparece um aviso simples de conexão lenta, com botão para tentar de novo */
-(function(){setTimeout(function(){var a=document.getElementById('app');if(!a||a.querySelector('.screen'))return;
-a.innerHTML='<div style="padding:28px;color:#fff;font:15px/1.5 sans-serif;background:#0C0C0C;min-height:100%"><b style="font-size:20px">Conexão lenta</b><p style="color:#9A9AA0">O app está demorando para abrir. Confira sua internet e tente novamente.</p><button onclick="location.reload()" style="height:48px;padding:0 24px;border:0;border-radius:14px;background:#D91E26;color:#fff;font:600 15px sans-serif">Tentar novamente</button></div>';},25000);})();
-</script>
-<script>
-/* abertura em vídeo: toca na primeira vez que o app é aberto no dia (celular e computador),
-   enquanto o app carrega por baixo. Sai com fade quando o logo terminou de montar (~5 s) e a primeira tela
-   já está pronta; tocar/clicar pula. Se o app demorar, depois do fim do vídeo a abertura sai mesmo assim.
-   Se o vídeo não conseguir tocar (ex.: modo pouca energia do iPhone), fica só o logo e o app abre normal. */
-(function(){
-  var W=window.__intro={ativa:false,fim:null},K='garrote:abertura:v2',d=new Date(),
-      hoje=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
-  try{if(localStorage.getItem(K)===hoje)return;}catch(e){}
-  if(navigator.connection&&navigator.connection.saveData)return;
-  var o=document.createElement('div');o.id='intro';o.setAttribute('aria-hidden','true');
-  o.innerHTML='<img src="assets/logo.png" alt=""><video muted playsinline autoplay preload="auto" src="assets/abertura.mp4"></video>';
-  document.body.appendChild(o);W.ativa=true;
-  var v=o.querySelector('video');v.muted=true;
-  var pronto=false,viu=false,saiu=false,MIN=5;
-  function marca(){try{localStorage.setItem(K,hoje)}catch(e){}}
-  function sair(){if(saiu)return;saiu=true;o.classList.add('sai');W.ativa=false;
-    dispatchEvent(new Event('garrote:intro-fim'));setTimeout(function(){o.remove()},700);}
-  function ver(){if(pronto&&viu)sair();}
-  W.fim=function(){pronto=true;ver();};                     // chamado pelo app quando a primeira tela aparece
-  v.addEventListener('timeupdate',function(){if(v.currentTime>=MIN){if(!viu)marca();viu=true;ver();}});   // só conta o dia quando o logo foi visto montado
-  v.addEventListener('ended',function(){if(!viu)marca();viu=true;ver();setTimeout(sair,2500);});
-  var tocou=false;
-  function semVideo(){if(tocou)return;o.classList.add('semvideo');viu=true;ver();setTimeout(sair,1500);}
-  v.addEventListener('playing',function(){if(saiu)return;tocou=true;o.classList.add('tocando');});
-  v.addEventListener('error',semVideo);
-  setTimeout(semVideo,6000);                                // em 6 s nem começou (internet ruim, autoplay bloqueado): segue sem vídeo
-  setTimeout(function(){viu=true;ver();setTimeout(sair,1500);},14000);   // trava de segurança: nunca segura o app além disso
-  o.addEventListener('click',function(){viu=true;sair();});
-  var p=v.play&&v.play();p&&p.catch&&p.catch(function(){});
+/* A vitrine é a porta de entrada. Estes casos vão direto para o app:
+   - app instalado na tela inicial (o ícone antigo abre o endereço raiz)
+   - link do e-mail de redefinição de senha (?mode=resetPassword&oobCode=...)
+   - links antigos do app com rota (#/login, #/treino/... de avisos e favoritos) */
+(function(){var q=location.search,h=location.hash,app=/app\.html$/.test(location.pathname);
+  var instalado=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  if(app){ /* um service worker antigo entregou a vitrine no lugar do app: atualiza e recarrega uma vez */
+    try{if(!sessionStorage.getItem('garrote:sw-fix')){sessionStorage.setItem('garrote:sw-fix','1');
+      var go=function(){location.reload();};
+      if(navigator.serviceWorker&&navigator.serviceWorker.getRegistration)navigator.serviceWorker.getRegistration().then(function(r){return r&&r.update();}).then(go,go);else go();}}catch(e){}
+    return;}
+  if(instalado||/[?&](mode|oobCode)=/.test(q)||/^#\//.test(h))location.replace('app.html'+q+(h||(instalado?'#/login':'')));
 })();
 </script>
-<div id="toast" role="status" aria-live="polite"></div>
-<script type="module" src="js/main.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Garrote Academia</title>
+<meta name="description" content="Garrote Academia, Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.">
+<meta name="theme-color" content="#0B0B0C">
+<link rel="icon" href="site/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&display=swap">
+<style>
+/* Layout: noite de academia. Preto quente da marca, vermelho Garrote como luz (brilhos, nunca chapado),
+   títulos condensados em escala contida; seções alternam palco escuro e faixas de superfície. */
+:root{
+  color-scheme:dark;
+  --ink:#0B0B0C; --s1:#131315; --s2:#1C1C1F; --s3:#26262A;
+  --line:rgba(255,255,255,.09);
+  --fg:#F4F2F0; --dim:#9C9AA0;
+  --red:#D91E26; --glow:#FF2D36; --ok:#2BC26B;
+  --display:'Barlow Condensed','Rajdhani','Arial Narrow',sans-serif;
+  --head:'Rajdhani','Barlow Condensed',sans-serif;
+  --body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --r:20px;
+  --gut:max(16px,env(safe-area-inset-left,0px));
+  --gutr:max(16px,env(safe-area-inset-right,0px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--ink);overflow-x:clip}
+body{background:var(--ink);color:var(--fg);font:400 16px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:clip}
+h1,h2,h3,h4,p,figure{margin:0}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--glow);outline-offset:3px;border-radius:6px}
+img{max-width:100%;display:block}
+.wrap{width:100%;max-width:1240px;margin:0 auto;padding-left:var(--gut);padding-right:var(--gutr)}
+section{position:relative;scroll-margin-top:84px}
+.band{padding-block:clamp(64px,8vw,104px)}
+.flat{padding-top:0}
+#academia.band,#cimerian.band{padding-block:clamp(48px,6vw,80px)}
+#cimerian .sec-head{margin-bottom:clamp(24px,3vw,36px)}
+.plaque .escudo{width:min(230px,60vw);height:auto;aspect-ratio:1;flex:none}
+
+/* tipografia */
+.eyebrow{font:600 12px/1 var(--head);letter-spacing:.22em;text-transform:uppercase;color:var(--dim);display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:14px;height:10px;background:var(--red);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%)}
+.h2{font:800 clamp(32px,4.2vw,56px)/.95 var(--display);text-transform:uppercase;letter-spacing:.005em;text-wrap:balance;margin-top:16px}
+.h2 em{font-style:normal;color:var(--glow)}
+.lead{font-size:clamp(15.5px,1.4vw,18px);color:var(--dim);max-width:58ch;text-wrap:pretty}
+.lead b{color:var(--fg);font-weight:600}
+.sec-head{display:grid;gap:16px;margin-bottom:clamp(32px,4vw,52px)}
+@media(min-width:900px){.sec-head.split{grid-template-columns:1.1fr .9fr;gap:48px;align-items:end}}
+
+/* botões */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;height:50px;padding:0 22px;border-radius:999px;font:700 15px var(--body);transition:transform .2s var(--ease),background .2s,box-shadow .2s,border-color .2s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.red{background:var(--red);color:#fff;box-shadow:0 14px 40px -12px rgba(217,30,38,.7)}
+.btn.red:hover{background:#ec2730;box-shadow:0 18px 50px -10px rgba(255,45,54,.75)}
+.btn.line{border:1px solid rgba(255,255,255,.22);color:var(--fg)}
+.btn.line:hover{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.4)}
+.btn.light{background:#fff;color:#0C0C0C}
+.btn svg{width:18px;height:18px;flex:none}
+
+/* encaixe de foto: site/fotos/<nome>.webp; sem a foto, mostra um espaço com o nome do arquivo */
+.ph{position:relative;overflow:hidden;background:
+  radial-gradient(120% 90% at 85% 10%,rgba(217,30,38,.18),transparent 55%),
+  repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px),var(--s1)}
+.ph>img.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s;transform:scale(var(--z,1))}
+.ph.tem>img.foto{opacity:1}
+.ph .tag{display:none!important;position:absolute;left:14px;bottom:14px;display:flex;gap:8px;align-items:center;font:600 11px/1.3 var(--head);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);max-width:calc(100% - 28px)}
+.ph .tag::before{content:"";flex:none;width:18px;height:14px;border:1.5px solid currentColor;border-radius:3px;box-shadow:inset 0 -5px 0 -3px currentColor}
+.ph.tem .tag{display:none}
+
+/* ---------- navegação ---------- */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:60;background:var(--ink)}
+.nav{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);z-index:50;padding:14px var(--gutr) 0 var(--gut);pointer-events:none}
+.nav-in{pointer-events:auto;max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:20px;height:58px;padding:0 9px 0 22px;border-radius:999px;background:rgba(14,14,16,.66);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--line)}
+.nav .logo{height:21px;width:auto}
+.nav ul{display:none;list-style:none;margin:0 auto;padding:0;gap:2px}
+.nav ul a{position:relative;display:block;padding:8px 14px;border-radius:999px;font:600 14px var(--head);letter-spacing:.08em;text-transform:uppercase;color:var(--dim);transition:color .2s}
+.nav ul a::after{content:"";position:absolute;left:14px;right:14px;bottom:3px;height:2px;border-radius:2px;background:var(--glow);transform:scaleX(0);transition:transform .3s var(--ease)}
+.nav ul a:hover,.nav ul a.on{color:var(--glow)}
+.nav ul a:hover::after,.nav ul a.on::after{transform:scaleX(1)}
+.nav .btn{height:40px;padding:0 18px;font-size:14px;margin-left:auto}
+@media(min-width:1000px){.nav ul{display:flex}.nav .btn{margin-left:0}}
+
+/* ---------- topo ---------- */
+.hero{min-height:min(820px,100svh);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden;isolation:isolate;padding-top:120px}
+.hero .bg{position:absolute;inset:0;z-index:-2}
+.hero:has(.bg.tem) .cut-slot{display:none}
+.hero .bg::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(11,11,12,.6) 0%,rgba(11,11,12,.2) 35%,rgba(11,11,12,.72) 74%,var(--ink) 100%),
+  radial-gradient(60% 55% at 50% 60%,rgba(217,30,38,.26),transparent 70%)}
+.hero .bg .tag{top:96px;bottom:auto;left:auto;right:var(--gutr)}
+.title{display:flex;justify-content:center}
+.title-in{position:relative;display:inline-flex;flex-direction:column;align-items:stretch}
+.hero-meta{display:flex;justify-content:space-between;gap:14px;font:700 clamp(11px,1.1vw,15px)/1 var(--display);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.72);padding-inline:.4em;margin-bottom:10px}
+.hero-meta span{display:flex;align-items:center;gap:12px}
+.hero-meta span+span::before{content:"";width:9px;height:7px;background:var(--red);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%)}
+.hero-meta{justify-content:center;flex-wrap:wrap}
+@media(min-width:620px){.hero-meta{justify-content:space-between}}
+.word{position:relative}
+.word h1{font:900 clamp(64px,12.5vw,176px)/.8 var(--display);text-transform:uppercase;letter-spacing:-.015em;color:#fff;white-space:nowrap;text-align:center}
+.word h1 .g{color:var(--glow)}
+/* pessoa recortada na frente das letras (PNG sem fundo em site/fotos/hero-atleta.png) */
+/* a pessoa recortada ocupa todo o espaço livre do topo: do menu até a base do título */
+.word h1{position:relative;z-index:1}
+.hero-meta{position:relative;z-index:1}
+.cut{position:absolute;left:50%;bottom:-6%;transform:translateX(-50%);height:var(--fig);width:auto;max-width:none;pointer-events:none;z-index:2;filter:drop-shadow(0 30px 40px rgba(0,0,0,.6))}
+.word{--fig:calc(min(820px,100svh) - 300px)}
+@media(max-width:899px){.word{--fig:calc(min(820px,100svh) - 430px)}}
+.cut-slot{position:absolute;left:50%;bottom:0;transform:translateX(-50%);z-index:0;height:var(--fig);width:min(calc(var(--fig) * .62),70vw);border:1.5px dashed rgba(255,255,255,.3);border-bottom:0;border-radius:999px 999px 0 0;display:flex;align-items:flex-start;padding-top:22%;justify-content:center;text-align:center;padding-inline:20px;font:600 10.5px/1.4 var(--head);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.55);background:linear-gradient(180deg,rgba(217,30,38,.07),rgba(11,11,12,.25))}
+.hero-foot{display:grid;gap:22px;align-items:center;padding-block:34px 40px;grid-template-columns:1fr}
+.hero-foot p{color:rgba(255,255,255,.8);max-width:44ch;font-size:clamp(15px,1.3vw,17px)}
+.hero-foot p b{color:#fff}
+.hero-cta{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+@media(min-width:900px){.hero-foot{grid-template-columns:1fr auto auto}}
+.seal{width:104px;height:104px;flex:none;display:none}
+@media(min-width:900px){.seal{display:block}}
+/* escudo Cimerian: imagem sem fundo, reflexo metálico passando e inclinação quando o mouse chega perto */
+.escudo{display:block;width:100%;height:100%;perspective:900px}
+.esc-in{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .2s ease-out;filter:drop-shadow(0 18px 26px rgba(0,0,0,.85))}
+.esc-in img{width:100%;height:100%;object-fit:contain;display:block;backface-visibility:hidden;transform:translateZ(0)}
+@media (hover:none),(pointer:coarse){.escudo{perspective:none}.esc-in{transform-style:flat;transition:none}.esc-in img{transform:none;backface-visibility:visible}}
+.esc-in .brilho{position:absolute;inset:0;pointer-events:none;
+  -webkit-mask:url(site/assets/escudo-cimerian.webp) center/contain no-repeat;mask:url(site/assets/escudo-cimerian.webp) center/contain no-repeat;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.38) 50%,transparent 60%) no-repeat;background-size:250% 100%;animation:brilho 5s ease-in-out infinite}
+@keyframes brilho{0%,30%{background-position:120% 0}70%,100%{background-position:-20% 0}}
+@keyframes gira{to{transform:rotate(360deg)}}
+
+/* faixa que corre */
+.ticker{background:var(--s1);border-block:1px solid rgba(255,45,54,.35);overflow:hidden;transform:rotate(-1deg) scale(1.02);position:relative;z-index:3;box-shadow:0 20px 50px -24px rgba(217,30,38,.7)}
+.ticker .row{display:flex;width:max-content;animation:corre 46s linear infinite}
+.ticker span{display:flex;align-items:center;gap:22px;padding:11px 11px;font:700 clamp(14px,1.4vw,17px)/1 var(--display);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;color:#fff}
+.ticker span::after{content:"";width:12px;height:9px;background:var(--glow);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%)}
+@keyframes corre{to{transform:translateX(-50%)}}
+
+/* ---------- quem somos ---------- */
+.about{display:grid;gap:clamp(28px,4vw,56px);grid-template-columns:1fr}
+@media(min-width:960px){.about{grid-template-columns:1.05fr .95fr;align-items:center}}
+.about-photos{display:grid;grid-template-columns:1.25fr 1fr;gap:12px;max-width:520px;width:100%;justify-self:end}
+.about-photos .ph{border-radius:var(--r);aspect-ratio:4/5}
+.about-photos .ph:nth-child(2){aspect-ratio:auto;margin-top:40px}
+.steps{list-style:none;padding:0;margin:22px 0 0;display:grid;counter-reset:s}
+.steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:11px 0;border-top:1px solid var(--line);counter-increment:s}
+.steps li::before{content:"0" counter(s);font:800 28px/1 var(--display);color:var(--glow)}
+.steps b{font:700 18px/1.2 var(--head);display:block;margin-bottom:3px;letter-spacing:.02em}
+.steps p{color:var(--dim);font-size:15px}
+
+/* ---------- Cimerian ---------- */
+.cim{background:var(--s1);overflow:hidden;border-block:1px solid var(--line)}
+.cim::before{content:"";position:absolute;inset:auto -10% -40% -10%;height:80%;background:radial-gradient(50% 50% at 50% 50%,rgba(217,30,38,.3),transparent 70%);pointer-events:none}
+.cim-grid{display:grid;gap:12px;grid-template-columns:repeat(2,1fr);position:relative}
+.cim-grid .ph:nth-child(3){grid-column:auto}
+.cim-grid .ph{border-radius:16px;aspect-ratio:4/3}
+.cim-grid .ph.wide{grid-column:span 2;aspect-ratio:16/9}
+@media(min-width:900px){.cim-grid{grid-template-columns:1.5fr 1fr;grid-template-rows:repeat(2,190px)}.cim-grid .ph.wide{grid-column:1;grid-row:span 2;aspect-ratio:auto}.cim-grid .ph:not(.wide){aspect-ratio:auto}}
+.cim-feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:12px;position:relative}
+.cim-feats div{background:var(--s1);padding:20px 22px}
+.cim-feats b{font:700 17px/1.2 var(--head);display:block;margin-bottom:5px;letter-spacing:.02em}
+.cim-feats p{font-size:14px;color:var(--dim)}
+.plaque{margin-top:clamp(28px,4vw,44px);display:grid;gap:28px 48px;align-items:center;grid-template-columns:1fr;position:relative}
+@media(min-width:860px){.plaque{grid-template-columns:1fr 260px}}
+.plaque .escudo{justify-self:center}
+.plaque .txt{display:grid;gap:12px;justify-items:start;text-align:left}
+.plaque h3{font:800 clamp(26px,2.8vw,36px)/1 var(--display);text-transform:uppercase}
+
+/* ---------- só na Garrote (compacto) ---------- */
+.bento{display:grid;gap:10px;grid-template-columns:1fr}
+@media(max-width:639px){.bento{grid-template-columns:1fr 1fr}.tile.big{grid-column:span 2}.tile:not(.big){grid-template-columns:1fr;padding:16px}.tile:not(.big) .ic{grid-row:auto;margin-bottom:8px}}
+@media(min-width:640px){.bento{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1040px){.bento{grid-template-columns:repeat(4,1fr)}}
+.tile{position:relative;border-radius:16px;padding:18px 20px;background:var(--s1);border:1px solid var(--line);display:grid;grid-template-columns:38px 1fr;gap:4px 14px;align-content:start;transition:border-color .3s}
+.tile:hover{border-color:rgba(255,45,54,.4)}
+.tile .ic{grid-row:span 2;width:38px;height:38px;border-radius:11px;background:rgba(217,30,38,.14);color:var(--glow);display:flex;align-items:center;justify-content:center}
+.tile .ic svg{width:19px;height:19px}
+.tile h3{font:700 17px/1.2 var(--head);letter-spacing:.02em;align-self:center}
+.tile p{font-size:13.5px;line-height:1.5;color:var(--dim)}
+.tile.big{grid-template-columns:1fr;padding:22px;background:radial-gradient(90% 80% at 100% 0,rgba(217,30,38,.32),transparent 60%),var(--s1)}
+@media(min-width:1040px){.tile.big{grid-column:span 2;grid-row:span 2}}
+.tile.big h3{font:800 clamp(28px,2.6vw,36px)/.95 var(--display);text-transform:uppercase}
+.tile.big .mods{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{display:inline-flex;align-items:center;height:28px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,.16);font:600 12px var(--head);letter-spacing:.08em;text-transform:uppercase}
+.tile.photo{padding:0;min-height:150px;display:block}
+.tile.photo .ph{position:absolute;inset:0;border-radius:inherit}
+
+/* ---------- modalidades ---------- */
+.mods-grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:640px){.mods-grid{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1080px){.mods-grid{grid-template-columns:repeat(3,1fr)}.mod{aspect-ratio:4/5}}
+.mod{position:relative;border-radius:var(--r);overflow:hidden;aspect-ratio:3/4;display:flex;flex-direction:column;justify-content:flex-end;padding:20px;isolation:isolate;border:1px solid var(--line);text-align:left;cursor:pointer}
+.mod .ph{position:absolute;inset:0;z-index:-2;transition:transform .8s var(--ease)}
+.mod::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,transparent 30%,rgba(11,11,12,.94) 85%)}
+.mod:hover .ph{transform:scale(1.05)}
+.mod .ph .tag{top:14px;bottom:auto}
+.mod .n{font:800 14px/1 var(--display);letter-spacing:.12em;color:var(--glow)}
+.mod h3{font:900 clamp(30px,2.6vw,38px)/.9 var(--display);text-transform:uppercase;margin:8px 0 8px;white-space:nowrap;hyphens:none}
+.mod p{font-size:14px;color:rgba(255,255,255,.75)}
+.mod .more{margin-top:14px;display:inline-flex;align-items:center;gap:8px;font:700 13px var(--head);letter-spacing:.12em;text-transform:uppercase;color:#fff}
+.mod .more i{width:30px;height:30px;border-radius:50%;background:var(--red);display:flex;align-items:center;justify-content:center;transition:transform .3s var(--ease)}
+.mod .more svg{width:15px;height:15px}
+.mod:hover .more i{transform:rotate(45deg)}
+/* janela do saiba mais */
+dialog.sheet{border:0;padding:0;margin:auto;width:min(920px,calc(100% - 32px));max-height:calc(100dvh - 48px);border-radius:24px;background:var(--s1);color:var(--fg);box-shadow:0 40px 120px -20px rgba(0,0,0,.9),0 0 0 1px var(--line);overflow:auto}
+dialog.sheet::backdrop{background:rgba(5,5,6,.72);backdrop-filter:blur(6px)}
+dialog.sheet[open]{animation:sobe .4s var(--ease)}
+@keyframes sobe{from{transform:translateY(24px);opacity:0}}
+.sh-in{display:grid;grid-template-columns:1fr}
+@media(min-width:780px){.sh-in{grid-template-columns:.9fr 1.1fr}}
+.sh-in .ph{min-height:260px}
+.sh-body{padding:clamp(22px,3vw,36px);display:grid;gap:18px;align-content:start}
+.sh-body h3{font:900 clamp(34px,3.6vw,48px)/.9 var(--display);text-transform:uppercase}
+.sh-body h4{font:700 13px var(--head);letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.sh-body ul{list-style:none;padding:0;margin:0;display:grid;gap:7px;font-size:15px}
+.sh-body li{display:flex;gap:10px}
+.sh-body li::before{content:"";flex:none;width:7px;height:6px;margin-top:9px;background:var(--glow);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%);transform:scale(1.3)}
+.sh-cols{display:grid;gap:18px;grid-template-columns:1fr}
+@media(min-width:520px){.sh-cols{grid-template-columns:1fr 1fr}}
+.sh-x{position:absolute;top:14px;right:14px;width:40px;height:40px;border-radius:50%;background:rgba(11,11,12,.7);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;z-index:2}
+.sh-x svg{width:18px;height:18px}
+.sh-cta{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ---------- o espaço ---------- */
+.place{display:grid;gap:12px;grid-template-columns:1fr;margin-bottom:12px}
+@media(min-width:960px){.place{grid-template-columns:1.55fr 1fr}}
+.facade{border-radius:var(--r);min-height:340px;aspect-ratio:16/10;max-width:100%}
+@media(min-width:960px){.facade{aspect-ratio:auto;min-height:440px}}
+.loc{display:grid;gap:12px;grid-template-rows:auto 1fr}
+.addr{border-radius:var(--r);background:var(--s1);border:1px solid var(--line);padding:24px;display:grid;gap:14px}
+.addr address{font-style:normal;font:700 24px/1.1 var(--head)}
+.addr address small{display:block;font:500 15px/1.5 var(--body);color:var(--dim);margin-top:6px}
+.addr .btns{display:flex;gap:10px;flex-wrap:wrap}
+.addr .btn{height:44px;padding:0 18px;font-size:14px}
+.drone{border-radius:var(--r);min-height:260px}
+.drone.tem .pin{display:none}
+.drone .pin{position:absolute;left:50%;top:46%;transform:translate(-50%,-100%);width:30px;height:40px;color:var(--glow);filter:drop-shadow(0 8px 14px rgba(0,0,0,.6))}
+/* maquete */
+.maq{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:radial-gradient(80% 70% at 50% 30%,#1b1112,var(--ink) 75%);height:clamp(380px,56vw,620px);max-width:100%}
+.maq canvas{display:block;width:100%!important;height:100%!important;touch-action:pan-y}
+.maq .labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.maq .lb{position:absolute;transform:translate(-50%,-100%);font:700 11px/1 var(--head);letter-spacing:.12em;text-transform:uppercase;white-space:nowrap;padding:6px 9px;border-radius:999px;background:rgba(11,11,12,.8);border:1px solid rgba(255,255,255,.14);transition:opacity .3s,background .3s}
+.maq .lb.on{background:var(--red);border-color:var(--red)}
+.maq .tip{position:absolute;pointer-events:none;transform:translate(-50%,calc(-100% - 14px));padding:7px 11px;border-radius:10px;background:#fff;color:#0C0C0C;font:700 13px var(--head);letter-spacing:.04em;white-space:nowrap;opacity:0;transition:opacity .15s}
+.maq .tip.on{opacity:1}
+.maq .hud{position:absolute;left:14px;right:14px;top:14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;pointer-events:none;flex-wrap:wrap}
+.maq .hud>*{pointer-events:auto}
+.floors{display:flex;padding:4px;border-radius:999px;background:rgba(11,11,12,.8);border:1px solid var(--line)}
+.floors button{height:34px;padding:0 14px;border-radius:999px;font:700 12px var(--head);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);transition:all .2s}
+.floors button[aria-pressed="true"]{background:var(--red);color:#fff}
+.zoom{display:flex;gap:6px}
+.zoom button{width:38px;height:38px;border-radius:12px;background:rgba(11,11,12,.8);border:1px solid var(--line);font:700 18px var(--head)}
+.maq .help{position:absolute;left:14px;bottom:12px;font:600 11px/1.3 var(--head);letter-spacing:.12em;text-transform:uppercase;color:var(--dim);pointer-events:none}
+.maq .tap{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(11,11,12,.2)}
+.maq .tap span{padding:12px 18px;border-radius:999px;background:rgba(11,11,12,.85);border:1px solid rgba(255,255,255,.2);font:700 13px var(--head);letter-spacing:.1em;text-transform:uppercase}
+.maq.touch .tap{display:flex}
+.maq.touch.live .tap{display:none}
+.maq .fallback{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:var(--dim);padding:24px;text-align:center}
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.legend button{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--line);font:600 12.5px var(--head);letter-spacing:.06em;text-transform:uppercase;color:var(--dim);transition:all .2s}
+.legend button i{width:10px;height:10px;border-radius:3px}
+.legend button[aria-pressed="true"],.legend button:hover{color:var(--fg);border-color:rgba(255,255,255,.35)}
+
+/* ---------- app: iPhones ---------- */
+.appsec{overflow:hidden}
+.appsec::before{content:"";position:absolute;inset:8% -20% auto;height:76%;background:radial-gradient(42% 48% at 62% 50%,rgba(217,30,38,.26),transparent 70%);pointer-events:none}
+.app-grid{display:grid;gap:40px;grid-template-columns:1fr;align-items:center;position:relative}
+@media(min-width:1000px){.app-grid{grid-template-columns:.85fr 1.15fr}}
+.checks{list-style:none;padding:0;margin:24px 0 30px;display:grid;gap:13px}
+.checks li{display:grid;grid-template-columns:28px 1fr;gap:12px;font-size:15.5px;color:var(--dim)}
+.checks li b{color:var(--fg);font-weight:600}
+.checks li::before{content:"";width:24px;height:24px;border-radius:50%;background:rgba(217,30,38,.16) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23FF2D36' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/14px no-repeat;margin-top:1px}
+.stage{position:relative;height:clamp(470px,50vw,640px);perspective:1800px;max-width:100%}
+.stage .rig{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .9s var(--ease)}
+.iph{--w:clamp(165px,16vw,228px);position:absolute;width:var(--w);aspect-ratio:71.6/147.6;border-radius:calc(var(--w)*.165);padding:calc(var(--w)*.032);
+  background:linear-gradient(140deg,#8f8f94 0%,#4a4a4f 10%,#2c2c30 22%,#1d1d20 50%,#3a3a3e 78%,#8a8a8f 100%);
+  box-shadow:0 0 0 1px rgba(255,255,255,.18) inset,0 0 0 2px #0a0a0b inset,0 60px 90px -30px rgba(0,0,0,.95),0 30px 40px -20px rgba(0,0,0,.7);transform-style:preserve-3d;transition:transform .9s var(--ease)}
+.iph::before,.iph::after{content:"";position:absolute;width:3px;border-radius:2px;background:linear-gradient(90deg,#2a2a2d,#6c6c70)}
+.iph::before{left:-2px;top:20%;height:6%;box-shadow:0 calc(var(--w)*.17) 0 #4a4a4e,0 calc(var(--w)*.3) 0 #4a4a4e}
+.iph::after{right:-2px;top:28%;height:13%}
+.iph .scr{position:relative;width:100%;height:100%;border-radius:calc(var(--w)*.135);overflow:hidden;background:#0C0C0C;box-shadow:0 0 0 calc(var(--w)*.012) #000}
+.iph .scr img{position:absolute;left:0;top:6.4%;width:100%;height:auto}
+.iph .island{position:absolute;top:2.1%;left:50%;transform:translateX(-50%);width:31%;height:3.9%;border-radius:999px;background:#000;z-index:3}
+.iph .sb{position:absolute;top:0;left:0;right:0;height:6.4%;display:flex;align-items:center;justify-content:space-between;padding:0 9% 0 11%;color:#fff;font:600 calc(var(--w)*.052) -apple-system,'Barlow',sans-serif;z-index:2;background:#0C0C0C}
+.iph .sb i{display:flex;gap:calc(var(--w)*.016);align-items:center}
+.iph .sb svg{height:calc(var(--w)*.042);width:auto}
+.iph .glare{position:absolute;inset:0;border-radius:inherit;background:linear-gradient(115deg,rgba(255,255,255,.14) 0%,transparent 28%,transparent 70%,rgba(255,255,255,.05) 100%);pointer-events:none;z-index:4}
+.iph.c{left:50%;top:5%;transform:translateX(-50%) translateZ(30px);z-index:3}
+.iph.l{left:0;top:15%;transform:translateZ(-40px) rotateY(18deg) scale(.88);z-index:2;filter:brightness(.82)}
+.iph.r{right:0;top:15%;transform:translateZ(-40px) rotateY(-18deg) scale(.88);z-index:1;filter:brightness(.82)}
+@media(max-width:640px){
+  .stage{height:calc(36vw * 2.06 + 90px)}
+  .iph{--w:36vw}
+  .iph.c{top:2%}
+  .iph.l{left:1%;top:12%;transform:translateZ(-40px) rotateY(16deg) scale(.82)}
+  .iph.r{right:1%;top:12%;transform:translateZ(-40px) rotateY(-16deg) scale(.82)}
+  .cap{gap:8px;font-size:9.5px;letter-spacing:.08em;text-align:center}
+  .cap span{flex:1;justify-content:center}
+}
+.stage:hover .iph.l{transform:translateZ(-20px) translateX(-8%) rotateY(22deg) scale(.9)}
+.stage:hover .iph.r{transform:translateZ(-20px) translateX(8%) rotateY(-22deg) scale(.9)}
+.cap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:center;gap:clamp(14px,4vw,48px);font:600 11px var(--head);letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.cap span{display:flex;gap:8px;align-items:center}
+.cap span::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--glow)}
+
+/* ---------- planos ---------- */
+.plans{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:760px){.plans{grid-template-columns:repeat(2,1fr)}}
+@media(min-width:1100px){.plans{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:759px){
+  .plans,.passes{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .plan,.pass{min-width:0}
+  .plan{padding:16px 14px;gap:9px}
+  .plan h3{font-size:21px}
+  .plan .sub{font-size:12.5px;line-height:1.4}
+  .plan .price{flex-wrap:wrap;gap:2px 4px}
+  .plan .price b{font-size:34px}
+  .plan .price small,.plan .price span{font-size:12px}
+  .plan .tot{font-size:11.5px;line-height:1.35}
+  .plan ul{font-size:12.5px;gap:6px;padding-top:10px}
+  .plan li::before{margin-top:7px}
+  .plan .btn{height:42px;font-size:13px;padding:0 10px;white-space:normal;text-align:center;line-height:1.15}
+  .plan .btn svg{display:none}
+  .plan .badge{left:14px;font-size:9.5px;padding:0 9px}
+  .pass{padding:14px;gap:8px;flex-direction:column;align-items:flex-start}
+  .pass h4{font-size:16px}
+  .pass p{font-size:12px}
+  .pass .price b{font-size:26px}
+  .pass .logos{flex-wrap:wrap;gap:6px}
+  .pass .logos span{height:28px;padding:0 10px;font-size:12px}
+}
+.plan{border-radius:var(--r);padding:24px;background:var(--s1);border:1px solid var(--line);display:flex;flex-direction:column;gap:12px;position:relative}
+.plan.hot{background:radial-gradient(100% 70% at 50% 0,rgba(217,30,38,.36),transparent 70%),var(--s1);border-color:rgba(255,45,54,.5);box-shadow:0 30px 70px -30px rgba(217,30,38,.6)}
+.plan .badge{position:absolute;top:-12px;left:24px;height:24px;padding:0 12px;border-radius:999px;background:var(--red);font:700 11px/24px var(--head);letter-spacing:.14em;text-transform:uppercase}
+.plan h3{font:800 26px/.95 var(--display);text-transform:uppercase}
+.plan .sub{font-size:14px;color:var(--dim)}
+.price{display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
+.price small{font:600 14px var(--head);color:var(--dim)}
+.price b{font:800 46px/1 var(--display)}
+.price span{font:600 14px var(--head);color:var(--dim)}
+.plan ul{list-style:none;padding:14px 0 0;margin:0;border-top:1px solid var(--line);display:grid;gap:8px;font-size:14.5px;color:var(--dim)}
+.plan li{display:flex;gap:10px}
+.plan li::before{content:"";flex:none;width:6px;height:6px;margin-top:9px;background:var(--glow);clip-path:polygon(35% 0,100% 0,65% 100%,0 100%);transform:scale(1.4)}
+.plan .btn{margin-top:auto;width:100%}
+.passes{display:grid;gap:12px;grid-template-columns:1fr;margin-top:12px}
+@media(min-width:640px){.passes{grid-template-columns:1fr 1fr}}
+@media(min-width:1100px){.passes{grid-template-columns:1fr 1fr 1fr 1.35fr}}
+.plan .tot{font-size:13px;color:var(--dim);margin-top:-6px}
+@media(min-width:1100px){.plan .sub{min-height:3.2em}}
+.pass{border-radius:16px;padding:18px 22px;border:1px solid var(--line);background:var(--s1);display:flex;align-items:center;gap:18px;justify-content:space-between;flex-wrap:wrap}
+.pass h4{font:700 19px/1.1 var(--head);letter-spacing:.02em}
+.pass p{font-size:13.5px;color:var(--dim)}
+.pass .price b{font-size:32px}
+.pass .logos{display:flex;gap:8px}
+.pass .logos span{height:32px;padding:0 13px;border-radius:10px;background:var(--s2);display:flex;align-items:center;font:700 14px var(--head);letter-spacing:.04em}
+
+/* ---------- avaliações: carrossel de vídeos ---------- */
+.rev-top{display:flex;gap:28px;align-items:center;flex-wrap:wrap;margin-bottom:32px}
+.score small a{color:var(--fg);text-decoration:underline;text-underline-offset:3px}
+.quotes{display:grid;gap:12px;grid-template-columns:1fr;margin-top:28px}
+@media(min-width:900px){.quotes{grid-template-columns:repeat(3,1fr)}}
+.q{margin:0;border-radius:var(--r);background:var(--s1);border:1px solid var(--line);padding:22px;display:flex;flex-direction:column;gap:12px}
+.q .stars svg{width:15px;height:15px}
+.q blockquote{margin:0;font-size:15.5px;line-height:1.6;color:var(--fg)}
+.who{display:flex;align-items:center;gap:12px}
+.who b{display:block;font:700 16px/1.2 var(--head);letter-spacing:.02em}
+.who small{font-size:12.5px;color:var(--dim)}
+.av{width:40px;height:40px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:500 18px var(--body);color:#fff;object-fit:cover}
+.q figcaption{margin-top:auto;font:600 11px var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.score{display:flex;align-items:center;gap:16px}
+.score b{font:900 68px/.85 var(--display)}
+.stars{display:flex;gap:3px;color:#FFB020}
+.stars svg{width:18px;height:18px}
+.score small{display:block;color:var(--dim);font-size:14px;margin-top:6px}
+.reel{overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.reel .row{display:flex;gap:12px;width:max-content;padding-block:6px;will-change:transform;transform:translate3d(0,0,0)}
+.case{position:relative;flex:none;width:clamp(190px,19vw,240px);aspect-ratio:9/15;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);display:flex;flex-direction:column;justify-content:flex-end;padding:16px;isolation:isolate;cursor:pointer;text-align:left;transition:transform .4s var(--ease),border-color .3s}
+.case:hover{transform:translateY(-4px);border-color:rgba(255,45,54,.45)}
+.case .ph{position:absolute;inset:0;z-index:-2}
+.case .ph .tag{top:14px;bottom:auto}
+.case::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(11,11,12,.25) 0%,rgba(11,11,12,.35) 40%,rgba(11,11,12,.96))}
+.case .ph.tem{background:var(--ink)}
+.case video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:-2}
+.case .play{width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.14);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;margin-bottom:auto;align-self:flex-end;border:1px solid rgba(255,255,255,.25)}
+.case .play svg{width:16px;height:16px;margin-left:3px}
+.case strong{font:800 28px/.95 var(--display);text-transform:uppercase}
+.case .ph>img.foto{transition:opacity .6s,transform .8s var(--ease)}
+.case .ph.tem>img.foto{opacity:.5;filter:brightness(.7) saturate(.85)}
+.case:hover .ph.tem>img.foto{opacity:.7}
+.case:hover .ph>img.foto{transform:scale(1.05)}
+dialog.player{border:0;padding:0;margin:auto;width:min(860px,calc(100% - 24px));max-height:calc(100dvh - 32px);border-radius:24px;background:var(--s1);color:var(--fg);box-shadow:0 40px 120px -20px rgba(0,0,0,.9),0 0 0 1px var(--line);overflow:auto}
+dialog.player::backdrop{background:rgba(5,5,6,.8);backdrop-filter:blur(6px)}
+dialog.player[open]{display:grid;grid-template-columns:1fr;animation:sobe .4s var(--ease)}
+@media(min-width:720px){dialog.player[open]{grid-template-columns:minmax(0,360px) 1fr}}
+.player video{width:100%;aspect-ratio:9/16;max-height:calc(100dvh - 32px);background:#000;display:block;object-fit:contain}
+.pl-info{padding:clamp(20px,3vw,32px);display:flex;flex-direction:column;gap:12px;align-items:flex-start;justify-content:flex-end}
+.pl-info .kk{padding:5px 10px;border-radius:999px;background:var(--red);font:700 11px var(--head);letter-spacing:.12em;text-transform:uppercase}
+.pl-info h3{font:900 clamp(32px,4vw,48px)/.9 var(--display);text-transform:uppercase}
+.pl-info p{color:var(--dim);font-size:15.5px;max-width:36ch}
+.case .ph{background:radial-gradient(120% 70% at 80% 0,rgba(217,30,38,.45),transparent 60%),repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px),var(--s1)}
+.case .kk{display:inline-flex;align-self:flex-start;margin-bottom:8px;padding:5px 10px;border-radius:999px;background:var(--red);font:700 11px var(--head);letter-spacing:.12em;text-transform:uppercase}
+.case .ig{display:flex;align-items:center;gap:6px;margin-top:12px;font:600 12px var(--head);letter-spacing:.06em;color:rgba(255,255,255,.75)}
+.case .ig svg{width:14px;height:14px}
+.case strong em{font-style:normal;color:var(--glow)}
+.case p{font-size:13px;line-height:1.6;color:rgba(255,255,255,.72);margin-top:5px;height:4.8em;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.case strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- horários e contato ---------- */
+.visit{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:1000px){.visit{grid-template-columns:1.25fr 1fr}}
+.card{border-radius:var(--r);background:var(--s1);border:1px solid var(--line);padding:clamp(22px,3vw,32px)}
+.card-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+.now{display:inline-flex;align-items:center;gap:8px;font:700 12.5px var(--head);letter-spacing:.12em;text-transform:uppercase;padding:7px 13px;border-radius:999px;background:rgba(255,255,255,.06)}
+.now i{width:8px;height:8px;border-radius:50%;background:var(--dim)}
+.now.aberto{color:var(--ok)}.now.aberto i{background:var(--ok);box-shadow:0 0 0 4px rgba(43,194,107,.18);animation:pisca 2s infinite}
+.now.fechado{color:#FF6B70}.now.fechado i{background:#FF6B70}
+@keyframes pisca{50%{box-shadow:0 0 0 8px rgba(43,194,107,0)}}
+.week{display:grid;gap:7px}
+.wd{display:grid;grid-template-columns:44px 1fr 108px;gap:12px;align-items:center}
+.wd span{font:700 14px var(--head);letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.wd b{font:700 15px var(--head);letter-spacing:.04em;text-align:right;font-variant-numeric:tabular-nums}
+.track{position:relative;height:28px;border-radius:8px;background:var(--s2);overflow:visible}
+.track .open{position:absolute;top:0;bottom:0;border-radius:8px;background:linear-gradient(90deg,rgba(217,30,38,.55),rgba(255,45,54,.85))}
+.wd.hoje span,.wd.hoje b{color:#fff}
+.wd.hoje .track{box-shadow:0 0 0 1px rgba(255,45,54,.6)}
+.track .agora{position:absolute;top:-5px;bottom:-5px;width:2px;background:#fff;border-radius:2px;box-shadow:0 0 0 3px rgba(255,255,255,.12)}
+.track .agora::after{content:attr(data-h);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);font:700 10px var(--head);letter-spacing:.06em;background:#fff;color:#0C0C0C;padding:2px 5px;border-radius:5px;white-space:nowrap}
+.axis{display:grid;grid-template-columns:44px 1fr 108px;gap:12px;margin-top:4px}
+.axis div{display:flex;justify-content:space-between;font:600 11px var(--head);color:var(--dim);letter-spacing:.06em}
+.visit small.obs{display:block;color:var(--dim);font-size:13px;margin-top:18px}
+@media(max-width:520px){.wd,.axis{grid-template-columns:36px 1fr 92px;gap:8px}.wd b{font-size:13.5px}}
+.contact{display:grid;gap:10px}
+.ct{display:grid;grid-template-columns:46px 1fr auto;gap:14px;align-items:center;padding:14px;border-radius:16px;background:var(--s2);border:1px solid transparent;transition:border-color .2s,transform .3s var(--ease)}
+.ct:hover{border-color:rgba(255,45,54,.4);transform:translateX(3px)}
+.ct .ic{width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:rgba(217,30,38,.14);color:var(--glow)}
+.ct .ic svg{width:22px;height:22px}
+.ct small{display:block;font:600 11px var(--head);letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.ct b{font:700 18px var(--head);letter-spacing:.02em;user-select:all;overflow-wrap:anywhere}
+.ct .go{font:700 12px var(--head);letter-spacing:.1em;text-transform:uppercase;color:var(--dim);padding:8px 12px;border-radius:10px;border:1px solid var(--line);white-space:nowrap}
+.ct.main{background:linear-gradient(120deg,#b3161d,#e0262e);color:#fff}
+.ct.main .ic{background:rgba(255,255,255,.18);color:#fff}
+.ct.main small{color:rgba(255,255,255,.75)}
+.ct.main .go{color:#fff;border-color:rgba(255,255,255,.35)}
+
+.closing{margin-top:clamp(64px,8vw,104px);border-radius:28px;overflow:hidden;position:relative;padding:clamp(44px,6vw,84px) 24px;text-align:center;background:linear-gradient(180deg,var(--ink) 0%,#2a0809 55%,#8f1117 85%,#ff4148 120%);border:1px solid var(--line)}
+.closing h2{font:900 clamp(34px,4.6vw,62px)/.92 var(--display);text-transform:uppercase;text-wrap:balance}
+.closing p{color:rgba(255,255,255,.82);max-width:46ch;margin:16px auto 28px}
+.closing .hero-cta{justify-content:center}
+
+/* ---------- rodapé ---------- */
+footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--ink),#0E0E10)}
+.foot{display:grid;gap:36px 28px;grid-template-columns:1fr;padding-block:56px 40px}
+@media(min-width:720px){.foot{grid-template-columns:1fr 1fr}}
+@media(min-width:1080px){.foot{grid-template-columns:1.4fr 1fr 1fr 1fr}}
+.foot .brand{display:grid;gap:16px;align-content:start}
+.foot .brand img{height:24px;width:auto}
+.foot .brand p{color:var(--dim);font-size:14.5px;max-width:34ch}
+.social{display:flex;gap:8px}
+.social a{width:42px;height:42px;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--fg);transition:all .2s}
+.social a:hover{background:var(--red);border-color:var(--red)}
+.social svg{width:19px;height:19px}
+.foot h4{font:700 12px var(--head);letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-bottom:14px}
+.foot dl{margin:0;display:grid;gap:6px;font-size:14.5px}
+.foot dl div{display:flex;justify-content:space-between;gap:14px;border-bottom:1px dashed var(--line);padding-bottom:6px}
+.foot dt{color:var(--dim)}.foot dd{margin:0;font-variant-numeric:tabular-nums}
+.foot address{font-style:normal;font-size:14.5px;line-height:1.6}
+.foot .lk{display:grid;gap:8px;font-size:14.5px}
+.foot .lk a{color:var(--fg);display:inline-flex;gap:8px;align-items:center;width:max-content;transition:color .2s}
+.foot .lk a:hover{color:var(--glow)}
+.foot .pays{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.foot .pays span{font:700 11px var(--head);letter-spacing:.1em;text-transform:uppercase;padding:6px 9px;border-radius:7px;background:var(--s2);color:var(--dim)}
+.legal{border-top:1px solid var(--line);padding-block:20px 28px;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;color:var(--dim);font-size:13px}
+.legal nav{display:flex;gap:18px;flex-wrap:wrap}
+.legal a:hover{color:var(--fg)}
+
+/* animações de rolagem (GSAP ScrollTrigger): estados finais são os do CSS; sem o script, tudo aparece normal */
+.word h1 .ch{display:inline-block;will-change:transform}
+.iph{translate:0 var(--ty,0px)}
+.track .open{transform-origin:left center}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:#fff;color:#0C0C0C;font:600 14px var(--body);padding:12px 18px;border-radius:999px;transition:all .3s var(--ease);z-index:70;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M8 7h9v9"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.4-.3z"/></symbol>
+  <symbol id="i-ig" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 32" fill="currentColor"><path d="M12 0C5.4 0 0 5.2 0 11.7 0 20.5 12 32 12 32s12-11.5 12-20.3C24 5.2 18.6 0 12 0zm0 16.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2v20M4.9 6.5l14.2 11M4.9 17.5l14.2-11M9 3.5l3 2.5 3-2.5M9 20.5l3-2.5 3 2.5"/></symbol>
+  <symbol id="i-shower" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V8a4 4 0 0 1 4-4h2a4 4 0 0 1 4 4M10 11h8a4 4 0 0 0-8 0zM12 15v1M15 15v2M18 15v1M13.5 19v1M16.5 19v1"/></symbol>
+  <symbol id="i-access" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="4" r="2"/><path d="M11 7v6h6l2 6M11 10h5M8 12a5 5 0 1 0 6.5 6.5"/></symbol>
+  <symbol id="i-food" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="18" height="6" rx="3"/><path d="M7 9v6M11 9v6M15 9v6"/></symbol>
+  <symbol id="i-shirt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 2-1v12h10V9l2 1 2-4-5-3a4 4 0 0 1-8 0z"/></symbol>
+  <symbol id="i-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17h14v-5l-2-5H7l-2 5zM5 12h14"/><circle cx="8" cy="17" r="2"/><circle cx="16" cy="17" r="2"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8.5a15 15 0 0 1 20 0M5 12a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="19" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+</svg>
+
+<header class="nav">
+  <div class="nav-in">
+    <a href="#topo" aria-label="Garrote Academia, início"><img class="logo" src="site/assets/logo.png" alt="Garrote Academia"></a>
+    <ul id="menu">
+      <li><a href="#academia">Academia</a></li>
+      <li><a href="#modalidades">Modalidades</a></li>
+      <li><a href="#espaco">O espaço</a></li>
+      <li><a href="#planos">Planos</a></li>
+      <li><a href="#contato">Contato</a></li>
+    </ul>
+    <a class="btn red" href="app.html#/login">Área do aluno <svg><use href="#i-arrow"/></svg></a>
+  </div>
+</header>
+
+<main id="topo">
+<!-- ================= TOPO ================= -->
+<section class="hero">
+  <div class="bg ph"></div>
+  <div class="wrap title">
+    <div class="title-in">
+      <div class="hero-meta"><span>Musculação</span><span>Boxe</span><span>Dança</span></div>
+      <div class="word">
+        <h1>Garrote<span class="g">.</span></h1>
+        <div class="cut-slot" id="cutslot" aria-hidden="true"></div>
+        <img class="cut" src="site/fotos/hero-atleta.png" alt="" onload="document.getElementById('cutslot').remove()" onerror="this.remove()">
+      </div>
+    </div>
+  </div>
+  <div class="wrap hero-foot">
+    <p><b>Academia completa em Piraju.</b> Máquinas Cimerian de última geração, quatro modalidades e o seu treino no celular. Tudo num só lugar.</p>
+    <div class="hero-cta">
+      <a class="btn red" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Quero%20agendar%20uma%20aula%20experimental%20na%20Garrote." target="_blank" rel="noopener">Agendar aula experimental <svg><use href="#i-arrow"/></svg></a>
+      <a class="btn line" href="#planos">Ver planos</a>
+    </div>
+    <div class="seal" role="img" aria-label="Academia oficial Cimerian">
+      <span class="escudo" aria-hidden="true"><span class="esc-in"><img src="site/assets/escudo-cimerian.webp" alt="" width="800" height="800" decoding="async"><i class="brilho"></i></span></span>
+    </div>
+  </div>
+</section>
+
+<div class="ticker" aria-hidden="true"><div class="row" id="tk"></div></div>
+
+<!-- ================= QUEM SOMOS ================= -->
+<section class="band" id="academia">
+  <div class="wrap about">
+    <div class="rv">
+      <span class="eyebrow">Quem somos</span>
+      <h2 class="h2">A academia <em>mais completa</em> de Piraju.</h2>
+      <p class="lead" style="margin-top:20px">A Garrote junta <b>musculação com equipamentos Cimerian</b>, <b>boxe</b> e <b>dança</b> no mesmo endereço. Ambiente climatizado, vestiários com chuveiro, equipe acompanhando o seu treino e um app próprio para você treinar com direção.</p>
+      <ol class="steps">
+        <li><div><b>Venha para uma aula experimental</b><p>Agende pelo WhatsApp, conheça o espaço e treine com a gente.</p></div></li>
+        <li><div><b>Escolha o seu plano</b><p>Avulsa, semanal, quinzenal, mensal, semestral, anual ou família. Também aceitamos Wellhub e TotalPass.</p></div></li>
+        <li><div><b>Receba o treino no app</b><p>O professor monta o seu treino e ele aparece no celular, com cargas, séries e descanso.</p></div></li>
+        <li><div><b>Evolua com acompanhamento</b><p>Check-in, histórico e comparação com o treino anterior para você ver o progresso.</p></div></li>
+      </ol>
+    </div>
+    <div class="about-photos rv">
+      <div class="ph" data-foto="sobre-1" data-tag="fotos/sobre-1.jpg · aluno treinando"></div>
+      <div class="ph" data-foto="sobre-2" data-tag="fotos/sobre-2.jpg · equipe"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CIMERIAN ================= -->
+<section class="band cim" id="cimerian">
+  <div class="wrap">
+    <div class="sec-head split rv">
+      <div><span class="eyebrow">Equipamentos</span><h2 class="h2">Treine nas máquinas <em>Cimerian</em>.</h2></div>
+      <p class="lead">A Cimerian é fabricante brasileira de equipamentos de alto padrão, feita em Londrina. Biomecânica que acompanha o movimento do corpo, ajustes finos e acabamento de academia premium. Aqui, o parque de máquinas é Cimerian.</p>
+    </div>
+    <div class="cim-grid rv">
+      <div class="ph wide" data-foto="cimerian-2" data-tag="fotos/cimerian-2.jpg"></div>
+      <div class="ph" data-foto="cimerian-1" data-tag="fotos/cimerian-1.jpg"></div>
+      <div class="ph" data-foto="cimerian-3" data-tag="fotos/cimerian-3.jpg"></div>
+    </div>
+    <div class="cim-feats rv">
+      <div><b>Movimento mais natural</b><p>Trajetórias desenhadas para a articulação, com menos sobrecarga.</p></div>
+      <div><b>Ajuste para cada corpo</b><p>Bancos e apoios reguláveis para qualquer altura.</p></div>
+      <div><b>Carga precisa</b><p>Progressão fina de peso, do iniciante ao avançado.</p></div>
+      <div><b>Linha completa</b><p>Máquinas para todos os grupos musculares no mesmo salão.</p></div>
+    </div>
+    <div class="plaque rv">
+      <div class="txt">
+        <span class="eyebrow">Selo oficial</span>
+        <h3>Academia oficial Cimerian</h3>
+        <p class="lead">Pela quantidade de máquinas oficiais, a Garrote recebeu a placa de academia oficial Cimerian. Ela fica na entrada, para você conferir.</p>
+      </div>
+      <span class="escudo" role="img" aria-label="Escudo Academia oficial Cimerian"><span class="esc-in"><img src="site/assets/escudo-cimerian.webp" alt="" width="800" height="800" decoding="async"><i class="brilho"></i></span></span>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SÓ NA GARROTE ================= -->
+<section class="band" id="diferenciais">
+  <div class="wrap">
+    <div class="sec-head split rv">
+      <div><span class="eyebrow">Só na Garrote</span><h2 class="h2">O que nenhuma academia da região entrega, <em>nós entregamos</em>.</h2></div>
+      <p class="lead">Musculação, luta e dança no mesmo lugar, com estrutura pensada para quem treina todo dia.</p>
+    </div>
+    <div class="bento rv">
+      <article class="tile big">
+        <h3>Tudo num só lugar</h3>
+        <p>Musculação, lutas e dança no mesmo endereço, com a mesma equipe e o mesmo app.</p>
+        <div class="mods"><span class="chip">Musculação</span><span class="chip">Boxe</span><span class="chip">Dança</span></div>
+      </article>
+      <article class="tile"><div class="ic"><svg><use href="#i-snow"/></svg></div><h3>Climatizada</h3><p>Ar-condicionado em todos os ambientes.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-shower"/></svg></div><h3>Vestiários com chuveiro</h3><p>Chuveiros, armários e secador.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-access"/></svg></div><h3>Acessível</h3><p>Banheiro e chuveiro adaptados.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-food"/></svg></div><h3>Comida fit</h3><p>Barrinhas e lanches no local.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-shirt"/></svg></div><h3>Roupas Garrote</h3><p>Linha própria, tecido premium.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-car"/></svg></div><h3>Estacionamento</h3><p>Com vaga acessível.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-wifi"/></svg></div><h3>Wi-Fi e bebedouro</h3><p>Internet, água gelada e mini bar.</p></article>
+      <article class="tile"><div class="ic"><svg><use href="#i-lock"/></svg></div><h3>App do aluno</h3><p>Treino, descanso e evolução no celular.</p></article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MODALIDADES ================= -->
+<section class="band flat" id="modalidades">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">Modalidades</span><h2 class="h2">Três jeitos de <em>treinar</em>.</h2></div>
+    <div class="mods-grid">
+      <button class="mod rv" type="button" data-mod="musculacao"><div class="ph" data-foto="mod-musculacao" data-tag="fotos/mod-musculacao.jpg"></div>
+        <span class="n">01</span><h3>Musculação</h3><p>Salão completo Cimerian, peso livre e cardio.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
+      <button class="mod rv" type="button" data-mod="boxe"><div class="ph" data-foto="mod-boxe" data-tag="fotos/mod-boxe.jpg"></div>
+        <span class="n">02</span><h3>Boxe</h3><p>Técnica, condicionamento e foco total.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
+      <button class="mod rv" type="button" data-mod="danca"><div class="ph" data-foto="mod-danca" data-tag="fotos/mod-danca.jpg"></div>
+        <span class="n">03</span><h3>Dança</h3><p>Aula animada e coreografias para todas as idades.</p><span class="more"><i><svg><use href="#i-arrow"/></svg></i>Saiba mais</span></button>
+    </div>
+  </div>
+</section>
+
+<dialog class="sheet" id="sheet" aria-labelledby="sh-t">
+  <button class="sh-x" type="button" id="sh-x" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
+  <div class="sh-in">
+    <div class="ph" id="sh-ph"></div>
+    <div class="sh-body">
+      <div><span class="eyebrow" id="sh-k">Modalidade</span><h3 id="sh-t" style="margin-top:12px"></h3></div>
+      <p class="lead" id="sh-d"></p>
+      <div class="sh-cols"><div><h4>Como é a aula</h4><ul id="sh-a"></ul></div><div><h4>Benefícios</h4><ul id="sh-b"></ul></div></div>
+      <div><h4>Onde e quando</h4><p id="sh-w" style="font-size:15px"></p></div>
+      <div class="sh-cta"><a class="btn red" id="sh-go" target="_blank" rel="noopener">Agendar aula experimental <svg><use href="#i-arrow"/></svg></a><a class="btn line" href="#planos" id="sh-pl">Ver planos</a></div>
+    </div>
+  </div>
+</dialog>
+
+<!-- ================= O ESPAÇO ================= -->
+<section class="band flat" id="espaco">
+  <div class="wrap">
+    <div class="sec-head split rv">
+      <div><span class="eyebrow">O espaço</span><h2 class="h2">Conheça a academia <em>por dentro</em>.</h2></div>
+      <p class="lead">O térreo inteiro é um salão de musculação, com recepção na entrada e vestiários no fundo. No 2º andar ficam as salas de dança e o tatame.</p>
+    </div>
+    <div class="place">
+      <div class="ph facade rv" data-foto="fachada" data-tag="fotos/fachada.jpg · fachada da Garrote"></div>
+      <div class="loc">
+        <div class="addr rv">
+          <span class="eyebrow">Endereço</span>
+          <address>Rua Major Mariano, 137<small>Vila Al Isa · Piraju - SP · 18800-009</small></address>
+          <div class="btns">
+            <a class="btn red" href="https://www.google.com/maps/search/?api=1&query=R.+Maj.+Mariano,+137+-+Vila+Al+Isa,+Piraju+-+SP,+18800-009" target="_blank" rel="noopener">Abrir no Maps <svg><use href="#i-arrow"/></svg></a>
+            <button class="btn line" type="button" data-copy="Rua Major Mariano, 137 - Vila Al Isa, Piraju - SP, 18800-009"><svg><use href="#i-copy"/></svg>Copiar</button>
+          </div>
+        </div>
+        <div class="ph drone rv" data-foto="drone" data-tag="fotos/drone.jpg · vista de cima"><svg class="pin"><use href="#i-pin"/></svg></div>
+      </div>
+    </div>
+    <div class="maq rv" id="maq">
+      <div class="labels" id="labels"></div>
+      <div class="tip" id="tip"></div>
+      <div class="hud">
+        <div class="floors" role="group" aria-label="Andar">
+          <button type="button" data-f="0" aria-pressed="true">Térreo</button>
+          <button type="button" data-f="1" aria-pressed="false">2º andar</button>
+          <button type="button" data-f="2" aria-pressed="false">Prédio</button>
+        </div>
+        <div class="zoom"><button type="button" id="zin" aria-label="Aproximar">+</button><button type="button" id="zout" aria-label="Afastar">−</button></div>
+      </div>
+      <span class="help" id="help">Arraste para girar · passe o mouse num aparelho para ver o nome</span>
+      <button class="tap" type="button" id="tap"><span>Tocar para explorar</span></button>
+      <div class="fallback" id="fb">A maquete 3D não abriu neste aparelho.</div>
+    </div>
+    <div class="legend" id="legend" role="group" aria-label="Áreas da academia"></div>
+  </div>
+</section>
+
+<!-- ================= APP ================= -->
+<section class="band flat appsec" id="app">
+  <div class="wrap app-grid">
+    <div class="rv">
+      <span class="eyebrow">App Garrote</span>
+      <h2 class="h2">Seu treino no <em>bolso</em>.</h2>
+      <p class="lead" style="margin-top:20px">Todo aluno da Garrote tem acesso ao nosso app. O professor monta o treino e você acompanha tudo pelo celular.</p>
+      <ul class="checks">
+        <li><span><b>Treino do dia</b> com séries, repetições e carga de referência.</span></li>
+        <li><span><b>Cronômetro de descanso</b> que continua contando mesmo fora do app.</span></li>
+        <li><span><b>Check-in e sequência de dias</b> para manter a constância.</span></li>
+        <li><span><b>Resumo e evolução</b>: compare cada treino com o anterior.</span></li>
+      </ul>
+      <a class="btn red" href="app.html#/login">Já sou aluno, entrar <svg><use href="#i-arrow"/></svg></a>
+    </div>
+    <div class="stage" id="stage" aria-label="Telas do app Garrote">
+      <div class="rig" id="rig">
+        <div class="iph l"><div class="scr"><div class="sb"><span>9:41</span><i><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#fff" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#fff"/><rect x="24" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg></i></div><span class="island"></span><img src="site/assets/app-treino.webp" alt="Tela de treino em andamento do app Garrote"><span class="glare"></span></div></div>
+        <div class="iph r"><div class="scr"><div class="sb"><span>9:41</span><i><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#fff" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#fff"/><rect x="24" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg></i></div><span class="island"></span><img src="site/assets/app-resumo.webp" alt="Tela de treino concluído do app Garrote"><span class="glare"></span></div></div>
+        <div class="iph c"><div class="scr"><div class="sb"><span>9:41</span><i><svg viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="9" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="12" rx="1" fill="#fff"/></svg><svg viewBox="0 0 27 12"><rect x=".5" y=".5" width="22" height="11" rx="3.5" fill="none" stroke="#fff" opacity=".5"/><rect x="2" y="2" width="16" height="8" rx="2" fill="#fff"/><rect x="24" y="4" width="2" height="4" rx="1" fill="#fff" opacity=".5"/></svg></i></div><span class="island"></span><img src="site/assets/app-home.webp" alt="Tela inicial do aluno no app Garrote"><span class="glare"></span></div></div>
+      </div>
+      <div class="cap"><span>Treino em andamento</span><span>Início</span><span>Treino concluído</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PLANOS ================= -->
+<section class="band flat" id="planos">
+  <div class="wrap">
+    <div class="sec-head split rv">
+      <div><span class="eyebrow">Planos de musculação</span><h2 class="h2">Escolha como <em>começar</em>.</h2></div>
+      <p class="lead">Todos os planos dão <b>acesso total à musculação</b>, acompanhamento profissional, ambiente moderno e equipamentos de última geração. Para boxe e dança, fale com a recepção.</p>
+    </div>
+    <div class="plans">
+      <article class="plan rv"><h3>Mensal</h3><p class="sub">Para começar sem compromisso longo.</p>
+        <div class="price"><small>R$</small><b>159</b><span>,90/mês</span></div>
+        <p class="tot">Renovação mensal</p>
+        <ul><li>Acesso total à musculação</li><li>Acompanhamento profissional</li><li>Treino no app</li></ul>
+        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20fazer%20minha%20matr%C3%ADcula%20no%20plano%20mensal%20de%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o mensal</a></article>
+      <article class="plan rv"><h3>Semestral</h3><p class="sub">Opção econômica para quem quer compromisso.</p>
+        <div class="price"><small>6× R$</small><b>139</b><span>,90</span></div>
+        <p class="tot">Total R$ 839,40 no cartão de crédito</p>
+        <ul><li>Matrícula garantida por 6 meses</li><li>Desconto sobre o mensal</li><li>Acompanhamento profissional</li></ul>
+        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20fazer%20minha%20matr%C3%ADcula%20no%20plano%20semestral%20de%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o semestral</a></article>
+      <article class="plan hot rv"><span class="badge">Maior desconto</span><h3>Anual</h3><p class="sub">Para quem quer resultado a longo prazo.</p>
+        <div class="price"><small>12× R$</small><b>129</b><span>,90</span></div>
+        <p class="tot">Total R$ 1.558,80 no cartão de crédito</p>
+        <ul><li>Matrícula garantida por 12 meses</li><li>Maior desconto e economia</li><li>Acompanhamento profissional</li></ul>
+        <a class="btn red" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20fazer%20minha%20matr%C3%ADcula%20no%20plano%20anual%20de%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o anual <svg><use href="#i-arrow"/></svg></a></article>
+      <article class="plan rv"><h3>Família</h3><p class="sub">Casal, filhos, pais e irmãos.</p>
+        <div class="price"><small>R$</small><b>149</b><span>,90/pessoa</span></div>
+        <p class="tot">Valor mensal individual</p>
+        <ul><li>Desconto especial para o grupo familiar</li><li>Acesso total à musculação</li><li>Cada um com seu treino no app</li></ul>
+        <a class="btn line" href="https://wa.me/5514998048435?text=Ol%C3%A1%21%20Quero%20saber%20do%20plano%20mensal%20fam%C3%ADlia%20da%20muscula%C3%A7%C3%A3o." target="_blank" rel="noopener">Quero o família</a></article>
+    </div>
+    <div class="passes">
+      <div class="pass rv"><div><h4>Aula avulsa</h4><p>Treine um dia na Garrote.</p></div><div class="price"><small>R$</small><b>30</b><span>,00</span></div></div>
+      <div class="pass rv"><div><h4>Semanal</h4><p>Uma semana de acesso.</p></div><div class="price"><small>R$</small><b>85</b><span>,00</span></div></div>
+      <div class="pass rv"><div><h4>Quinzenal</h4><p>Quinze dias de acesso.</p></div><div class="price"><small>R$</small><b>105</b><span>,00</span></div></div>
+      <div class="pass rv"><div><h4>Wellhub e TotalPass</h4><p>Use o seu benefício da empresa.</p></div><div class="logos"><span>Wellhub</span><span>TotalPass</span></div></div>
+    </div>
+  </div>
+  </div>
+</section>
+
+<!-- ================= AVALIAÇÕES ================= -->
+<section class="band flat" id="avaliacoes">
+  <div class="wrap">
+    <div class="sec-head rv"><span class="eyebrow">Quem treina aqui</span><h2 class="h2">Resultados de <em>verdade</em>.</h2></div>
+    <div class="rev-top rv">
+      <div class="score"><b>5,0</b><div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><small>Nota no Google · <a href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">23 avaliações</a></small></div></div>
+      <p class="lead" style="max-width:44ch">Alunos reais contando como foi a evolução treinando na Garrote. Toque num card para assistir ao vídeo.</p>
+    </div>
+  </div>
+  <div class="wrap"><div class="reel" id="reel"><div class="row" id="reel-row"></div></div></div>
+  <div class="wrap">
+    <div class="quotes">
+      <figure class="q rv"><div class="who"><span class="av" style="background:#5C6BC0">F</span><div><b>Fabio Felix Menezes</b><small>Google · nov. de 2025</small></div></div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>A melhor academia da cidade, infraestrutura de ponta, professores atenciosos, ar condicionado para o nosso conforto e os vestiários amplos com chuveiro, excelente!</blockquote></figure>
+      <figure class="q rv"><div class="who"><span class="av" style="background:#00796B">F</span><div><b>Fernando Ferreira Lopes</b><small>Google · nov. de 2025</small></div></div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Profissionais muito atenciosos e estrutura de alto padrão! A melhor academia que já visitei na região de Piraju</blockquote></figure>
+      <figure class="q rv"><div class="who"><img class="av" src="site/assets/avaliacoes/douglas.jpg" alt="" width="40" height="40"><div><b>Douglas Lobeiro</b><small>Google · nov. de 2025</small></div></div><div class="stars"><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg><svg><use href="#i-star"/></svg></div><blockquote>Ambiente super agradável, limpo e bem estruturado. Os profissionais são atenciosos, capacitados e sempre dispostos a ajudar. Os equipamentos são modernos e bem cuidados, e os treinos são personalizados de acordo com os objetivos de cada aluno.</blockquote></figure>
+    </div>
+    <a class="btn line" style="margin-top:16px" href="https://www.google.com/maps/search/?api=1&query=Garrote+Academia&query_place_id=ChIJHY9_R9WrwZQR553wcNAB4cw" target="_blank" rel="noopener">Ver todas as avaliações no Google <svg><use href="#i-arrow"/></svg></a>
+  </div>
+</section>
+
+<!-- ================= HORÁRIOS + CONTATO ================= -->
+<section class="band flat" id="contato">
+  <div class="wrap">
+    <div class="sec-head split rv">
+      <div><span class="eyebrow">Visite a Garrote</span><h2 class="h2">Horários e <em>contato</em>.</h2></div>
+      <p class="lead">Aberta todos os dias da semana. Fale com a recepção pelo WhatsApp para agendar sua aula experimental ou tirar dúvidas sobre os planos.</p>
+    </div>
+    <div class="visit">
+      <div class="card rv">
+        <div class="card-top"><span class="eyebrow">Horário de funcionamento</span><span class="now" id="now"><i></i><span>Horário</span></span></div>
+        <div class="week" id="week"></div>
+        <div class="axis"><span></span><div><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>24h</span></div><span></span></div>
+        <small class="obs">Em feriados o horário pode mudar. Confira no Instagram.</small>
+      </div>
+      <div class="card rv">
+        <div class="card-top"><span class="eyebrow">Fale com a gente</span></div>
+        <div class="contact">
+          <a class="ct main" href="https://wa.me/5514998048435" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-wa"/></svg></span><span><small>WhatsApp</small><b>(14) 99804-8435</b></span><span class="go">Conversar</span></a>
+          <a class="ct" href="https://www.instagram.com/garroteacademia/" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-ig"/></svg></span><span><small>Instagram</small><b>@garroteacademia</b></span><span class="go">Seguir</span></a>
+          <div class="ct"><span class="ic"><svg><use href="#i-phone"/></svg></span><span><small>Telefone</small><b>(14) 99804-8435</b></span><button class="go" type="button" data-copy="(14) 99804-8435">Copiar</button></div>
+          <a class="ct" href="https://www.google.com/maps/search/?api=1&query=R.+Maj.+Mariano,+137+-+Vila+Al+Isa,+Piraju+-+SP,+18800-009" target="_blank" rel="noopener"><span class="ic"><svg><use href="#i-map"/></svg></span><span><small>Endereço</small><b>Rua Major Mariano, 137</b></span><span class="go">Rota</span></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="closing rv">
+      <h2>Sua primeira aula é por nossa conta.</h2>
+      <p>Venha conhecer a Garrote, treinar nas máquinas Cimerian e sentir o ambiente. Agende pelo WhatsApp.</p>
+      <div class="hero-cta">
+        <a class="btn light" href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Quero%20agendar%20uma%20aula%20experimental%20na%20Garrote." target="_blank" rel="noopener">Agendar aula experimental <svg><use href="#i-arrow"/></svg></a>
+        <a class="btn line" href="app.html#/login">Área do aluno</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap foot">
+    <div class="brand">
+      <img src="site/assets/logo.png" alt="Garrote Academia">
+      <p>Academia completa em Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.</p>
+      <div class="social">
+        <a href="https://www.instagram.com/garroteacademia/" target="_blank" rel="noopener" aria-label="Instagram"><svg><use href="#i-ig"/></svg></a>
+        <a href="https://wa.me/5514998048435" target="_blank" rel="noopener" aria-label="WhatsApp"><svg><use href="#i-wa"/></svg></a>
+        <a href="https://www.google.com/maps/search/?api=1&query=R.+Maj.+Mariano,+137+-+Vila+Al+Isa,+Piraju+-+SP,+18800-009" target="_blank" rel="noopener" aria-label="Endereço no mapa"><svg><use href="#i-map"/></svg></a>
+      </div>
+    </div>
+    <div>
+      <h4>Horários</h4>
+      <dl><div><dt>Seg a sex</dt><dd>05:00 – 22:00</dd></div><div><dt>Sábado</dt><dd>06:00 – 13:00</dd></div><div><dt>Domingo</dt><dd>09:00 – 11:00</dd></div></dl>
+    </div>
+    <div>
+      <h4>Onde estamos</h4>
+      <address>Rua Major Mariano, 137<br>Vila Al Isa · Piraju - SP<br>CEP 18800-009</address>
+      <div class="pays"><span>Pix</span><span>Cartão</span><span>Wellhub</span><span>TotalPass</span></div>
+    </div>
+    <div>
+      <h4>Alunos</h4>
+      <div class="lk">
+        <a href="app.html#/login"><svg width="16" height="16"><use href="#i-user"/></svg>Área do aluno</a>
+        <a href="https://wa.me/5514998048435?text=Ol%C3%A1!%20Quero%20agendar%20uma%20aula%20experimental%20na%20Garrote." target="_blank" rel="noopener">Agendar aula experimental</a>
+        <a href="https://wa.me/5514998048435" target="_blank" rel="noopener">(14) 99804-8435</a>
+        <a href="https://www.instagram.com/garroteacademia/" target="_blank" rel="noopener">@garroteacademia</a>
+      </div>
+    </div>
+  </div>
+  <div class="wrap legal">
+    <span>© 2026 Garrote Academia · Piraju-SP</span>
+    <nav><a href="app.html#/privacidade">Política de privacidade</a><a href="app.html#/termos">Termos de uso</a></nav>
+  </div>
+</footer>
+<dialog class="player" id="player" aria-labelledby="pl-n">
+  <button class="sh-x" type="button" id="pl-x" aria-label="Fechar"><svg><use href="#i-x"/></svg></button>
+  <video id="pl-v" controls playsinline preload="metadata"></video>
+  <div class="pl-info"><span class="kk" id="pl-k"></span><h3 id="pl-n"></h3><p id="pl-r"></p>
+    <a class="btn line" id="pl-ig" target="_blank" rel="noopener"><svg><use href="#i-ig"/></svg>Ver no Instagram</a></div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* começa a baixar as fotos já, sem esperar as bibliotecas da maquete e das animações */
+(function(){var v={};[].forEach.call(document.querySelectorAll('[data-foto]'),function(p){v[p.getAttribute('data-foto')]=1;});
+  for(var n=1;n<=6;n++)v['case-'+n]=1;Object.keys(v).forEach(function(k){var i=new Image();i.decoding='async';i.src='site/fotos/'+k+'.webp';});})();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+document.documentElement.classList.add('js');
+const $=(s,e=document)=>e.querySelector(s), $$=(s,e=document)=>[...e.querySelectorAll(s)];
+const reduz=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const WA='https://wa.me/5514998048435?text=';
+
+/* fotos */
+function encaixe(p){
+  if(p.dataset.tag&&!$('.tag',p)){const t=document.createElement('span');t.className='tag';t.textContent=p.dataset.tag;p.appendChild(t);}
+  const n=p.dataset.foto;if(!n||p.dataset.ok)return;p.dataset.ok=1;
+  const i=new Image();i.className='foto';i.alt='';i.decoding='async';
+  i.onload=()=>{p.prepend(i);p.classList.add('tem');};i.src='site/fotos/'+n+'.webp';
+}
+
+/* faixa */
+(function(){const itens=['Equipamentos Cimerian','Musculação','Boxe','Dança','Climatizada','Vestiários com chuveiro','App do aluno','Piraju · SP'];
+  const h=itens.map(t=>`<span>${t}</span>`).join('');$('#tk').innerHTML=h+h;})();
+
+/* carrossel de cases: dados dos reels da Garrote; cada card abre o reel no Instagram.
+   Capa: site/fotos/case-N.webp (vertical). Sem ela, o card mostra o fundo da marca. */
+const CASES=[
+  {n:'Bruna',h:'bruna_basqueira',k:'1 ano de treino',r:'Venceu a hipertensão, a pré-diabetes e a obesidade com treino e acompanhamento.',u:'DQ9XBypgGI8'},
+  {n:'Sirlene',h:'sirlen2_macieira',k:'−15 kg',r:'15 kg a menos e muito mais disposição, energia e saúde.',u:'DV_437DkziG'},
+  {n:'Sthe Teshima',h:'stheteshima',k:'Academia premium',r:'Equipamentos top, ambiente climatizado e lojinha com suplementos e marmitas.',u:'DLh5khEsq3n'},
+  {n:'Terceira idade',h:'',k:'Nunca é tarde',r:'Alunos da terceira idade contam como ganharam qualidade de vida e saúde.',u:'DKNx4lNsCkw'},
+  {n:'Nossos alunos',h:'',k:'Não querem parar',r:'Eles começaram na Garrote e não querem mais parar.',u:'DJ41nG_BbHR'},
+  {n:'Dona Marlene',h:'',k:'Exemplo que inspira',r:'Treino que vai além do físico: qualidade de vida, bem-estar e amor-próprio.',u:'DPysk_eADrO'}
+];
+(function(){
+  const card=(c,i,dup)=>`<button class="case" type="button" data-i="${i}"${dup?' tabindex="-1" aria-hidden="true"':''}>
+    <div class="ph" data-foto="case-${i+1}"></div><span class="play"><svg><use href="#i-play"/></svg></span>
+    <span class="kk">${c.k}</span><strong>${c.n}</strong><p>${c.r}</p><span class="ig"><svg><use href="#i-ig"/></svg>${c.h?'@'+c.h:'@garroteacademia'}</span></button>`;
+  $('#reel-row').innerHTML=CASES.map((c,i)=>card(c,i)).join('')+CASES.map((c,i)=>card(c,i,1)).join('');
+  /* player: abre por cima do site, com som; ao fechar, para o vídeo e o carrossel volta a correr */
+  const dlg=$('#player'),v=$('#pl-v');
+  const fecha=()=>{v.pause();v.removeAttribute('src');v.load();dlg.close();$('#reel').classList.remove('parado');};
+  $$('#reel-row .case').forEach(b=>b.addEventListener('click',()=>{const i=+b.dataset.i,c=CASES[i];
+    $('#pl-n').textContent=c.n;$('#pl-r').textContent=c.r;$('#pl-k').textContent=c.k;$('#pl-ig').href=`https://www.instagram.com/reel/${c.u}/`;
+    v.poster=`site/fotos/case-${i+1}.webp`;v.src=`site/fotos/case-${i+1}.mp4`;$('#reel').classList.add('parado');
+    dlg.showModal?dlg.showModal():dlg.setAttribute('open','');v.play&&v.play().catch(()=>{});}));
+  /* movimento do carrossel: começa assim que ele aparece na tela, com um impulso rápido que desacelera até a velocidade normal */
+  (function(){const reel=$('#reel'),row=$('#reel-row');let x=0,vel=0,alvo=0,ult=0,visto=false,hover=false;
+    const base=()=>row.scrollWidth/2/60;                       // meia faixa em 60 s, como antes
+    reel.addEventListener('pointerenter',e=>{if(e.pointerType==='mouse')hover=true;});
+    reel.addEventListener('pointerleave',()=>hover=false);
+    const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting&&!visto){visto=true;vel=base()*5;}}),{threshold:.15});
+    io.observe(reel);
+    function passo(t){const dt=Math.min(.05,(t-(ult||t))/1000);ult=t;
+      const parado=hover||reel.classList.contains('parado')||!visto;
+      alvo=parado?0:base();vel+=(alvo-vel)*Math.min(1,dt*(vel>alvo?1.6:4));
+      if(!reduz){x-=vel*dt;const meio=row.scrollWidth/2;if(meio&&-x>=meio)x+=meio;row.style.transform=`translate3d(${x}px,0,0)`;}
+      requestAnimationFrame(passo);}
+    requestAnimationFrame(passo);})();
+  $('#pl-x').onclick=fecha;dlg.addEventListener('click',e=>{if(e.target===dlg)fecha();});dlg.addEventListener('cancel',e=>{e.preventDefault();fecha();});
+})();
+$$('.ph').forEach(encaixe);
+
+/* copiar e aviso */
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('on'),2400);}
+$$('[data-copy]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const s=b.dataset.copy,ok=()=>toast('Copiado: '+s);
+  const sel=()=>{const ta=document.createElement('textarea');ta.value=s;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok();}catch(e){toast(s);}ta.remove();};
+  try{navigator.clipboard.writeText(s).then(ok,sel);}catch(err){sel();}}));
+
+/* menu: a seção visível fica vermelha */
+(function(){const links=$$('#menu a'),secs=links.map(a=>$(a.getAttribute('href')));
+  if(!('IntersectionObserver' in window))return;
+  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));}}),{rootMargin:'-45% 0px -50% 0px'});
+  secs.forEach(s=>s&&io.observe(s));})();
+
+/* saiba mais das modalidades */
+const MODS={
+  musculacao:{t:'Musculação',d:'O térreo inteiro é salão de musculação, com o parque de máquinas Cimerian, área de peso livre, gaiolas de agachamento e cardio. O professor monta o seu treino e ele vai para o app.',
+    a:['Treino individual montado pelo professor','Máquinas Cimerian, peso livre e cardio','Acompanhamento da equipe no salão','Treino, descanso e evolução no app'],
+    b:['Ganho de força e massa muscular','Emagrecimento e condicionamento','Postura e prevenção de lesões','Resultado que você acompanha no app'],
+    w:'Térreo · livre durante todo o horário de funcionamento.'},
+  boxe:{t:'Boxe',d:'Base, guarda, deslocamento e combinações de socos. Treino intenso, com muito cardio e foco total, no tatame do 2º andar.',
+    a:['Corda e aquecimento','Fundamentos de guarda e deslocamento','Combinações na manopla e no saco','Condicionamento no fim da aula'],
+    b:['Condicionamento cardiovascular','Força de core e ombros','Foco e disciplina','Defesa pessoal'],
+    w:'Tatame do 2º andar · turmas em horários fixos (confirme com a recepção).'},
+  danca:{t:'Dança',d:'Aula animada, com coreografias e ritmos variados, na sala de dança do 2º andar. Você gasta energia sem perceber e sai de bom humor.',
+    a:['Aquecimento com música','Coreografias passo a passo','Ritmos variados','Alongamento no final'],
+    b:['Gasto calórico divertido','Coordenação e ritmo','Socialização','Para todas as idades'],
+    w:'Sala de dança do 2º andar · turmas em horários fixos (confirme com a recepção).'}
+};
+(function(){const dlg=$('#sheet');
+  const fecha=()=>dlg.close();$('#sh-x').onclick=fecha;
+  dlg.addEventListener('click',e=>{if(e.target===dlg)fecha();});
+  $('#sh-pl').onclick=fecha;
+  $$('.mod').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.mod,m=MODS[k];
+    $('#sh-t').textContent=m.t;$('#sh-d').textContent=m.d;$('#sh-w').textContent=m.w;
+    $('#sh-a').innerHTML=m.a.map(x=>`<li>${x}</li>`).join('');$('#sh-b').innerHTML=m.b.map(x=>`<li>${x}</li>`).join('');
+    $('#sh-go').href=WA+encodeURIComponent(`Olá! Quero agendar uma aula experimental de ${m.t.toLowerCase()} na Garrote.`);
+    const ph=$('#sh-ph');ph.className='ph';ph.innerHTML='';delete ph.dataset.ok;ph.dataset.foto='mod-'+k;ph.dataset.tag='fotos/mod-'+k+'.jpg';encaixe(ph);
+    dlg.showModal?dlg.showModal():dlg.setAttribute('open','');}));})();
+
+/* horários: barra de cada dia, hoje destacado e a hora atual de Piraju */
+(function(){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',weekday:'short',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(new Date());
+  const g=k=>p.find(x=>x.type===k).value, dia=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(g('weekday')), min=(+g('hour')%24)*60+(+g('minute'));
+  const H={0:[540,660],6:[360,780]};for(let d=1;d<=5;d++)H[d]=[300,1320];
+  const hm=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0');
+  const nomes=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'],ordem=[1,2,3,4,5,6,0];
+  $('#week').innerHTML=ordem.map(d=>{const[a,f]=H[d],hoje=d===dia;
+    return `<div class="wd${hoje?' hoje':''}"><span>${nomes[d]}</span><div class="track" title="${hm(a)} às ${hm(f)}"><i class="open" style="left:${a/14.4}%;width:${(f-a)/14.4}%"></i>${hoje?`<i class="agora" style="left:${min/14.4}%" data-h="${hm(min)}"></i>`:''}</div><b>${hm(a)} – ${hm(f)}</b></div>`;}).join('');
+  const[a,f]=H[dia],aberto=min>=a&&min<f,el=$('#now');
+  el.classList.add(aberto?'aberto':'fechado');
+  $('span',el).textContent=aberto?'Aberto agora · até '+hm(f):(min<a?'Fechado · abre às '+hm(a):'Fechado agora');
+})();
+
+/* iPhones: parados; inclinam levemente acompanhando o mouse */
+(function(){const st=$('#stage'),rig=$('#rig');if(reduz||!matchMedia('(hover:hover)').matches)return;
+  st.addEventListener('pointermove',e=>{const r=st.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+    rig.style.transform=`rotateY(${x*14}deg) rotateX(${-y*10}deg)`;});
+  st.addEventListener('pointerleave',()=>rig.style.transform='');})();
+
+/* escudos: inclinam acompanhando o mouse quando ele está perto (até ~420 px do centro) */
+(function(){const es=$$('.escudo .esc-in');if(reduz||!es.length||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;const MAX=16,R=420;   // só com mouse
+  addEventListener('pointermove',e=>es.forEach(el=>{if(e.pointerType!=='mouse')return;const r=el.getBoundingClientRect();if(!r.width)return;
+    const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),d=Math.hypot(dx,dy);
+    if(d>R){el.style.transform='';return;}const f=1-d/R,x=Math.max(-1,Math.min(1,dx/(R*.5))),y=Math.max(-1,Math.min(1,dy/(R*.5)));
+    el.style.transform=`rotateY(${x*MAX*f}deg) rotateX(${-y*MAX*f}deg)`;}),{passive:true});
+  document.addEventListener('pointerleave',()=>es.forEach(el=>el.style.transform=''));
+})();
+
+/* ---------- animações de rolagem ---------- */
+(function(){
+  if(reduz||!window.gsap||!window.ScrollTrigger)return;
+  gsap.registerPlugin(ScrollTrigger);
+  const E='power3.out', baixo=el=>el.getBoundingClientRect().top>innerHeight*.92;   // só anima o que ainda não está na tela
+  const limpa={clearProps:'transform,opacity,clipPath'};
+
+  /* topo: letras do GARROTE sobem uma a uma, depois o resto */
+  const h1=$('.word h1');
+  if(h1){const g=h1.querySelector('.g');const txt=h1.firstChild.textContent;
+    h1.firstChild.replaceWith(...[...txt].map(c=>{const sp=document.createElement('span');sp.className='ch';sp.textContent=c;return sp;}));
+    gsap.timeline({defaults:{ease:E}})
+      .from('.word h1 .ch, .word h1 .g',{yPercent:110,opacity:0,duration:.9,stagger:.05})
+      .from('.hero-meta span',{y:16,opacity:0,duration:.6,stagger:.06},'-=.6')
+      .from('.hero-foot>*',{y:24,opacity:0,duration:.7,stagger:.1,...limpa},'-=.4');
+    // parallax: o título sobe e some devagar ao rolar
+    gsap.to('.title',{yPercent:-28,opacity:.25,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    gsap.to('.hero .bg',{yPercent:18,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+  }
+
+  /* cabeçalhos das seções: selo, título e texto em sequência */
+  $$('.sec-head, .about>div:first-child, .app-grid>div:first-child, .plaque .txt').forEach(h=>{if(!baixo(h))return;
+    const it=h.querySelectorAll('.eyebrow,.h2,.lead,h3');
+    gsap.from(it,{y:44,opacity:0,duration:.95,ease:E,stagger:.09,...limpa,scrollTrigger:{trigger:h,start:'top 86%'}});});
+
+  /* grupos em cascata */
+  const cascata=(sel,o={})=>{const els=$$(sel).filter(baixo);if(!els.length)return;
+    gsap.set(els,{y:o.y??56,opacity:0,scale:o.s??1});
+    ScrollTrigger.batch(els,{start:'top 90%',once:true,onEnter:b=>gsap.to(b,{y:0,opacity:1,scale:1,duration:o.d??.85,ease:E,stagger:o.st??.08,...limpa})});};
+  cascata('.steps li',{y:30});
+  cascata('.cim-feats>div',{y:30});
+  cascata('.bento .tile',{y:40,s:.96});
+  cascata('.mods-grid .mod',{y:80,st:.1,d:1});
+  cascata('.plans .plan',{y:70,st:.1});
+  cascata('.passes .pass',{y:30});
+  cascata('.contact .ct',{y:30});
+  cascata('.quotes .q',{y:40,st:.1});
+  cascata('.legend button',{y:14,st:.04,d:.5});
+  cascata('.foot>div',{y:30});
+  cascata('.addr, .nums',{y:40});
+
+  /* imagens: revelação de baixo para cima com leve zoom */
+  $$('.about-photos .ph, .cim-grid .ph, .facade, .drone').filter(baixo).forEach((ph,i)=>{
+    gsap.fromTo(ph,{clipPath:'inset(100% 0% 0% 0% round 20px)'},{clipPath:'inset(0% 0% 0% 0% round 20px)',duration:1.2,ease:'power4.out',delay:(i%3)*.08,
+      scrollTrigger:{trigger:ph,start:'top 88%'},onComplete:()=>gsap.set(ph,{clearProps:'clipPath'})});
+    gsap.fromTo(ph,{'--z':1.2},{'--z':1,duration:1.6,ease:'power3.out',scrollTrigger:{trigger:ph,start:'top 88%'}});
+  });
+
+  /* escudo da placa: entra girando */
+  const esc=$('.plaque .escudo');
+  /* escudo: no computador entra girando; no celular só aparece subindo (a rotação 3D faz o Safari do iPhone redesenhar o escudo pequeno) */
+  const toque=!matchMedia('(hover:hover) and (pointer:fine)').matches;
+  if(esc&&baixo(esc))gsap.from(esc,{...(toque?{y:30}:{rotateY:-70}),opacity:0,duration:toque?.9:1.2,ease:'power3.out',...limpa,scrollTrigger:{trigger:esc,start:'top 85%'}});
+
+  /* maquete: abre como uma cortina */
+  const mq=$('#maq');
+  if(mq&&baixo(mq))gsap.fromTo(mq,{clipPath:'inset(8% 8% 8% 8% round 20px)',opacity:.2},{clipPath:'inset(0% 0% 0% 0% round 20px)',opacity:1,duration:1.3,ease:'power3.out',
+    scrollTrigger:{trigger:mq,start:'top 85%'},onComplete:()=>gsap.set(mq,{clearProps:'clipPath,opacity'})});
+
+  /* celulares: sobem de baixo, o do meio por último */
+  const ph=$$('.iph');
+  if(ph.length&&baixo($('#stage'))){gsap.set(ph,{'--ty':'160px',opacity:0});
+    gsap.to(ph,{'--ty':'0px',opacity:1,duration:1.2,ease:'power4.out',stagger:.14,scrollTrigger:{trigger:'#stage',start:'top 80%'},onComplete:()=>gsap.set(ph,{clearProps:'opacity'})});
+    gsap.from('.cap span',{y:12,opacity:0,stagger:.08,duration:.6,scrollTrigger:{trigger:'#stage',start:'top 60%'}});}
+
+  /* horários: as barras crescem dia a dia; a nota conta */
+  const tr=$$('.track .open');
+  if(tr.length&&baixo($('#week')))gsap.from(tr,{scaleX:0,duration:1,ease:E,stagger:.06,scrollTrigger:{trigger:'#week',start:'top 85%'}});
+  const nota=$('.score b');
+  if(nota&&baixo(nota)){const o={v:0};gsap.to(o,{v:5,duration:1.6,ease:'power2.out',scrollTrigger:{trigger:nota,start:'top 90%'},
+    onUpdate:()=>nota.textContent=o.v.toFixed(1).replace('.',',')});nota.textContent='0,0';}
+
+  /* chamada final: cresce ao entrar */
+  const cl=$('.closing');
+  if(cl&&baixo(cl))gsap.from(cl,{scale:.9,opacity:0,y:40,duration:1.1,ease:E,...limpa,scrollTrigger:{trigger:cl,start:'top 88%'}});
+
+  /* faixa que corre acelera conforme a velocidade da rolagem */
+  const tk=$('#tk');
+  if(tk){const anim=tk.getAnimations?tk.getAnimations()[0]:null;
+    if(anim)ScrollTrigger.create({onUpdate:self=>{const v=Math.min(4,1+Math.abs(self.getVelocity())/900);anim.playbackRate=v;gsap.to(anim,{playbackRate:1,duration:.8,overwrite:true});}});}
+
+  addEventListener('load',()=>ScrollTrigger.refresh());
+  document.fonts&&document.fonts.ready.then(()=>ScrollTrigger.refresh());
+})();
+
+/* ---------- maquete 3D: posições tiradas da planta (unidade = px da planta, 1 px ≈ 2,4 cm) ---------- */
+/* tipos: m máquina · g gaiola/polia/estrutura · b banco · c cardio · r halteres/anilhas · a armário/prateleira · v louça/pia · sh chuveiros · x balcão · sf sofá · p parede · st escada */
+const TERREO=[
+ ['Mictório · masculino','mi',0,0,42,32],['Mictório · masculino','mi',0,42,42,32],
+ ['Box sanitário 2 · masculino','bs',193,0,70,40,'L'],['Box sanitário 3 · masculino','bs',193,44,70,40,'L'],['Box sanitário 2 · feminino','bs',408,0,70,40,'R'],['Box sanitário 3 · feminino','bs',408,44,70,40,'R'],
+ ['Box sanitário 1 · masculino','bs',0,82,42,50,'R'],['Box sanitário 1 · feminino','bs',602,82,68,50,'L'],
+ ['Box de banho 4 · masculino','bc',0,135,42,52,'R'],['Box de banho 3 · masculino','bc',0,188,42,52,'R'],['Box de banho 2 · masculino','bc',0,240,42,52,'R'],['Box de banho 1 · masculino','bc',0,293,42,52,'R'],
+ ['Box de banho 4 · feminino','bc',602,135,68,52,'L'],['Box de banho 3 · feminino','bc',602,188,68,52,'L'],['Box de banho 2 · feminino','bc',602,240,68,52,'L'],['Box de banho 1 · feminino','bc',602,293,68,52,'L'],
+ ['Pia e espelho','v',153,92,40,105],['Pia e espelho','v',153,200,40,105],['Pia e espelho','v',477,92,40,105],['Pia e espelho','v',477,200,40,105],['Bebedouro','v',258,212,152,42],
+ ['Banco do vestiário','b',0,372,28,90],['Banco do vestiário','b',65,408,152,42],['Banco do vestiário','b',453,408,152,42],['Banco do vestiário','b',641,372,28,90],
+ ['Armários · vestiário masculino','a',0,475,260,28],['Armários · vestiário feminino','a',409,475,260,28],
+ ['','p',0,505,262,6],['','p',408,505,262,6],['','p',262,290,6,221],['','p',402,290,6,221],['','p',193,92,5,206],['','p',472,92,5,206],['','p',193,204,284,5],['','t',193,88,284,121],['','t',263,0,145,88],
+ ['Halteres de 10 a 45 kg','r',15,515,155,62],['Torre de halteres 1 a 10 kg','r',172,515,36,62],['Torre de halteres 1 a 10 kg','r',212,515,38,62],
+ ['Colchonetes','a',608,515,45,55],['Steps','b',612,572,40,48],['Caneleiras','a',348,595,26,85],['Anilhas','r',321,652,26,25],['Elevação pélvica livre','b',555,620,98,68],
+ ['Banco ajustável','b',32,642,86,38],['Banco ajustável','b',32,727,86,38],['Banco ajustável','b',32,807,86,38],['Banco reto','b',32,873,86,38],
+ ['Rosca bíceps livre','b',162,640,98,52],['Rosca bíceps máquina','m',162,712,98,52],['Banco inclinado','bi',172,808,88,38],['Banco declinado','bd',172,873,88,38],
+ ['Banco romano','b',321,690,98,38],['Panturrilha sentado','m',321,733,98,52],['Paralelas','g',321,793,98,38],
+ ['Máquina 4 apoios','m',585,697,68,95],['Máquina de elevação pélvica','m',555,802,98,88],['Anilhas','r',321,870,28,26],
+ ['Stiff máquina','m',555,910,98,62],['Barras montadas','r',0,927,68,65],['Supino livre reto','g',173,917,112,68],
+ ['Leg press 45° normal','m',321,912,148,60],['Leg press 45° articulado','m',321,980,148,62],
+ ['Barras','r',68,1050,40,30],['Anilhas','r',68,1088,40,30],
+ ['Supino máquina reto','m',173,995,112,68],['Supino máquina inclinado','m',173,1070,112,70],['Flexora unilateral','m',372,1053,96,62],
+ ['Elevação lateral máquina','m',173,1148,112,70],['V squat','m',372,1122,96,63],['Panturrilha em pé','m',372,1190,96,62],['Agachamento hack','m',555,1132,98,62],
+ ['Peck deck','m',173,1225,96,82],['Gaiola de agachamento 2','g',555,1213,98,130],['Gaiola de agachamento 1','g',555,1363,98,130],
+ ['Abdutora 2','m',401,1260,67,55],['Abdutora 1','m',401,1318,67,55],['Mesa flexora','m',401,1375,67,55],['Cadeira flexora','m',401,1432,67,62],['Cadeira extensora 2','m',401,1498,67,65],['Cadeira extensora 1','m',401,1565,67,65],
+ ['Desenvolvimento','m',14,1290,50,75],['Remada cavalinho com apoio','m',173,1317,112,65],['Remada curvada máquina','m',173,1385,112,73],['Remada articulada costas','m',173,1460,96,82],
+ ['Chest press','m',14,1408,50,132],['Puxada articulada costas','m',173,1550,96,78],
+ ['Simulador de escada','c',517,1537,133,20],['Elíptico 2','c',517,1566,133,20],['Elíptico 1','c',517,1596,133,20],['Bike 2','c',517,1626,133,20],['Bike 1','c',517,1656,133,20],
+ ['Esteira 5','c',517,1686,133,20],['Esteira 4','c',517,1716,133,20],['Esteira 3','c',517,1745,133,20],['Esteira 2','c',517,1774,133,20],['Esteira 1','c',517,1803,133,20],
+ ['Polia dupla 3','g',14,1550,66,72],['Polia dupla 2','g',14,1630,66,72],['Polia dupla 1','g',14,1712,66,90],
+ ['Puxada costas 2','m',162,1642,58,65],['Puxada costas 1','m',162,1715,58,65],['Remada baixa 2','m',235,1642,65,65],['Remada baixa 2','b',300,1662,168,28],['Remada baixa 1','m',235,1715,65,65],['Remada baixa 1','b',300,1736,168,28],
+ ['Mini vestiário (nichos)','a',201,1803,267,25],['Recepção','x',201,1835,267,48],['Roupas Garrote','a',0,1835,28,75],['Comidas e bebidas','x',0,1937,186,42],['Mesa e sofá','sf',480,1917,190,62]
+];
+const ZONAS0=[['Recepção e loja',335,1880,0xD91E26],['Salão de máquinas',290,1350,0xD91E26],['Cardio',590,1690,0xD91E26],['Peso livre',335,740,0xD91E26],['Vestiários',335,200,0xD91E26],['Escada',32,1130,0xD91E26]];
+const ZONAS1=[['Sala de dança',167,456],['Tatame · Boxe',502,378],['Escritório',585,912]];
+
+(function(){
+  const box=$('#maq');
+  if(!window.THREE){$('#fb').style.display='flex';$('#help').remove();return;}
+  const T=THREE,S=.024,BW=670,BL=1980, W=()=>box.clientWidth,Hh=()=>box.clientHeight;
+  const X=py=>(py-BL/2)*S, Z=px=>(BW/2-px)*S, DZ=(a,b)=>Math.abs(Z(a)-Z(b)), ZB=BW*S/2;   // planta em pé → maquete deitada; esquerda da planta = esquerda de quem entra
+  let r;try{r=new T.WebGLRenderer({antialias:true,alpha:true});}catch(e){$('#fb').style.display='flex';return;}
+  r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(W(),Hh());r.shadowMap.enabled=true;r.shadowMap.type=T.PCFSoftShadowMap;
+  box.prepend(r.domElement);
+  const sc=new T.Scene();
+  const cam=new T.PerspectiveCamera(34,W()/Hh(),.1,400);
+  const HOME=new T.Vector3(40,30,30);if(innerWidth<640)HOME.multiplyScalar(1.45);   // no celular a maquete começa mais longe, inteira na tela
+  cam.position.copy(HOME);
+  const ctl=T.OrbitControls?new T.OrbitControls(cam,r.domElement):null;
+  if(ctl){ctl.enableDamping=true;ctl.dampingFactor=.08;ctl.enableZoom=false;ctl.enablePan=false;ctl.maxPolarAngle=1.3;ctl.minPolarAngle=.2;ctl.target.set(0,0,0);}
+  const toque=matchMedia('(pointer: coarse)').matches;
+  if(toque&&ctl){box.classList.add('touch');ctl.enabled=false;$('#help').textContent='Toque num aparelho para ver o nome';
+    $('#tap').onclick=()=>{ctl.enabled=true;box.classList.add('live');r.domElement.style.touchAction='none';};}
+  else $('#tap').remove();
+
+  sc.add(new T.HemisphereLight(0xffffff,0x1a0a0b,.6));
+  const sun=new T.DirectionalLight(0xffffff,.85);sun.position.set(20,40,14);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+  Object.assign(sun.shadow.camera,{left:-30,right:30,top:30,bottom:-30,far:120});sc.add(sun);
+  const red=new T.PointLight(0xff2d36,1.2,36);red.position.set(10,7,0);sc.add(red);
+
+  const M=(c,o={})=>new T.MeshStandardMaterial(Object.assign({color:c,roughness:.7,metalness:.15},o));
+  const mat={maq:M(0x1b1b1e,{metalness:.55,roughness:.35}),vermelho:M(0xD91E26,{metalness:.3,roughness:.4}),metal:M(0x9a9aa0,{metalness:.85,roughness:.25}),
+    estofado:M(0x0e0e10,{roughness:.9}),branco:M(0xEDEBE8,{roughness:.5}),parede:M(0x2e2e33),madeira:M(0x7a5536,{roughness:.6}),
+    balcao:M(0x232327,{metalness:.3}),tatame:M(0x6a0d18,{roughness:.95}),junta:M(0x3a060c,{roughness:1}),espelho:M(0xa9c0cc,{metalness:.25,roughness:.1,emissive:0x34444c,emissiveIntensity:.6})};
+  const pickables=[];
+  function add(g,m,x,y,z,parent,nome){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;parent.add(o);if(nome){o.userData.nome=nome;pickables.push(o);}return o;}
+  const B=(w,h,d)=>new T.BoxGeometry(w,h,d);
+
+  function predio(nivel,y0,lista){
+    const g=new T.Group();g.position.y=y0;sc.add(g);
+    lista.forEach(([nome,tp,px,py,pw,ph,aberto='B'])=>{
+      const w=ph*S, d=pw*S, cx=X(py+ph/2), cz=Z(px+pw/2), nm=nome||null;   // w ao longo de X (comprimento da planta)
+      const it=new T.Group();it.position.set(cx,0,cz);g.add(it);
+      const p=o=>{if(nm){o.userData.nome=nm;pickables.push(o);}return o;};
+      if(tp==='p'){add(B(w,2.6,d),mat.parede,0,1.4,0,it);return;}
+      if(tp==='t'){add(B(w,.12,d),mat.parede,0,2.76,0,it);return;}   // teto da área vazia entre as pias
+      if(tp==='m'){p(add(B(w*.92,.28,d*.92),mat.maq,0,.24,0,it));p(add(B(w*.5,.55,d*.5),mat.estofado,w*.1,.65,0,it));
+        const tw=Math.min(w,d)*.28;p(add(B(tw,2,tw),mat.maq,-w*.32,1.1,0,it));p(add(B(tw*1.1,.18,d*.7),mat.vermelho,-w*.32,2.15,0,it));return;}
+      if(tp==='g'){const hh=tp==='g'?2.3:2;[[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([a,b])=>p(add(B(.09,hh,.09),mat.metal,a*w*.42,hh/2+.1,b*d*.42,it)));
+        p(add(B(w*.9,.08,.09),mat.vermelho,0,hh+.1,-d*.42,it));p(add(B(w*.9,.08,.09),mat.vermelho,0,hh+.1,d*.42,it));p(add(B(.09,.08,d*.9),mat.metal,w*.42,hh+.1,0,it));p(add(B(.09,.08,d*.9),mat.metal,-w*.42,hh+.1,0,it));
+        p(add(B(w*.96,.06,d*.96),mat.estofado,0,.13,0,it));return;}
+      if(tp==='b'){p(add(B(w*.86,.12,d*.7),mat.estofado,0,.52,0,it));p(add(B(w*.1,.46,d*.3),mat.metal,-w*.3,.26,0,it));p(add(B(w*.1,.46,d*.3),mat.metal,w*.3,.26,0,it));return;}
+      if(tp==='c'){p(add(B(w*.92,.22,d*.55),mat.maq,0,.21,0,it));p(add(B(.12,1.2,d*.45),mat.maq,w*.38,.8,0,it));p(add(B(.3,.32,d*.6),mat.branco,w*.42,1.42,0,it));return;}
+      if(tp==='r'){p(add(B(w*.95,.7,d*.75),mat.maq,0,.45,0,it));const n=Math.max(2,Math.round(w/.42));for(let i=0;i<n;i++)p(add(new T.CylinderGeometry(.12,.12,d*.6,10).rotateX(Math.PI/2),mat.metal,-w*.42+i*(w*.84/(n-1||1)),.92,0,it));return;}
+      if(tp==='a'){const hh=d<.9&&w<.9?1.1:2.1;p(add(B(w*.96,hh,d*.92),mat.balcao,0,hh/2+.1,0,it));p(add(B(w*.96,.05,d*.94),mat.vermelho,0,hh+.12,0,it));return;}
+      if(tp==='v'){p(add(B(w*.9,.9,d*.9),mat.branco,0,.55,0,it));return;}
+      if(tp==='sh'){const n=4;for(let i=0;i<n;i++){p(add(B(w/n-.06,2.2,d*.95),M(0x3a4656,{transparent:true,opacity:.75}),-w/2+(i+.5)*w/n,1.2,0,it));}return;}
+      if(tp==='x'){p(add(B(w*.96,1.1,d*.9),mat.balcao,0,.65,0,it));p(add(B(w*.98,.06,d*.95),mat.vermelho,0,1.22,0,it));return;}
+      if(tp==='sf'){p(add(B(w*.5,.45,d*.5),mat.madeira,-w*.15,.5,0,it));p(add(B(w*.3,.7,d*.9),mat.estofado,w*.3,.45,0,it));return;}
+      if(tp==='bi'||tp==='bd'){const a=tp==='bi'?.38:-.3;                     // encosto inclinado / declinado
+        p(add(B(w*.34,.12,d*.7),mat.estofado,w*.3,.5,0,it));const e=add(B(w*.62,.12,d*.7),mat.estofado,-w*.14,.55+Math.sin(Math.abs(a))*w*.2,0,it);e.rotation.z=-a;p(e);
+        p(add(B(w*.08,.46,d*.3),mat.metal,-w*.3,.26,0,it));p(add(B(w*.08,.46,d*.3),mat.metal,w*.3,.26,0,it));return;}
+      if(tp==='mi'){p(add(B(w*.5,.6,.22),mat.branco,0,.9,d/2-.11,it));return;}  // mictório preso na parede
+      if(tp==='bc'||tp==='bs'){                                                 // box: divisórias nos lados, aberto para dentro do vestiário
+        const hh=2.1,t=.05,div=M(0x3a4656,{transparent:true,opacity:.82});
+        const lados={T:[-w/2,0,t,d],B:[w/2,0,t,d],L:[0,d/2,w,t],R:[0,-d/2,w,t]};   // T/B ao longo de X; L/R ao longo de Z (L = esquerda da planta)
+        Object.entries(lados).forEach(([k,[x,z,ww,dd]])=>{if(k!==aberto)p(add(B(ww,hh,dd),div,x,hh/2+.1,z,it));});
+        const fundo={L:[0,-d/2+.14],R:[0,d/2-.14],T:[w/2-.14,0],B:[-w/2+.14,0]}[aberto];
+        p(add(B(w*.9,.03,d*.9),M(tp==='bc'?0x6f8796:0x50565e),0,.12,0,it));         // piso do box
+        if(tp==='bc'){p(add(new T.CylinderGeometry(.11,.11,.04,16),mat.metal,fundo[0]*.7,2.05,fundo[1]*.7,it));p(add(B(.04,.9,.04),mat.metal,fundo[0],1.7,fundo[1],it));}   // chuveiro
+        else{p(add(B(.4,.42,.36),mat.branco,fundo[0]*.75,.31,fundo[1]*.75,it));p(add(B(.18,.5,.42),mat.branco,fundo[0],.6,fundo[1],it));}                            // vaso sanitário
+        return;}
+    });
+    return g;
+  }
+
+  /* térreo */
+  const T0=new T.Group();sc.add(T0);
+  add(B(BL*S+.8,.4,BW*S+.8),M(0x141416),0,-.2,0,T0);
+  add(B(BL*S,.1,BW*S),M(0x2a2a2e,{roughness:.95}),0,.05,0,T0);                       // piso do salão
+  add(B(X(910)-X(0),.11,BW*S),M(0x232326,{roughness:.95}),(X(0)+X(910))/2,.06,0,T0);    // piso do fundo (vestiários e peso livre)
+  add(B(X(1835)-X(1533),.14,DZ(670,512)),M(0x1d1d20),(X(1533)+X(1835))/2,.12,(Z(512)+Z(670))/2,T0); // plataforma de cardio
+  const pw=mat.parede;
+  add(B(BL*S,2.8,.2),pw,0,1.5,ZB+.1,T0);add(B(BL*S,2.8,.2),pw,0,1.5,-ZB-.1,T0);add(B(.2,2.8,BW*S),pw,X(0)-.1,1.5,0,T0);
+  add(B(.2,2.8,DZ(240,0)),pw,X(1980)+.1,1.5,(Z(0)+Z(240))/2,T0);add(B(.2,2.8,DZ(670,430)),pw,X(1980)+.1,1.5,(Z(430)+Z(670))/2,T0);   // fachada com a porta
+  add(B(.06,2.5,DZ(430,240)),M(0x9fb6c4,{transparent:true,opacity:.25,metalness:.9,roughness:.05}),X(1980)+.1,1.35,(Z(240)+Z(430))/2,T0);
+  const G0=predio(0,0,TERREO);T0.add(G0);
+  (function escada(){const g=new T.Group();sc.add(g);   // fora do térreo: aparece também na vista do 2º andar
+    const nm='Escada para o 2º andar',n=20,y0=1240,y1=991,larg=DZ(0,62),z=Z(31);
+    const run=(X(y0)-X(y1))/n,rise=3.4/n,deg=M(0x2a2a2e,{metalness:.4,roughness:.5});
+    for(let i=0;i<n;i++){const o=add(B(run+.04,.07,larg),deg,X(y0)-(i+.5)*run,(i+1)*rise,z,g);o.userData.nome=nm;pickables.push(o);}
+    const comp=Math.hypot(X(y0)-X(y1),3.4),ang=Math.atan2(3.4,X(y0)-X(y1));
+    const lon=add(B(comp,.22,.06),mat.maq,(X(y0)+X(y1))/2,1.7,ZB-.05,g);lon.rotation.z=-ang;                 // longarina presa na parede
+    const cor=add(B(comp,.05,.05),mat.vermelho,(X(y0)+X(y1))/2,1.7+.95,z-larg/2,g);cor.rotation.z=-ang;    // corrimão do lado aberto
+    [0,.33,.66,1].forEach(f=>{const xx=X(y0)-f*(X(y0)-X(y1));add(B(.04,.95,.04),mat.metal,xx,f*3.4+.5,z-larg/2,g);});
+  })();
+  // faixa de luz vermelha da marca no chão da entrada
+  add(new T.PlaneGeometry(1.2,DZ(430,240)).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xff2d36,transparent:true,opacity:.35}),X(1960),.12,(Z(240)+Z(430))/2,T0);
+
+  /* 2º andar (sobre o fundo do prédio): planta do 2º andar ajustada à largura do térreo */
+  const Y1=3.4, U=new T.Group();U.position.y=Y1;sc.add(U);
+  const slab=(x0,y0,x1,y1,m,h=.25)=>add(B(X(y1)-X(y0),h,DZ(x1,x0)),m,(X(y0)+X(y1))/2,-h/2,(Z(x0)+Z(x1))/2,U);
+  slab(0,82,670,991,M(0x1a1a1d));
+  slab(0,82,335,830,mat.madeira,.06).position.y=.03;                        // sala de dança
+  const tat=slab(335,82,670,673,mat.tatame,.08);tat.position.y=.04;           // tatame
+  for(let k=1;k<8;k++){const yy=82+k*591/8;const q=slab(335,yy-1,670,yy+1,mat.junta,.09);q.position.y=.045;}   // juntas das placas do tatame
+  for(let k=1;k<4;k++){const xx=335+k*335/4;const q=slab(xx-1,82,xx+1,673,mat.junta,.09);q.position.y=.045;}
+  slab(499,830,670,992,M(0x2a2a2e),.05).position.y=.03;                     // escritório
+  add(B(X(830)-X(82),2,.08),mat.espelho,(X(82)+X(830))/2,1.1,Z(4),U);         // espelho da dança
+  add(B(X(830)-X(82),2.6,.12),M(0x2e2e33,{transparent:true,opacity:.55}),(X(82)+X(830))/2,1.3,Z(335),U);   // divisória dança/tatame
+  add(B(.12,2.6,DZ(670,499)),pw,X(830),1.3,(Z(499)+Z(670))/2,U);add(B(X(992)-X(830),2.6,.12),pw,(X(830)+X(992))/2,1.3,Z(499),U);   // escritório
+  add(B(.12,1.1,DZ(70,670)),M(0x9fb6c4,{transparent:true,opacity:.3}),X(991),.55,(Z(70)+Z(670))/2,U);   // guarda-corpo de vidro, com a abertura da escada
+  add(B(X(991)-X(82),1.2,.15),pw,(X(82)+X(991))/2,.6,ZB+.07,U);add(B(X(991)-X(82),1.2,.15),pw,(X(82)+X(991))/2,.6,-ZB-.07,U);add(B(.15,1.2,BW*S),pw,X(82)-.07,.6,0,U);
+  ['Sala de dança','Tatame · Boxe','Escritório'].forEach((n,i)=>{const[x0,y0,x1,y1]=[[0,82,335,830],[335,82,670,673],[499,830,670,992]][i];
+    const hit=add(B(X(y1)-X(y0),.3,DZ(x1,x0)),new T.MeshBasicMaterial({visible:false}),(X(y0)+X(y1))/2,.2,(Z(x0)+Z(x1))/2,U);hit.userData.nome=n;hit.castShadow=false;pickables.push(hit);});
+
+  /* rótulos das áreas e legenda */
+  const lbBox=$('#labels'),leg=$('#legend');let zonas=[];
+  function rotulos(f){lbBox.innerHTML='';leg.innerHTML='';zonas=[];
+    const lst=f===1?ZONAS1.map(z=>[...z,1]):f===2?[...ZONAS0.slice(0,3).map(z=>[...z,0]),...ZONAS1.map(z=>[...z,1])]:ZONAS0.map(z=>[...z,0]);
+    lst.forEach(([nome,px,py,,nv])=>{const lb=document.createElement('span');lb.className='lb';lb.textContent=nome;lbBox.appendChild(lb);
+      const b=document.createElement('button');b.type='button';b.setAttribute('aria-pressed','false');b.innerHTML=`<i style="background:${nv?'#FF2D36':'#D91E26'}"></i>${nome}`;leg.appendChild(b);
+      const z={nome,lb,b,pos:new T.Vector3(X(py),nv?Y1+2.6:2.9,Z(px)),c:new T.Vector3(X(py),nv?Y1:0,Z(px))};b.onclick=()=>foca(z);zonas.push(z);});}
+
+  let foco=null,anim=false;const alvo=new T.Vector3(),camAlvo=HOME.clone();
+  function foca(z){if(foco===z)z=null;foco=z;
+    zonas.forEach(o=>{const on=o===z;o.b.setAttribute('aria-pressed',on);o.lb.classList.toggle('on',on);});
+    if(z){alvo.copy(z.c);const dir=new T.Vector3().subVectors(cam.position,ctl.target).normalize();camAlvo.copy(z.c).add(dir.multiplyScalar(20));camAlvo.y=Math.max(camAlvo.y,z.c.y+10);}
+    else{base(andar);alvo.copy(cAlvo);camAlvo.copy(cCam);}
+    anim=true;}
+  let andar=0;
+  function mostra(f){andar=f;$$('.floors button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.f===f));
+    U.visible=f>=1;G0.visible=f!==1;T0.children.forEach(o=>{if(o!==G0&&o.material&&o.material.transparent===false){}});
+    sc.traverse(o=>{if(o.isMesh&&o.parent&&isChildOf(o,T0)&&o.material){o.material.opacity=f===1?.25:1;}});
+    rotulos(f);foco=null;base(f);alvo.copy(cAlvo);camAlvo.copy(cCam);anim=true;}
+  const cAlvo=new T.Vector3(),cCam=new T.Vector3();
+  function base(f){if(f===1){cAlvo.set(X(536),Y1,0);cCam.set(X(536)+24,Y1+22,20);}else{cAlvo.set(0,0,0);cCam.copy(HOME);}}
+  function isChildOf(o,p){while(o){if(o===p)return true;o=o.parent;}return false;}
+  // materiais do térreo prontos para ficar translúcidos quando só o 2º andar estiver à vista
+  T0.traverse(o=>{if(o.isMesh&&!o.material.transparent){o.material=o.material.clone();o.material.transparent=true;o.material.opacity=1;}});
+  $$('.floors button').forEach(b=>b.onclick=()=>mostra(+b.dataset.f));
+  mostra(0);
+
+  $('#zin').onclick=()=>{anim=true;alvo.copy(ctl.target);camAlvo.copy(cam.position).sub(ctl.target).multiplyScalar(.8).add(ctl.target);};
+  $('#zout').onclick=()=>{anim=true;alvo.copy(ctl.target);const v=cam.position.clone().sub(ctl.target);if(v.length()<80)v.multiplyScalar(1.22);camAlvo.copy(v.add(ctl.target));};
+
+  /* nome do aparelho ao passar o mouse (ou tocar) */
+  const ray=new T.Raycaster(),mp=new T.Vector2(),tip=$('#tip');
+  function pick(cx,cy){const rc=r.domElement.getBoundingClientRect();mp.set((cx-rc.left)/rc.width*2-1,-(cy-rc.top)/rc.height*2+1);ray.setFromCamera(mp,cam);
+    const hit=ray.intersectObjects(pickables.filter(o=>vis(o)),false)[0];
+    if(hit){tip.textContent=hit.object.userData.nome;tip.style.left=(cx-rc.left)+'px';tip.style.top=(cy-rc.top)+'px';tip.classList.add('on');r.domElement.style.cursor='pointer';}
+    else{tip.classList.remove('on');r.domElement.style.cursor='';}}
+  function vis(o){while(o){if(!o.visible)return false;o=o.parent;}return true;}
+  r.domElement.addEventListener('pointermove',e=>{if(e.pointerType==='mouse')pick(e.clientX,e.clientY);});
+  r.domElement.addEventListener('pointerleave',()=>tip.classList.remove('on'));
+  r.domElement.addEventListener('click',e=>pick(e.clientX,e.clientY));
+  if(ctl)ctl.addEventListener('start',()=>{anim=false;});
+
+  const v=new T.Vector3();let visivel=true;
+  if('IntersectionObserver' in window)new IntersectionObserver(e=>{visivel=e[0].isIntersecting;}).observe(box);
+  function loop(){requestAnimationFrame(loop);if(!visivel)return;
+    if(anim&&ctl){ctl.target.lerp(alvo,.09);cam.position.lerp(camAlvo,.09);if(cam.position.distanceTo(camAlvo)<.05)anim=false;}
+    ctl&&ctl.update();r.render(sc,cam);
+    zonas.forEach(z=>{v.copy(z.pos).project(cam);z.lb.style.left=((v.x*.5+.5)*W())+'px';z.lb.style.top=((-v.y*.5+.5)*Hh())+'px';z.lb.style.opacity=v.z<1?1:0;});}
+  loop();
+  addEventListener('resize',()=>{r.setSize(W(),Hh());cam.aspect=W()/Hh();cam.updateProjectionMatrix();});
+})();
+</script>
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});</script>
 </body>
 </html>
