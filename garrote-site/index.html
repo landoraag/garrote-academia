@@ -62,7 +62,7 @@ section{position:relative;scroll-margin-top:84px}
 .ph{position:relative;overflow:hidden;background:
   radial-gradient(120% 90% at 85% 10%,rgba(217,30,38,.18),transparent 55%),
   repeating-linear-gradient(135deg,rgba(255,255,255,.03) 0 2px,transparent 2px 14px),var(--s1)}
-.ph>img.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s}
+.ph>img.foto{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .6s;transform:scale(var(--z,1))}
 .ph.tem>img.foto{opacity:1}
 .ph .tag{position:absolute;left:14px;bottom:14px;display:flex;gap:8px;align-items:center;font:600 11px/1.3 var(--head);letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.5);max-width:calc(100% - 28px)}
 .ph .tag::before{content:"";flex:none;width:18px;height:14px;border:1.5px solid currentColor;border-radius:3px;box-shadow:inset 0 -5px 0 -3px currentColor}
@@ -401,10 +401,11 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 .legal nav{display:flex;gap:18px;flex-wrap:wrap}
 .legal a:hover{color:var(--fg)}
 
-/* entrada ao rolar: começa visível e só desloca */
-.rv{transition:transform .9s var(--ease)}
-.js .rv.pre{transform:translateY(24px)}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}.js .rv.pre{transform:none}}
+/* animações de rolagem (GSAP ScrollTrigger): estados finais são os do CSS; sem o script, tudo aparece normal */
+.word h1 .ch{display:inline-block;will-change:transform}
+.iph{translate:0 var(--ty,0px)}
+.track .open{transform-origin:left center}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}html{scroll-behavior:auto}}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:#fff;color:#0C0C0C;font:600 14px var(--body);padding:12px 18px;border-radius:999px;transition:all .3s var(--ease);z-index:70;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -773,6 +774,8 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 </footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script>
@@ -877,11 +880,87 @@ const MODS={
   document.addEventListener('pointerleave',()=>es.forEach(el=>el.style.transform=''));
 })();
 
-/* entrada ao rolar */
-if(!reduz&&'IntersectionObserver' in window){
-  const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.remove('pre');io.unobserve(e.target);}}),{rootMargin:'0px 0px -8% 0px'});
-  $$('.rv').forEach(el=>{if(el.getBoundingClientRect().top>innerHeight){el.classList.add('pre');io.observe(el);}});
-}
+/* ---------- animações de rolagem ---------- */
+(function(){
+  if(reduz||!window.gsap||!window.ScrollTrigger)return;
+  gsap.registerPlugin(ScrollTrigger);
+  const E='power3.out', baixo=el=>el.getBoundingClientRect().top>innerHeight*.92;   // só anima o que ainda não está na tela
+  const limpa={clearProps:'transform,opacity,clipPath'};
+
+  /* topo: letras do GARROTE sobem uma a uma, depois o resto */
+  const h1=$('.word h1');
+  if(h1){const g=h1.querySelector('.g');const txt=h1.firstChild.textContent;
+    h1.firstChild.replaceWith(...[...txt].map(c=>{const sp=document.createElement('span');sp.className='ch';sp.textContent=c;return sp;}));
+    gsap.timeline({defaults:{ease:E}})
+      .from('.word h1 .ch, .word h1 .g',{yPercent:110,opacity:0,duration:.9,stagger:.05})
+      .from('.hero-meta span',{y:16,opacity:0,duration:.6,stagger:.06},'-=.6')
+      .from('.hero-foot>*',{y:24,opacity:0,duration:.7,stagger:.1,...limpa},'-=.4');
+    // parallax: o título sobe e some devagar ao rolar
+    gsap.to('.title',{yPercent:-28,opacity:.25,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+    gsap.to('.hero .bg',{yPercent:18,ease:'none',scrollTrigger:{trigger:'.hero',start:'top top',end:'bottom top',scrub:true}});
+  }
+
+  /* cabeçalhos das seções: selo, título e texto em sequência */
+  $$('.sec-head, .about>div:first-child, .app-grid>div:first-child, .plaque .txt').forEach(h=>{if(!baixo(h))return;
+    const it=h.querySelectorAll('.eyebrow,.h2,.lead,h3');
+    gsap.from(it,{y:44,opacity:0,duration:.95,ease:E,stagger:.09,...limpa,scrollTrigger:{trigger:h,start:'top 86%'}});});
+
+  /* grupos em cascata */
+  const cascata=(sel,o={})=>{const els=$$(sel).filter(baixo);if(!els.length)return;
+    gsap.set(els,{y:o.y??56,opacity:0,scale:o.s??1});
+    ScrollTrigger.batch(els,{start:'top 90%',once:true,onEnter:b=>gsap.to(b,{y:0,opacity:1,scale:1,duration:o.d??.85,ease:E,stagger:o.st??.08,...limpa})});};
+  cascata('.steps li',{y:30});
+  cascata('.cim-feats>div',{y:30});
+  cascata('.bento .tile',{y:40,s:.96});
+  cascata('.mods-grid .mod',{y:80,st:.1,d:1});
+  cascata('.plans .plan',{y:70,st:.1});
+  cascata('.passes .pass',{y:30});
+  cascata('.contact .ct',{y:30});
+  cascata('.legend button',{y:14,st:.04,d:.5});
+  cascata('.foot>div',{y:30});
+  cascata('.addr, .nums',{y:40});
+
+  /* imagens: revelação de baixo para cima com leve zoom */
+  $$('.about-photos .ph, .cim-grid .ph, .facade, .drone').filter(baixo).forEach((ph,i)=>{
+    gsap.fromTo(ph,{clipPath:'inset(100% 0% 0% 0% round 20px)'},{clipPath:'inset(0% 0% 0% 0% round 20px)',duration:1.2,ease:'power4.out',delay:(i%3)*.08,
+      scrollTrigger:{trigger:ph,start:'top 88%'},onComplete:()=>gsap.set(ph,{clearProps:'clipPath'})});
+    gsap.fromTo(ph,{'--z':1.2},{'--z':1,duration:1.6,ease:'power3.out',scrollTrigger:{trigger:ph,start:'top 88%'}});
+  });
+
+  /* escudo da placa: entra girando */
+  const esc=$('.plaque .escudo');
+  if(esc&&baixo(esc))gsap.from(esc,{rotateY:-70,scale:.7,opacity:0,duration:1.3,ease:'back.out(1.4)',...limpa,scrollTrigger:{trigger:esc,start:'top 85%'}});
+
+  /* maquete: abre como uma cortina */
+  const mq=$('#maq');
+  if(mq&&baixo(mq))gsap.fromTo(mq,{clipPath:'inset(8% 8% 8% 8% round 20px)',opacity:.2},{clipPath:'inset(0% 0% 0% 0% round 20px)',opacity:1,duration:1.3,ease:'power3.out',
+    scrollTrigger:{trigger:mq,start:'top 85%'},onComplete:()=>gsap.set(mq,{clearProps:'clipPath,opacity'})});
+
+  /* celulares: sobem de baixo, o do meio por último */
+  const ph=$$('.iph');
+  if(ph.length&&baixo($('#stage'))){gsap.set(ph,{'--ty':'160px',opacity:0});
+    gsap.to(ph,{'--ty':'0px',opacity:1,duration:1.2,ease:'power4.out',stagger:.14,scrollTrigger:{trigger:'#stage',start:'top 80%'},onComplete:()=>gsap.set(ph,{clearProps:'opacity'})});
+    gsap.from('.cap span',{y:12,opacity:0,stagger:.08,duration:.6,scrollTrigger:{trigger:'#stage',start:'top 60%'}});}
+
+  /* horários: as barras crescem dia a dia; a nota 4,91 conta */
+  const tr=$$('.track .open');
+  if(tr.length&&baixo($('#week')))gsap.from(tr,{scaleX:0,duration:1,ease:E,stagger:.06,scrollTrigger:{trigger:'#week',start:'top 85%'}});
+  const nota=$('.score b');
+  if(nota&&baixo(nota)){const o={v:0};gsap.to(o,{v:4.91,duration:1.6,ease:'power2.out',scrollTrigger:{trigger:nota,start:'top 90%'},
+    onUpdate:()=>nota.textContent=o.v.toFixed(2).replace('.',',')});nota.textContent='0,00';}
+
+  /* chamada final: cresce ao entrar */
+  const cl=$('.closing');
+  if(cl&&baixo(cl))gsap.from(cl,{scale:.9,opacity:0,y:40,duration:1.1,ease:E,...limpa,scrollTrigger:{trigger:cl,start:'top 88%'}});
+
+  /* faixa que corre acelera conforme a velocidade da rolagem */
+  const tk=$('#tk');
+  if(tk){const anim=tk.getAnimations?tk.getAnimations()[0]:null;
+    if(anim)ScrollTrigger.create({onUpdate:self=>{const v=Math.min(4,1+Math.abs(self.getVelocity())/900);anim.playbackRate=v;gsap.to(anim,{playbackRate:1,duration:.8,overwrite:true});}});}
+
+  addEventListener('load',()=>ScrollTrigger.refresh());
+  document.fonts&&document.fonts.ready.then(()=>ScrollTrigger.refresh());
+})();
 
 /* ---------- maquete 3D: posições tiradas da planta (unidade = px da planta, 1 px ≈ 2,4 cm) ---------- */
 /* tipos: m máquina · g gaiola/polia/estrutura · b banco · c cardio · r halteres/anilhas · a armário/prateleira · v louça/pia · sh chuveiros · x balcão · sf sofá · p parede · st escada */
