@@ -121,6 +121,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .escudo{display:block;width:100%;height:100%;perspective:900px}
 .esc-in{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .2s ease-out;filter:drop-shadow(0 18px 26px rgba(0,0,0,.85))}
 .esc-in img{width:100%;height:100%;object-fit:contain;display:block;backface-visibility:hidden;transform:translateZ(0)}
+@media (hover:none),(pointer:coarse){.escudo{perspective:none}.esc-in{transform-style:flat;transition:none}.esc-in img{transform:none;backface-visibility:visible}}
 .esc-in .brilho{position:absolute;inset:0;pointer-events:none;
   -webkit-mask:url(assets/escudo-cimerian.webp) center/contain no-repeat;mask:url(assets/escudo-cimerian.webp) center/contain no-repeat;
   background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.38) 50%,transparent 60%) no-repeat;background-size:250% 100%;animation:brilho 5s ease-in-out infinite}
@@ -974,8 +975,8 @@ const MODS={
   st.addEventListener('pointerleave',()=>rig.style.transform='');})();
 
 /* escudos: inclinam acompanhando o mouse quando ele está perto (até ~420 px do centro) */
-(function(){const es=$$('.escudo .esc-in');if(reduz||!es.length)return;const MAX=16,R=420;
-  addEventListener('pointermove',e=>es.forEach(el=>{const r=el.getBoundingClientRect();if(!r.width)return;
+(function(){const es=$$('.escudo .esc-in');if(reduz||!es.length||!matchMedia('(hover:hover) and (pointer:fine)').matches)return;const MAX=16,R=420;   // só com mouse
+  addEventListener('pointermove',e=>es.forEach(el=>{if(e.pointerType!=='mouse')return;const r=el.getBoundingClientRect();if(!r.width)return;
     const dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2),d=Math.hypot(dx,dy);
     if(d>R){el.style.transform='';return;}const f=1-d/R,x=Math.max(-1,Math.min(1,dx/(R*.5))),y=Math.max(-1,Math.min(1,dy/(R*.5)));
     el.style.transform=`rotateY(${x*MAX*f}deg) rotateX(${-y*MAX*f}deg)`;}),{passive:true});
@@ -1032,7 +1033,9 @@ const MODS={
 
   /* escudo da placa: entra girando */
   const esc=$('.plaque .escudo');
-  if(esc&&baixo(esc))gsap.from(esc,{rotateY:-70,opacity:0,duration:1.2,ease:'power3.out',...limpa,scrollTrigger:{trigger:esc,start:'top 85%'}});
+  /* escudo: no computador entra girando; no celular só aparece subindo (a rotação 3D faz o Safari do iPhone redesenhar o escudo pequeno) */
+  const toque=!matchMedia('(hover:hover) and (pointer:fine)').matches;
+  if(esc&&baixo(esc))gsap.from(esc,{...(toque?{y:30}:{rotateY:-70}),opacity:0,duration:toque?.9:1.2,ease:'power3.out',...limpa,scrollTrigger:{trigger:esc,start:'top 85%'}});
 
   /* maquete: abre como uma cortina */
   const mq=$('#maq');
