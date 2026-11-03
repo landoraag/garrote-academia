@@ -516,7 +516,7 @@ function bindFin(el, D, repaint) {
 }
 function build(tab, D, E) {
   const me = SESSION.me;
-  const side = `<aside class="side" id="menu" aria-label="Menu">${logo(34)}<button type="button" class="iconbtn mclose" id="mx" aria-label="Fechar menu">${ic('close', 20)}</button>${MENU[E.mode].map(([k, l]) => `<a class="${tab === k ? 'on' : ''}" href="#/painel/${k}">${l}</a>`).join('')}
+  const side = `<aside class="side" id="menu" aria-label="Menu">${logo(34)}<button type="button" class="iconbtn mclose" id="mx" aria-label="Fechar menu">${ic('close', 20)}</button><nav class="snav">${MENU[E.mode].map(([k, l]) => `<a class="${tab === k ? 'on' : ''}" href="#/painel/${k}">${l}</a>`).join('')}</nav>
     <div class="thmline"><span>Aparência</span>${temaBtn()}</div>
     <div class="who"><a class="whou" href="#/painel/perfil" aria-label="Abrir meu perfil"${tab === 'perfil' ? ' aria-current="page"' : ''}>${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div></a>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
