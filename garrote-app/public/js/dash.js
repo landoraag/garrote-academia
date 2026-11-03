@@ -1,5 +1,6 @@
 /* Painel inicial do dono: indicadores e gráficos interativos (HTML/CSS puro, sem biblioteca). */
 import { $, $$, esc, brl, dkey, DIAS, ic, avatar } from './ui.js';
+import { api } from './api.js';
 
 const MES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const fk = k => `${k.slice(8)}/${k.slice(5, 7)}`;
@@ -70,13 +71,17 @@ export function dashHTML(D, C) {
 }
 
 export function bindDash(el, D, C) {
-  const X = dados(D, C); let per = 30, rec = 'rec';
+  const X = dados(D, C); X.desde = D.ckDesde || '0000-00-00'; let per = 30, rec = 'rec';
   const ptn = n => String(n).replace('.', ',');
-  const freq = () => {
+  const freq = async () => {
+    if (per === 90 && !X.tem90) {   // 90 dias só são lidos quando pedidos (dias passados ficam salvos no aparelho)
+      $('#dfreq', el).innerHTML = '<p class="dnote">Carregando 90 dias...</p>';
+      try { const d = new Date(); d.setDate(d.getDate() - 89); X.ck = await api.checkinsPeriodo(dkey(d)); X.desde = dkey(d); X.tem90 = true; } catch { per = 30; $$('[data-dp]', el).forEach(x => x.classList.toggle('on', +x.dataset.dp === 30)); }
+    }
     const dias = Array.from({ length: per }, (_, i) => dkey(addD(X.hoje, i - per + 1))), cnt = Object.fromEntries(dias.map(k => [k, 0]));
     X.ck.forEach(c => { if (c.data in cnt) cnt[c.data]++; });
     const v = dias.map(k => cnt[k]), total = v.reduce((a, b) => a + b, 0), ymax = nice(Math.max(1, ...v)), n = per;
-    const ant = per * 2 <= 90 ? X.ck.filter(c => c.data >= dkey(addD(X.hoje, -per * 2 + 1)) && c.data < dias[0]).length : null;
+    const ant = per * 2 <= 90 && dkey(addD(X.hoje, -per * 2 + 1)) >= X.desde ? X.ck.filter(c => c.data >= dkey(addD(X.hoje, -per * 2 + 1)) && c.data < dias[0]).length : null;
     $('#dsub', el).innerHTML = `${total} check-ins ${ant !== null ? (pct(total, ant) === null ? '' : `· <span class="${total >= ant ? 'up' : 'dn'}">${total >= ant ? '▲' : '▼'} ${Math.abs(pct(total, ant))}%</span> vs. ${per} dias antes`) : ''}`;
     const sem = [0, 0, 0, 0, 0, 0, 0, 0]; dias.forEach(k => { sem[diaIdx(k)] += cnt[k]; });
     const hr = Array(24).fill(0); X.ck.forEach(c => { if (c.data in cnt && c.ts) hr[new Date(c.ts).getHours()]++; });

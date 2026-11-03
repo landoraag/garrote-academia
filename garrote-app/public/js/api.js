@@ -2,6 +2,8 @@
    - firebase: Authentication + Firestore (quando firebase-config.js está preenchido)
    - demo: tudo em localStorage, para testar sem backend */
 import { firebaseConfig as cfg } from './firebase-config.js';
+const chave = (n = 0) => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const junta = (...ls) => [...new Map(ls.flat().map(d => [d.id, d])).values()];   // sem repetir documentos
 export const mode = cfg.apiKey ? 'firebase' : 'demo';
 
 async function makeFirebase() {
@@ -24,7 +26,7 @@ async function makeFirebase() {
   const pdrop = c => { try { const u = uidAtual(), pre = PK + u + '|' + c + '|'; Object.keys(localStorage).filter(x => x.startsWith(pre)).forEach(x => localStorage.removeItem(x)); } catch {} };
   const pclear = () => { try { Object.keys(localStorage).filter(x => x.startsWith(PK)).forEach(x => localStorage.removeItem(x)); } catch {} };
   const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); pdrop(c); };
-  const CATALOGO = new Set(['users', 'modalidades', 'categorias', 'exercicios', 'treinos', 'planos', 'alimentos']), STALE = 600000;   // só listas completas do painel; check-ins, pagamentos etc. sempre frescos
+  const CATALOGO = new Set(['users', 'modalidades', 'categorias', 'exercicios', 'treinos', 'planos', 'alimentos', 'fotos']), LONGO = 600000;   // cadastros: ficam 10 min sem nova leitura   // só listas completas do painel; check-ins, pagamentos etc. sempre frescos
   const PERSIST = new Set([...CATALOGO, 'produtos', 'dietas']);
   const fetchList = (k, c, filters) => {
     const e = { t: Date.now(), p: F.getDocs(F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)))).then(s => { const d = s.docs.map(withId); if (PERSIST.has(c)) pset(k, d); return d; }) };
@@ -58,15 +60,28 @@ async function makeFirebase() {
       await b.commit(); drop('users'); drop('config');
     },
     async get(c, id) { const s = await F.getDoc(F.doc(db, c, id)); return s.exists() ? withId(s) : null; },
-    async list(c, filters = [], opt = {}) {   // opt.fresh: ignora o cache (usado para ver pedidos novos na hora)
-      const k = c + '|' + JSON.stringify(filters), hit = opt.fresh ? null : cache.get(k), age = hit ? Date.now() - hit.t : Infinity;
-      if (hit && (age < TTL || (age < STALE && !filters.length && CATALOGO.has(c)))) {   // recente: usa; cadastro um pouco velho: usa agora e atualiza por trás
-        if (age >= TTL) fetchList(k, c, filters);
-        return [...await hit.p];
-      }
+    async list(c, filters = [], opt = {}) {   // opt.fresh: ignora o cache (pedidos novos na hora); opt.ttl: tempo (ms) em que a lista em memória vale
+      const k = c + '|' + JSON.stringify(filters), hit = opt.fresh ? null : cache.get(k), age = hit ? Date.now() - hit.t : Infinity, ttl = opt.ttl || (PERSIST.has(c) ? LONGO : TTL);
+      if (hit && age < ttl) return [...await hit.p];
       const salvo = !hit && !opt.fresh && PERSIST.has(c) ? pget(k) : null;
       if (salvo) { fetchList(k, c, filters).p.catch(() => {}); return salvo; }   // lista salva no aparelho: mostra já e atualiza por trás
       return [...await fetchList(k, c, filters).p];
+    },
+    /* check-ins: dias que já passaram não mudam, então ficam salvos no aparelho e só os dias novos são lidos */
+    async checkinsDe(uid) {
+      const q = f => F.getDocs(F.query(F.collection(db, 'checkins'), ...f.map(([a, o, v]) => F.where(a, o, v)))).then(r => r.docs.map(withId)), ch = 'ck:de:' + uid, c = pget(ch), pre = uid + '_';
+      let novos; if (c) { try { novos = await q([['__name__', '>', pre + c.ate], ['__name__', '<', pre + '\uf8ff']]); } catch { novos = null; } }
+      const todos = c && novos ? junta(c.docs, novos) : await q([['uid', '==', uid]]);
+      pset(ch, { ate: chave(1), docs: todos.filter(d => d.data < chave()) }); return todos;
+    },
+    async checkinsPeriodo(de) {   // todos os check-ins de 'de' (AAAA-MM-DD) até hoje
+      const q = f => F.getDocs(F.query(F.collection(db, 'checkins'), ...f.map(([a, o, v]) => F.where(a, o, v)))).then(r => r.docs.map(withId)), c = pget('ck:per');
+      let todos, ini = de;
+      if (c && c.de <= de) todos = junta(c.docs, await q([['data', '>', c.ate]]));
+      else if (c) { const [velhos, novos] = await Promise.all([q([['data', '>=', de], ['data', '<=', c.ate]]), q([['data', '>', c.ate]])]); todos = junta(c.docs, velhos, novos); }
+      else todos = await q([['data', '>=', de]]);
+      if (c && c.de < ini) ini = c.de;
+      pset('ck:per', { de: ini, ate: chave(1), docs: todos.filter(d => d.data < chave()) }); return todos.filter(d => d.data >= de);
     },
     async set(c, id, d) { await wr(F.setDoc(F.doc(db, c, id), clean(d))); drop(c); },
     async add(c, d) { const ref = F.doc(F.collection(db, c)); await wr(F.setDoc(ref, clean(d))); drop(c); return ref.id; },
@@ -160,6 +175,8 @@ function makeDemo() {
       return Object.entries(col(c)).map(([id, d]) => ({ id, ...clone(d) }))
         .filter(d => filters.every(([f, o, v]) => o === '==' ? d[f] === v : o === 'array-contains' ? (d[f] || []).includes(v) : true));
     },
+    async checkinsDe(uid) { return this.list('checkins', [['uid', '==', uid]]); },
+    async checkinsPeriodo(de) { return (await this.list('checkins')).filter(d => d.data >= de); },
     async set(c, id, d) { col(c)[id] = clone(d); save(); },
     async add(c, d) { const id = rid(); col(c)[id] = clone(d); save(); return id; },
     async update(c, id, d) { col(c)[id] = { ...col(c)[id], ...clone(d) }; save(); },

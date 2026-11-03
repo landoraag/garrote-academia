@@ -98,17 +98,22 @@ function popup(lista) {
     try { for (const p of lista) await mudarPedido(p, 'separado'); toast(lista.length > 1 ? 'Pedidos separados.' : 'Pedido separado. Estoque atualizado.'); m.close(); onNovo && onNovo(); }
     catch (err) { b.disabled = false; toast(friendly(err)); } };
 }
-/* o Firestore "lite" não tem escuta em tempo real: a tela do dono consulta os pedidos novos a cada 20 s (gasta poucas leituras, só vem o que está em aberto) */
+/* o Firestore "lite" não tem escuta em tempo real: o painel do dono consulta os pedidos a cada 30 s, só com a aba visível.
+   A primeira consulta traz os pedidos em aberto; as seguintes trazem só o que chegou depois (poucas leituras) */
 export function iniciarAvisoPedidos(cb) {
   onNovo = cb; if (timer) return;
+  let ultimo = null;
   const tick = async () => {
     if (!SESSION.me || SESSION.me.role !== 'dono') { clearInterval(timer); timer = null; return; }
-    let novos; try { novos = await api.list('pedidos', [['status', '==', 'novo']], { fresh: true }); } catch { return; }
-    const nao = novos.filter(p => !visto.has(p.id)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    if (document.hidden) return;
+    let novos; try { novos = await api.list('pedidos', ultimo === null ? [['status', '==', 'novo']] : [['ts', '>', ultimo]], { fresh: true }); } catch { return; }
+    if (novos.length) ultimo = Math.max(ultimo || 0, ...novos.map(p => +p.ts || 0)); else if (ultimo === null) ultimo = Date.now();
+    const nao = novos.filter(p => p.status === 'novo' && !visto.has(p.id)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
     if (!nao.length || aberto) return;
     popup(nao); onNovo && onNovo();
   };
-  timer = setInterval(tick, 20000); tick();
+  timer = setInterval(tick, 30000); tick();
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && timer) tick(); });
 }
 
 /* ---------- vitrine do aluno ---------- */

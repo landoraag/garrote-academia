@@ -35,18 +35,19 @@ async function load(tab) {
   const [users, modalidades, categorias, exercicios, treinos] = await Promise.all(names.map(c => api.list(c)));
   const D = { users: users.sort(byName), modalidades: modalidades.sort(byName), categorias: categorias.sort(byName), exercicios: exercicios.sort(byName), treinos: treinos.sort(byName) };
   D.planos = SESSION.me.role === 'dono' ? (await api.list('planos')).sort(byName) : [];
-  if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos');
+  if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos', [], { ttl: 600000 });
   if (tab === 'dieta' || tab === 'alimentos' || tab === 'macros') D.alimentos = (await api.list('alimentos')).sort(byName);
   if (tab === 'dieta') D.dietas = (await api.list('dietas')).sort(byName);
   if (tab === 'produtos' || tab === 'pedidos') D.produtos = (await api.list('produtos')).sort(byName);
-  if (tab === 'pedidos') D.pedidos = (await api.list('pedidos', [], { fresh: true })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  if (tab === 'pedidos') D.pedidos = (await api.list('pedidos', [['ts', '>=', Date.now() - 60 * 86400000]], { fresh: true })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   if (tab === 'visao') {
-    [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', dkey(new Date())]]), api.list('agendamentos')]);
-    if (SESSION.me.role === 'dono') {   // indicadores e gráficos do dono
-      const d90 = new Date(); d90.setDate(d90.getDate() - 89);
-      [D.ck90, D.pagamentos, D.pedidos, D.produtos] = await Promise.all([api.list('checkins', [['data', '>=', dkey(d90)]]).catch(() => []), api.list('pagamentos').catch(() => []),
-        api.list('pedidos').catch(() => []), api.list('produtos').catch(() => [])]);
-    }
+    const dono = SESSION.me.role === 'dono', hoje = dkey(new Date());
+    if (dono) {   // indicadores e gráficos do dono: check-ins só dos 30 últimos dias (dias passados ficam salvos no aparelho), pagamentos de 6 meses e pedidos de 60 dias
+      const m6 = new Date(); m6.setDate(1); m6.setMonth(m6.getMonth() - 5); const d30 = new Date(); d30.setDate(d30.getDate() - 29);
+      [D.ck90, D.agend, D.pagamentos, D.pedidos, D.produtos] = await Promise.all([api.checkinsPeriodo(dkey(d30)).catch(() => []), api.list('agendamentos', [], { ttl: 600000 }),
+        api.list('pagamentos', [['data', '>=', dkey(m6)]], { ttl: 600000 }).catch(() => []), api.list('pedidos', [['ts', '>=', Date.now() - 60 * 86400000]], { ttl: 600000 }).catch(() => []), api.list('produtos').catch(() => [])]);
+      D.ckDesde = dkey(d30); D.checkins = D.ck90.filter(c => c.data === hoje);
+    } else [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', hoje]]), api.list('agendamentos', [], { ttl: 600000 })]);
   }
   return D;
 }

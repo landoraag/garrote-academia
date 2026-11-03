@@ -161,7 +161,7 @@ api.onAuth(async u => {
     let last = ''; try { last = localStorage.getItem('garrote:role') || ''; } catch {}
     if (last === 'dono' || last === 'treinador') {   // painel: já pede as listas junto com o perfil, em vez de esperar
       ['users', 'modalidades', 'categorias', 'exercicios', 'treinos', ...(last === 'dono' ? ['planos'] : [])].forEach(c => api.list(c).catch(() => {}));
-      if (!/^\/painel\/(?!visao)/.test(rota())) { api.list('checkins', [['data', '==', dkey(new Date())]]).catch(() => {}); api.list('agendamentos').catch(() => {}); }
+      if (!/^\/painel\/(?!visao)/.test(rota())) { if (last === 'treinador') api.list('checkins', [['data', '==', dkey(new Date())]]).catch(() => {}); api.list('agendamentos', [], { ttl: 600000 }).catch(() => {}); }
     }
     const [me, f] = await Promise.all([api.get('users', u.uid).catch(e => { console.error(e); return null; }), api.get('fotos', u.uid).catch(() => null)]);   // em paralelo
     SESSION.me = me; if (me && f) me.foto = f.data;

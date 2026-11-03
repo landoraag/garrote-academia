@@ -40,7 +40,9 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 
 Todo campo de senha tem um olho para mostrar ou ocultar o que foi digitado. Em todos os painéis, a foto e o nome no canto inferior esquerdo do menu levam ao perfil. As listas são paginadas (5 itens por página no celular, 10 no computador).
 
-**Cache no aparelho:** as listas de cadastro (alunos, treinos, exercícios, modalidades, planos, alimentos, produtos, dietas) ficam salvas no celular de cada pessoa (`localStorage`, por usuário, até 3 dias). A segunda abertura mostra a lista salva na hora e atualiza por trás; qualquer gravação limpa a coleção e sair da conta apaga tudo. Check-ins, execuções, pedidos e pagamentos nunca são salvos, para aparecerem sempre atualizados.
+**Cache no aparelho:** as listas de cadastro (alunos, treinos, exercícios, modalidades, planos, alimentos, produtos, dietas) ficam salvas no celular de cada pessoa (`localStorage`, por usuário, até 3 dias). A segunda abertura mostra a lista salva na hora e atualiza por trás; qualquer gravação limpa a coleção e sair da conta apaga tudo. Check-ins, execuções, pedidos e pagamentos não são salvos como lista, para aparecerem sempre atualizados; já os **check-ins de dias que passaram** ficam salvos (não mudam) e só os dias novos são lidos.
+
+**Economia de leituras (plano gratuito do Firebase):** cadastros ficam 10 min sem nova leitura; o dashboard do dono lê 30 dias de check-ins (90 só ao escolher), 6 meses de pagamentos e 60 dias de pedidos; o aviso de pedidos consulta a cada 30 s só com a aba visível e, depois da primeira vez, só os pedidos novos; o aluno lê só os check-ins novos.
 
 ## Tecnologias
 

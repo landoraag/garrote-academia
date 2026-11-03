@@ -49,7 +49,7 @@ const diasTxt = t => { const d = [...(t.dias || [])].sort((a, b) => ate(a) - ate
 /* check-in automático: ao iniciar o treino, o dia conta como check-in (se ainda não tiver) */
 async function autoCheckin(k, tid) {
   const uid = sid();
-  try { const cks = await api.list('checkins', [['uid', '==', uid]]); if (cks.some(c => c.data === k)) return;
+  try { const cks = await api.checkinsDe(uid); if (cks.some(c => c.data === k)) return;
     await api.set('checkins', `${uid}_${k}`, { uid, data: k, ts: Date.now(), auto: true, tid }); toast('Treino iniciado. Check-in de hoje feito.'); }
   catch (e) { console.error('check-in automático', e); }
 }
@@ -66,7 +66,7 @@ const itemDone = (it, feitos) => { const f = feitos[it.exId] || []; return f.len
 /* ---------------- Início ---------------- */
 export async function home() {
   const uid = sid(), t = new Date(), k = dkey(t);
-  const [cks, treinos, prof] = await Promise.all([api.list('checkins', [['uid', '==', uid]]), myTreinos(uid), ro() ? api.get('users', uid) : SESSION.me]);
+  const [cks, treinos, prof] = await Promise.all([api.checkinsDe(uid), myTreinos(uid), ro() ? api.get('users', uid) : SESSION.me]);
   const dates = new Set(cks.map(c => c.data)), checked = dates.has(k);
   const { cur, rec } = streakInfo(dates, t);
   const mon = new Date(t); mon.setDate(t.getDate() - (iso(t) - 1));
@@ -620,7 +620,7 @@ export async function modalidade(id) {
 
 /* ---------------- Perfil ---------------- */
 export async function perfil() {
-  const uid = sid(), [cks, mine] = await Promise.all([api.list('checkins', [['uid', '==', uid]]), api.get('users', uid)]);
+  const uid = sid(), [cks, mine] = await Promise.all([api.checkinsDe(uid), api.get('users', uid)]);
   const plano = mine && mine.planoId ? await api.get('planos', mine.planoId).catch(() => null) : null, [stc, stl] = situ(mine || {}, plano);
   const podePagar = !!plano && plano.categoria !== 'totalpass' && !ro() && pagamentoAtivo();
   const planoCard = `<section class="card span2"><h2 class="h2" style="margin-bottom:10px">Meu plano</h2>${plano ? `<div class="row" style="justify-content:space-between;gap:12px;flex-wrap:wrap"><div><b style="font:700 22px var(--d)">${esc(plano.nome)}</b><div class="muted" style="font-size:13px">${plano.categoria === 'totalpass' ? 'Via Total Pass' : perLabel(plano.periodo)} · ${plano.familia === 'sim' ? 'Família' : 'Individual'}</div>${plano.categoria === 'totalpass' ? '' : `<div class="muted" style="font-size:13px;margin-top:2px">${esc(precoTxt(plano))}</div>`}</div><div style="text-align:right"><span class="st-chip ${stc}">${stl}</span>${plano.categoria === 'totalpass' || !mine.vencimento ? '' : `<div class="muted" style="font-size:13px;margin-top:4px">Vencimento ${ptDate(mine.vencimento)}</div>`}</div></div>${podePagar ? `<button class="btn red" id="pagar" style="margin-top:14px">${stc === 'emdia' ? 'Pagar mensalidade adiantada' : 'Pagar mensalidade'}</button>` : ''}` : '<p class="muted" style="margin:0;font-size:14px">Nenhum plano definido. Fale com a recepção.</p>'}</section>`;
