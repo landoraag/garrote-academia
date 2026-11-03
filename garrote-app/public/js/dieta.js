@@ -1,28 +1,12 @@
 /* Dieta: alimentos (com macros), dietas por horário e montagem das refeições. Só o treinador monta; o aluno vê a dieta dele. */
 import { $, $$, esc, ic, fail, fmtHora } from './ui.js';
 
-export const GRUPOS = ["Pães e cereais", "Arroz, massas e raízes", "Leguminosas", "Carnes e ovos", "Laticínios e suplementos", "Frutas e vegetais", "Oleaginosas e gorduras", "Doces e bebidas"];
-const GRUPO_DE = {"Pão francês": "Pães e cereais", "Pão de forma": "Pães e cereais", "Pão integral": "Pães e cereais", "Pão de queijo": "Pães e cereais", "Tapioca (goma)": "Pães e cereais", "Cuscuz de milho": "Pães e cereais", "Aveia em flocos": "Pães e cereais", "Granola": "Pães e cereais", "Arroz branco cozido": "Arroz, massas e raízes", "Arroz integral cozido": "Arroz, massas e raízes", "Macarrão cozido": "Arroz, massas e raízes", "Batata doce cozida": "Arroz, massas e raízes", "Batata inglesa cozida": "Arroz, massas e raízes", "Mandioca cozida": "Arroz, massas e raízes", "Feijão carioca cozido": "Leguminosas", "Ovo cozido": "Carnes e ovos", "Peito de frango grelhado": "Carnes e ovos", "Patinho bovino grelhado": "Carnes e ovos", "Tilápia grelhada": "Carnes e ovos", "Atum em lata (natural)": "Carnes e ovos", "Whey protein": "Laticínios e suplementos", "Leite integral": "Laticínios e suplementos", "Iogurte natural integral": "Laticínios e suplementos", "Queijo muçarela": "Laticínios e suplementos", "Banana prata": "Frutas e vegetais", "Maçã": "Frutas e vegetais", "Laranja": "Frutas e vegetais", "Mamão papaia": "Frutas e vegetais", "Abacate": "Frutas e vegetais", "Brócolis cozido": "Frutas e vegetais", "Tomate": "Frutas e vegetais", "Amendoim": "Oleaginosas e gorduras", "Pasta de amendoim": "Oleaginosas e gorduras", "Castanha-do-pará": "Oleaginosas e gorduras", "Azeite de oliva": "Oleaginosas e gorduras", "Mel": "Doces e bebidas", "Açúcar": "Doces e bebidas", "Chocolate ao leite": "Doces e bebidas", "Suco de laranja": "Doces e bebidas", "Refrigerante": "Doces e bebidas"};
-// [nome, porção, peso da porção em g, kcal, carboidrato g, proteína g, gordura g]
-const BASE = [
-  ['Pão francês', '1 unidade (50 g)', 50, 150, 29, 4, 1.5], ['Pão de forma', '1 fatia (25 g)', 25, 63, 12, 2, 1], ['Pão integral', '1 fatia (25 g)', 25, 60, 11, 2.5, 0.8],
-  ['Pão de queijo', '1 unidade (20 g)', 20, 73, 6.8, 1, 4.9], ['Tapioca (goma)', '2 colheres de sopa (30 g)', 30, 100, 25, 0, 0], ['Cuscuz de milho', '1 fatia (100 g)', 100, 113, 25, 2.2, 0.7],
-  ['Arroz branco cozido', '4 colheres de sopa (100 g)', 100, 128, 28, 2.5, 0.2], ['Arroz integral cozido', '4 colheres de sopa (100 g)', 100, 124, 25.8, 2.6, 1], ['Feijão carioca cozido', '1 concha (100 g)', 100, 76, 13.6, 4.8, 0.5],
-  ['Macarrão cozido', '1 pegador (100 g)', 100, 102, 19.9, 3.4, 0.5], ['Batata doce cozida', '100 g', 100, 77, 18.4, 0.6, 0.1], ['Batata inglesa cozida', '100 g', 100, 52, 11.9, 1.2, 0],
-  ['Mandioca cozida', '100 g', 100, 125, 30, 0.6, 0.3], ['Aveia em flocos', '2 colheres de sopa (30 g)', 30, 118, 20, 4.2, 2.6], ['Granola', '3 colheres de sopa (30 g)', 30, 120, 21, 3, 3],
-  ['Ovo cozido', '1 unidade (50 g)', 50, 73, 0.5, 6.7, 4.8], ['Peito de frango grelhado', '100 g', 100, 159, 0, 32, 2.5], ['Patinho bovino grelhado', '100 g', 100, 219, 0, 35.9, 7.3],
-  ['Tilápia grelhada', '100 g', 100, 128, 0, 26, 2.6], ['Atum em lata (natural)', '100 g', 100, 116, 0, 25.5, 0.8], ['Whey protein', '1 scoop (30 g)', 30, 120, 3, 24, 1.5],
-  ['Leite integral', '1 copo (200 ml)', 206, 126, 9.3, 6.6, 6.8], ['Iogurte natural integral', '1 pote (170 g)', 170, 87, 3.2, 7, 5], ['Queijo muçarela', '1 fatia (20 g)', 20, 66, 0.6, 4.5, 5],
-  ['Banana prata', '1 unidade (80 g)', 80, 78, 21, 1, 0.2], ['Maçã', '1 unidade (130 g)', 130, 73, 19, 0.3, 0.2], ['Laranja', '1 unidade (150 g)', 150, 70, 17.5, 1.3, 0.2],
-  ['Mamão papaia', '1 fatia (170 g)', 170, 66, 17, 0.7, 0.2], ['Abacate', '2 colheres de sopa (60 g)', 60, 96, 5, 1.2, 8.8], ['Brócolis cozido', '100 g', 100, 25, 4.4, 2.1, 0.5],
-  ['Tomate', '1 unidade (100 g)', 100, 15, 3.1, 0.9, 0.2], ['Amendoim', '1 punhado (30 g)', 30, 170, 4.7, 7.7, 14], ['Pasta de amendoim', '1 colher de sopa (15 g)', 15, 90, 3, 3.5, 7.5],
-  ['Castanha-do-pará', '1 unidade (4 g)', 4, 26, 0.5, 0.6, 2.6], ['Azeite de oliva', '1 colher de sopa (13 ml)', 12, 108, 0, 0, 12], ['Mel', '1 colher de sopa (20 g)', 20, 61, 16.5, 0, 0],
-  ['Açúcar', '1 colher de chá (5 g)', 5, 20, 5, 0, 0], ['Chocolate ao leite', '1 quadrado (25 g)', 25, 135, 14.5, 1.9, 7.8], ['Suco de laranja', '1 copo (200 ml)', 200, 90, 21, 1.4, 0.4],
-  ['Refrigerante', '1 lata (350 ml)', 350, 140, 35, 0, 0]
-];
-
-
-export const PADRAO = BASE.map(([nome, porcao, g, kcal, carb, prot, gord]) => ({ nome, grupo: GRUPO_DE[nome] || 'Outros', porcao, g, kcal, carb, prot, gord }));
+import { TACO, TACO_GRUPOS } from './taco.js';
+export const GRUPOS = TACO_GRUPOS;
+export const VERSAO_BASE = 'taco4';
+const padId = nome => 'pad-' + String(nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+/* valores por 100 g (TACO 4ª ed.): a "porção" é 100 g; o aluno e o treinador podem pedir em gramas ou em múltiplos de 100 g */
+export const PADRAO = TACO.map(([n, nome, g, kcal, carb, prot, gord]) => ({ nome, grupo: TACO_GRUPOS[g], porcao: '100 g', g: 100, kcal, carb, prot, gord, v: VERSAO_BASE, taco: n }));
 export const REFEICOES = ['Café da manhã', 'Lanche da manhã', 'Almoço', 'Lanche da tarde', 'Pré-treino', 'Pós-treino', 'Jantar', 'Ceia'];
 
 export const n1 = v => Number(v || 0).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
@@ -70,9 +54,14 @@ export function resultadoCalc(box, dia, perfil) {
 
 /* alimentos padrão: ids fixos, então importar duas vezes não duplica */
 export async function importarPadrao(api, existentes, uid) {
-  const tem = new Set(existentes.map(a => sa(a.nome))), novos = PADRAO.filter(p => !tem.has(sa(p.nome)));
-  for (let i = 0; i < novos.length; i += 10) await Promise.all(novos.slice(i, i + 10).map(p => api.set('alimentos', 'pad-' + sa(p.nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), { ...p, criadoPor: uid, criadoEm: Date.now() })));
+  const porId = new Map(existentes.map(a => [a.id, a])), meus = new Set(existentes.filter(a => !String(a.id).startsWith('pad-')).map(a => sa(a.nome)));
+  const novos = PADRAO.filter(p => { const e = porId.get(padId(p.nome)); return e ? e.v !== VERSAO_BASE : !meus.has(sa(p.nome)); });
+  for (let i = 0; i < novos.length; i += 10) await Promise.all(novos.slice(i, i + 10).map(p => api.set('alimentos', padId(p.nome), { ...p, criadoPor: uid, criadoEm: Date.now() })));
+  /* remove os alimentos padrão antigos (valores aproximados) que não estão na TACO, se nenhuma dieta os usa */
+  const ids = new Set(PADRAO.map(p => padId(p.nome))), velhos = existentes.filter(a => String(a.id).startsWith('pad-') && !ids.has(a.id));
+  if (velhos.length) { const usados = new Set((await api.list('dietas', [])).flatMap(d => (d.refeicoes || []).flatMap(m => (m.itens || []).map(i => i.alId)))); for (const a of velhos) if (!usados.has(a.id)) await api.del('alimentos', a.id); }
   return novos.length; }
+export const baseDesatualizada = al => !al.length || al.some(a => String(a.id).startsWith('pad-') && a.v !== VERSAO_BASE);
 
 /* ---------- formulário: refeições por horário (como os exercícios do treino, mas com horas no lugar dos dias) ---------- */
 const grupoOpts = (al, sel) => `<option value="">Todos os grupos</option>` + [...new Set(al.map(a => a.grupo || 'Outros'))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(g => `<option ${g === sel ? 'selected' : ''}>${esc(g)}</option>`).join('');
@@ -80,8 +69,8 @@ const foodOpts = (al, g, sel) => `<option value="">Escolha o alimento</option>` 
 const frow = (D, it = {}) => { const a = D.alimentos.find(x => x.id === it.alId), g = a ? a.grupo || 'Outros' : '';
   return `<div class="frow"><label class="ii"><span>Grupo</span><select name="fg" aria-label="Grupo">${grupoOpts(D.alimentos, g)}</select></label>
   <label class="ii fa"><span>Alimento</span><select name="fa" aria-label="Alimento">${foodOpts(D.alimentos, g, it.alId)}</select></label>
-  <label class="ii fq"><span>Quantidade</span><input name="fq" type="number" min="0.25" step="0.25" value="${it.qtd ?? 1}" aria-label="Quantidade"></label>
-  <label class="ii fu"><span>Medida</span><select name="fu" aria-label="Medida"><option value="p">Porção</option><option value="g" ${it.un === 'g' ? 'selected' : ''}>Gramas</option></select></label>
+  <label class="ii fq"><span>Quantidade</span><input name="fq" type="number" min="0.25" step="0.25" value="${it.qtd ?? 100}" aria-label="Quantidade"></label>
+  <label class="ii fu"><span>Medida</span><select name="fu" aria-label="Medida"><option value="p" ${it.un === 'p' ? 'selected' : ''}>Porção</option><option value="g" ${it.un !== 'p' ? 'selected' : ''}>Gramas</option></select></label>
   <button type="button" class="pdel" data-rmfood aria-label="Remover alimento">${ic('close', 18, 'currentColor', 2.4)}</button><p class="fk"></p></div>`; };
 const mrow = (D, m = {}) => `<div class="meal"><div class="mrtop"><label class="ii mh"><span>Horário</span><input name="mh" type="time" step="300" value="${esc(fmtHora(m.hora))}" aria-label="Horário"></label>
   <label class="ii mn"><span>Refeição</span><input name="mn" list="dlref" maxlength="40" value="${esc(m.nome || '')}" placeholder="Ex.: Café da manhã" autocomplete="off" aria-label="Nome da refeição"></label>

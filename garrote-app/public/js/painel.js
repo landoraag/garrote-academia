@@ -2,7 +2,7 @@
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora, TECNICAS, segTxt } from './ui.js';
 import { dashHTML, bindDash } from './dash.js';
-import { mealsField, bindMeals, collectMeals, dcalcField, collectPerfil, gasto, importarPadrao, GRUPOS, macDieta, macRef, macTxt, qtdTxt, n1 } from './dieta.js';
+import { mealsField, bindMeals, collectMeals, dcalcField, collectPerfil, gasto, importarPadrao, baseDesatualizada, GRUPOS, macDieta, macRef, macTxt, qtdTxt, n1 } from './dieta.js';
 import { produtosSchema, pedidosHTML, bindPedidos, iniciarAvisoPedidos } from './loja.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
@@ -37,7 +37,7 @@ async function load(tab) {
   if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos', [], { ttl: 600000 });
   if (tab === 'dieta' || tab === 'alimentos') {
     D.alimentos = await api.list('alimentos');
-    if (!D.alimentos.length && SESSION.me.role === 'treinador') { try { await importarPadrao(api, [], SESSION.user.uid); D.alimentos = await api.list('alimentos', [], { fresh: true }); } catch (e) { console.error('alimentos padrão', e); } }   // primeira vez: já cadastra a lista padrão
+    if (SESSION.me.role === 'treinador' && !SESSION.baseOk && baseDesatualizada(D.alimentos)) { SESSION.baseOk = 1; try { await importarPadrao(api, D.alimentos, SESSION.user.uid); D.alimentos = await api.list('alimentos', [], { fresh: true }); } catch (e) { console.error('alimentos padrão', e); } }   // primeira vez: já cadastra a lista padrão
     D.alimentos.sort(byName); }
   if (tab === 'dieta') D.dietas = (await api.list('dietas')).sort(byName);
   if (tab === 'produtos' || tab === 'pedidos') D.produtos = (await api.list('produtos')).sort(byName);
@@ -137,7 +137,7 @@ function schema(tab, D, E) {
       fields: [{ k: 'nome', l: 'Nome do alimento', req: 1, full: 1, ph: 'Ex.: Pão francês' }, { k: 'grupo', l: 'Grupo', type: 'select', opts: () => GRUPOS.map(g => [g, g]), def: () => GRUPOS[0] }, { k: 'porcao', l: 'Porção (como o aluno vai ver)', req: 1, ph: 'Ex.: 1 unidade (50 g)' },
         { k: 'g', l: 'Peso da porção (g)', type: 'money', req: 1, ph: '50' }, { k: 'kcal', l: 'Calorias (kcal)', type: 'money', req: 1, ph: '150' },
         { k: 'carb', l: 'Carboidratos (g)', type: 'money', ph: '29' }, { k: 'prot', l: 'Proteínas (g)', type: 'money', ph: '4' }, { k: 'gord', l: 'Gorduras (g)', type: 'money', ph: '1,5' },
-        { k: '_dica', type: 'hint', txt: 'Os valores são da porção inteira. Use “Importar lista padrão” para começar com os alimentos mais comuns e depois ajuste ou acrescente os seus.' }],
+        { k: '_dica', type: 'hint', txt: 'Os valores são da porção inteira. A lista padrão vem da Tabela TACO (valores por 100 g); acrescente os seus ou ajuste o que precisar.' }],
       cols: [['Nome', r => r.nome], ['Grupo', r => r.grupo || 'Outros'], ['Porção', r => r.porcao], ['Calorias', r => n1(r.kcal) + ' kcal'], ['Carboidratos', r => n1(r.carb) + ' g'], ['Proteínas', r => n1(r.prot) + ' g'], ['Gorduras', r => n1(r.gord) + ' g']] },
     dieta: { col: 'dietas', title: 'Dietas', one: 'dieta', rows: (D.dietas || []).filter(t => !E.tid || t.criadoPor === E.tid), wide: 1,
       fields: [{ k: 'nome', l: 'Nome da dieta', req: 1, full: 1, ph: 'Ex.: Cutting, 2.000 kcal' }, { k: 'alunoIds', l: 'Alunos que seguem esta dieta', type: 'multi', opts: () => als.map(a => [a.id, a.nome]) },
