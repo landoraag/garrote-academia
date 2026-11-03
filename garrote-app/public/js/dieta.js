@@ -31,7 +31,7 @@ export const sa = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]
 export const fator = (a, q, un) => un === 'g' ? q / Math.max(1, +a.g || 1) : q;
 export const mac = (a, f) => ({ kcal: (+a.kcal || 0) * f, carb: (+a.carb || 0) * f, prot: (+a.prot || 0) * f, gord: (+a.gord || 0) * f });
 export const soma = l => l.reduce((t, m) => ({ kcal: t.kcal + m.kcal, carb: t.carb + m.carb, prot: t.prot + m.prot, gord: t.gord + m.gord }), { kcal: 0, carb: 0, prot: 0, gord: 0 });
-export const macTxt = m => `${n1(m.kcal)} kcal · C ${n1(m.carb)} · P ${n1(m.prot)} · G ${n1(m.gord)}`;
+export const macTxt = m => `${n1(m.kcal)} kcal · Carbo ${n1(m.carb)} · Proteína ${n1(m.prot)} · Gordura ${n1(m.gord)}`;
 export const tilesHTML = m => `<div class="nut-tiles"><div class="nt-k"><small>Calorias</small><b>${n1(m.kcal)}<span> kcal</span></b></div><div><small>Carboidratos</small><b>${n1(m.carb)}<span> g</span></b></div><div><small>Proteínas</small><b>${n1(m.prot)}<span> g</span></b></div><div><small>Gorduras</small><b>${n1(m.gord)}<span> g</span></b></div></div>`;
 export const qtdTxt = (a, q, un) => un === 'g' ? `${n1(q)} g` : `${n1(q)} × ${a ? a.porcao : 'porção'}`;
 /* macros de uma refeição / de uma dieta inteira (alimentos = lista cadastrada) */
