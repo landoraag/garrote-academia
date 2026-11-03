@@ -19,7 +19,7 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 - **Técnicas avançadas**: biset, triset, dropset, rest-pause, cluster e outras, por exercício (em todas as séries ou só na última). Biset/triset agrupam este exercício com os próximos e dispensam o descanso entre eles.
 - **Dados do treino anterior**: carga e repetições vêm primeiro do último treino feito; só sem histórico entra a recomendação do treinador.
 - **Treinador externo** (dono, menu Treinadores externos): usa o app como os internos e paga mensalidade ao João; o dono registra pagamentos e o vencimento avança um mês.
-- **Calculadora de macros** (aluno): alimento por porção ou gramas, com "Minha refeição". Valores médios aproximados; o dono/treinador cadastra os próprios em **Alimentos**, que valem no lugar do padrão.
+- **Calculadora de macros** (painel do treinador e do dono): alimento por porção ou gramas, com "Minha refeição". Valores médios aproximados; o dono/treinador cadastra os próprios em **Alimentos**, que valem no lugar do padrão.
 - **Professores das modalidades**: cada modalidade lista professores, dias e horários, e a tela do aluno mostra quem dá aula em cada horário.
 - **Sem zoom**: pinça e toque duplo bloqueados (viewport, eventos de gesto e `touch-action`).
 - **Vitrine de produtos**: o aluno monta o pedido (pagamento na retirada); o painel do dono avisa na hora (som, vibração e título; consulta a cada 20 s) para a recepção separar. O dono cadastra produtos e estoque (baixa ao marcar "separado"), vê pedidos e faturamento.

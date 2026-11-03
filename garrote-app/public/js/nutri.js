@@ -1,8 +1,6 @@
 /* Calculadora de macros: converte um alimento (porções ou gramas) em calorias, carboidratos, proteínas e gorduras.
    A lista padrão traz valores médios aproximados; a academia pode cadastrar os seus em Alimentos (no painel), e o cadastro vale no lugar do padrão. */
-import { api } from './api.js';
-import { nav, topIcon, viewing } from './aluno.js';
-import { $, $$, esc, ic, logo, toast } from './ui.js';
+import { $, $$, esc, ic, toast } from './ui.js';
 
 // [nome, porção, peso da porção em g, kcal, carboidrato g, proteína g, gordura g]
 const PADRAO = [
@@ -32,11 +30,14 @@ const mac = (a, f) => ({ kcal: (+a.kcal || 0) * f, carb: (+a.carb || 0) * f, pro
 const tiles = m => `<div class="nut-tiles"><div class="nt-k"><small>Calorias</small><b>${n1(m.kcal)}<span> kcal</span></b></div><div><small>Carboidratos</small><b>${n1(m.carb)}<span> g</span></b></div>
   <div><small>Proteínas</small><b>${n1(m.prot)}<span> g</span></b></div><div><small>Gorduras</small><b>${n1(m.gord)}<span> g</span></b></div></div>`;
 
-export async function macros() {
-  const custom = await api.list('alimentos').catch(() => []), nomes = new Set(custom.map(c => sa(c.nome)));
+const todosDe = D => {
+  const custom = D.alimentos || [], nomes = new Set(custom.map(c => sa(c.nome)));
   const todos = [...custom.map(c => ({ ...c, nome: c.nome })), ...PADRAO.filter(p => !nomes.has(sa(p.nome)))].sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
-  return { depth: 2, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
-    <div class="body"><div><h1 class="h1">Calculadora de macros</h1><p class="muted" style="margin-top:4px;font-size:14px">Escolha o alimento e a quantidade para ver calorias e macros. Valores médios, podem variar por marca e preparo.</p></div>
+  return todos;
+};
+
+export const macrosHTML = () => `<div class="head"><div><h1 class="h1">Calculadora de macros</h1><p class="muted" style="margin-top:4px;font-size:14px">Escolha o alimento e a quantidade para ver calorias e macros. Valores médios, podem variar por marca e preparo. Para usar seus próprios valores, cadastre em Alimentos.</p></div></div>
+    <div class="nut-wrap">
       <label class="hq nut-q">${ic('search', 18)}<input id="nq" type="search" placeholder="Buscar alimento: pão, arroz, frango..." aria-label="Buscar alimento" autocomplete="off"></label>
       <div class="nut-list" id="nlist" role="listbox" aria-label="Alimentos"></div>
       <section class="card nut-calc" id="ncalc" hidden>
@@ -46,8 +47,10 @@ export async function macros() {
         <div id="nres"></div><button type="button" class="btn red" id="nadd" style="margin-top:12px">Adicionar à refeição</button>
       </section>
       <section class="card" id="nref" hidden><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px"><h2 class="h2">Minha refeição</h2><button type="button" class="btn link" id="nclr" style="height:34px">Limpar</button></div>
-        <div id="nitens"></div><div id="ntot"></div></section></div><div style="height:16px;flex:none"></div>${nav('home')}`,
-  after(el) {
+        <div id="nitens"></div><div id="ntot"></div></section></div>`;
+
+export function bindMacros(el, D) {
+    const todos = todosDe(D);
     let sel = null, modo = 'p', ref = lsGet();
     const num = () => { const v = parseFloat(String($('#nqtd', el).value).replace(',', '.')); return isFinite(v) && v > 0 ? v : 0; };
     const lista = () => { const q = sa($('#nq', el).value.trim()), l = todos.filter(a => !q || q.split(/\s+/).every(w => sa(a.nome).includes(w))).slice(0, 6);
@@ -67,5 +70,4 @@ export async function macros() {
     $('#nitens', el).onclick = e => { const b = e.target.closest('.nut-x'); if (!b) return; ref.splice(+b.dataset.i, 1); lsSet(ref); refresh(); };
     $('#nclr', el).onclick = () => { ref = []; lsSet(ref); refresh(); };
     lista(); refresh();
-  } };
 }

@@ -869,3 +869,7 @@ html,body{touch-action:pan-x pan-y}
 .hpf .field{min-width:0}.hpf .field input,.hpf .field select{width:100%;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;box-sizing:border-box}
 .hpf .field input[type=date]{display:block;text-align:left}
 @media (max-width:560px){.hpf{grid-template-columns:1fr}.hadv{padding:0 14px}.hadv span{display:none}.hq{padding:0 12px}}
+
+/* calculadora de macros dentro do painel */
+.nut-wrap{display:flex;flex-direction:column;gap:14px;max-width:720px}
+.nut-wrap .card{padding:16px}

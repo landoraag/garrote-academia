@@ -1,6 +1,7 @@
 /* Painel do dono e do treinador (tela larga). Cadastros genéricos guiados por "schema". */
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora, TECNICAS, segTxt } from './ui.js';
+import { macrosHTML, bindMacros } from './nutri.js';
 import { produtosSchema, pedidosHTML, bindPedidos, iniciarAvisoPedidos } from './loja.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
@@ -12,8 +13,8 @@ const byName = (a, b) => String(a.nome || '').localeCompare(String(b.nome || '')
 const genPass = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)]; return s; };
 /* Dono: pessoas, modalidades e financeiro. Treinador: alunos, treinos, exercícios e categorias. */
 const MENU = {
-  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['externos', 'Treinadores externos'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['produtos', 'Produtos'], ['pedidos', 'Pedidos'], ['alimentos', 'Alimentos']],
-  treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['alimentos', 'Alimentos']]
+  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['externos', 'Treinadores externos'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['produtos', 'Produtos'], ['pedidos', 'Pedidos'], ['alimentos', 'Alimentos'], ['macros', 'Calculadora de macros']],
+  treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['alimentos', 'Alimentos'], ['macros', 'Calculadora de macros']]
 };
 /* atalhos fixos na parte de baixo do celular (5 ícones, o do meio é sempre a visão geral) */
 const BNAV = {
@@ -31,7 +32,7 @@ async function load(tab) {
   const D = { users: users.sort(byName), modalidades: modalidades.sort(byName), categorias: categorias.sort(byName), exercicios: exercicios.sort(byName), treinos: treinos.sort(byName) };
   D.planos = SESSION.me.role === 'dono' ? (await api.list('planos')).sort(byName) : [];
   if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos');
-  if (tab === 'alimentos') D.alimentos = (await api.list('alimentos')).sort(byName);
+  if (tab === 'alimentos' || tab === 'macros') D.alimentos = (await api.list('alimentos')).sort(byName);
   if (tab === 'produtos' || tab === 'pedidos') D.produtos = (await api.list('produtos')).sort(byName);
   if (tab === 'pedidos') D.pedidos = (await api.list('pedidos', [], { fresh: true })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   if (tab === 'visao') [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', dkey(new Date())]]), api.list('agendamentos')]);
@@ -510,7 +511,7 @@ function build(tab, D, E) {
     <div class="thmline"><span>Aparência</span>${temaBtn()}</div>
     <div class="who"><a class="whou" href="#/painel/perfil" aria-label="Abrir meu perfil"${tab === 'perfil' ? ' aria-current="page"' : ''}>${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div></a>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
-  const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D) : tab === 'pedidos' ? pedidosHTML(D)
+  const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D) : tab === 'pedidos' ? pedidosHTML(D) : tab === 'macros' ? macrosHTML()
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
     : tableHTML(schema(tab, D, E), D, E);
   const mbar = `<header class="mtop"><button type="button" class="iconbtn" id="mn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">${ic('menu', 22)}</button>${logo(30)}${temaBtn()}</header><div class="scrim" id="scrim"></div>`;
@@ -529,6 +530,7 @@ function bind(el, tab, D, E) {
   if (tab === 'perfil') return bindPerfil(el, repaint);
   if (tab === 'financeiro') return bindFin(el, D, repaint);
   if (tab === 'pedidos') return bindPedidos(el, D, repaint);
+  if (tab === 'macros') return bindMacros(el, D);
   const sc = schema(tab, D, E); if (!sc) return;
   const create = () => openForm(sc, D, E, null, repaint);
   const nb = $('#new', el); if (nb) nb.onclick = create;

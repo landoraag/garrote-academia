@@ -95,7 +95,6 @@ export async function home() {
     ${hoje ? `<a class="card tcard" href="#/treino/${hoje.id}"><div style="flex:1"><div class="k">Treino de hoje</div><div class="t">${esc(hoje.nome)}</div>
       <div class="m">${(hoje.itens || []).length} exercícios</div></div><span class="go">${ic('arrow')}</span></a>`
     : `<a class="card tcard" href="#/treinos"><div style="flex:1"><div class="k">Treino de hoje</div><div class="t">Sem treino para hoje</div><div class="m">${treinos.length ? 'Veja todos os seus treinos' : 'Fale com seu professor para receber um treino'}</div></div><span class="go">${ic('arrow')}</span></a>`}
-    <a class="card tcard" href="#/macros"><div style="flex:1"><div class="k">Nutrição</div><div class="t">Calculadora de macros</div><div class="m">Calorias e macros dos alimentos</div></div><span class="go">${ic('arrow')}</span></a>
     <a class="card tcard" href="#/loja"><div style="flex:1"><div class="k">Vitrine</div><div class="t">Marmitas, bebidas e mais</div><div class="m">Peça pelo app e retire na recepção</div></div><span class="go">${ic('arrow')}</span></a>
   </div><div style="height:16px;flex:none"></div>${nav('home')}`,
   after(el) {
