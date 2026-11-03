@@ -987,3 +987,11 @@ html,body{touch-action:pan-x pan-y}
 .dcont li{display:flex;justify-content:space-between;gap:10px;font:600 14px var(--b)}.dcont li small{font:400 12.5px var(--b);color:var(--muted);text-align:right}
 .dmt{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font:600 12.5px var(--b);color:var(--red)}
 .dieta .nut-tiles>div{background:var(--card);box-shadow:var(--shadow)}.dieta .nut-tiles .nt-k{background:var(--solid)}
+
+/* vitrine: cartão clicável e tela de detalhes do produto */
+.vit-card{cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s}.vit-card:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(0,0,0,.14)}.vit-card:focus-visible{outline:2px solid var(--red);outline-offset:2px}
+.vit-det{display:flex;flex-direction:column;gap:14px}
+.vit-big{width:100%;aspect-ratio:4/3;max-height:340px;border-radius:18px;background:var(--line) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.vit-dt{display:flex;flex-direction:column;gap:8px}.vit-cat{align-self:flex-start;padding:4px 12px;border-radius:99px;background:rgba(217,30,38,.12);color:var(--red);font:700 12px var(--b)}
+.vit-desc{margin:0;font:400 15px/1.5 var(--b);white-space:pre-line}.vit-pr.big{font-size:26px}
+@media (min-width:700px){.vit-det{flex-direction:row;align-items:flex-start}.vit-big{flex:1;max-width:340px}.vit-dt{flex:1}}

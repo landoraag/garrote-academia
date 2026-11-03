@@ -120,7 +120,7 @@ export async function loja() {
   meus.sort((a, b) => (b.ts || 0) - (a.ts || 0));
   let cat = 'todas';
   const card = p => { const est = Math.max(0, +p.estoque || 0), q = Math.min(CARRINHO[p.id] || 0, est);
-    return `<div class="vit-card ${est ? '' : 'out'}" data-id="${esc(p.id)}"><div class="vit-img" ${p.foto ? `style="background-image:url('${esc(p.foto)}')"` : ''}>${p.foto ? '' : ic('cart', 30)}</div>
+    return `<div class="vit-card ${est ? '' : 'out'}" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${esc(p.nome)}"><div class="vit-img" ${p.foto ? `style="background-image:url('${esc(p.foto)}')"` : ''}>${p.foto ? '' : ic('cart', 30)}</div>
       <div class="vit-info"><b>${esc(p.nome)}</b><small>${esc(p.descricao || p.categoria || '')}</small>
         <div class="vit-row"><span class="vit-pr">${brl(p.preco)}</span>${est ? `<div class="stp"><button type="button" data-m aria-label="Tirar um">−</button><b data-q>${q}</b><button type="button" data-p aria-label="Adicionar um">+</button></div>` : '<span class="vit-out">Esgotado</span>'}</div>
         ${est && est <= 3 ? `<small class="vit-low">Restam ${est}</small>` : ''}</div></div>`; };
@@ -140,11 +140,24 @@ export async function loja() {
     for (const id of Object.keys(CARRINHO)) if (!prod(id)) delete CARRINHO[id];
     draw(); bar();
     const vc = $('#vcats', el); if (vc) vc.onclick = e => { const b = e.target.closest('.chip'); if (!b) return; cat = b.dataset.c; $$('.chip', vc).forEach(c => c.classList.toggle('on', c === b)); draw(); };
-    $('#vgrid', el).onclick = e => { const b = e.target.closest('[data-m],[data-p]'); if (!b) return; if (ro()) return toast('Modo visualização: só o aluno pode pedir.');
-      const c = b.closest('.vit-card'), p = prod(c.dataset.id), q = CARRINHO[p.id] || 0, nq = b.hasAttribute('data-p') ? Math.min(est(p), q + 1) : Math.max(0, q - 1);
-      if (b.hasAttribute('data-p') && q >= est(p)) toast(`Só tem ${est(p)} em estoque.`);
+    /* soma/tira uma unidade no carrinho e atualiza o cartão da grade e a barra */
+    const ajusta = (p, mais) => { if (ro()) { toast('Modo visualização: só o aluno pode pedir.'); return CARRINHO[p.id] || 0; }
+      const q = CARRINHO[p.id] || 0, nq = mais ? Math.min(est(p), q + 1) : Math.max(0, q - 1);
+      if (mais && q >= est(p)) toast(`Só tem ${est(p)} em estoque.`);
       if (nq) CARRINHO[p.id] = nq; else delete CARRINHO[p.id];
-      $('[data-q]', c).textContent = nq; bar(); };
+      const c = $(`.vit-card[data-id="${CSS.escape(p.id)}"] [data-q]`, el); if (c) c.textContent = nq; bar(); return nq; };
+    const detalhe = p => { const e = est(p);
+      const m = openModal({ title: p.nome, html: `<div class="vit-det"><div class="vit-big" ${p.foto ? `style="background-image:url('${esc(p.foto)}')"` : ''}>${p.foto ? '' : ic('cart', 44)}</div>
+        <div class="vit-dt"><span class="vit-cat">${esc(p.categoria || 'Outros')}</span><p class="vit-desc">${p.descricao ? esc(p.descricao) : 'Sem descrição.'}</p>
+        <div class="vit-row"><span class="vit-pr big">${brl(p.preco)}</span>${e ? `<div class="stp"><button type="button" data-dm aria-label="Tirar um">−</button><b data-dq>${Math.min(CARRINHO[p.id] || 0, e)}</b><button type="button" data-dp aria-label="Adicionar um">+</button></div>` : '<span class="vit-out">Esgotado</span>'}</div>
+        ${e && e <= 3 ? `<small class="vit-low">Restam ${e}</small>` : ''}<p class="muted" style="font-size:13px;margin:10px 0 0">Retire na recepção e pague na retirada.</p></div></div>` });
+      const f = m.form, q = () => $('[data-dq]', f); if (!q()) return;
+      $('[data-dm]', f).onclick = () => { q().textContent = ajusta(p, false); }; $('[data-dp]', f).onclick = () => { q().textContent = ajusta(p, true); };; };
+    const abrir = c => { const p = prod(c.dataset.id); if (p) detalhe(p); };
+    $('#vgrid', el).onclick = e => { const b = e.target.closest('[data-m],[data-p]');
+      if (b) { ajusta(prod(b.closest('.vit-card').dataset.id), b.hasAttribute('data-p')); return; }
+      const c = e.target.closest('.vit-card'); if (c) abrir(c); };
+    $('#vgrid', el).onkeydown = e => { if (e.key !== 'Enter' || e.target.closest('button') || !e.target.classList.contains('vit-card')) return; abrir(e.target); };
     $('#cb', el).onclick = () => {
       const ids = Object.keys(CARRINHO).filter(id => prod(id));
       openModal({ title: 'Seu pedido', submit: 'Enviar pedido', html: `<div class="vit-sum">${ids.map(id => `<div class="vs"><span>${CARRINHO[id]}× ${esc(prod(id).nome)}</span><b>${brl((+prod(id).preco || 0) * CARRINHO[id])}</b></div>`).join('')}<div class="vs tot"><span>Total</span><b>${brl(total())}</b></div></div>
