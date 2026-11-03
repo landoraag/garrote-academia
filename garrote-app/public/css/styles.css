@@ -964,3 +964,26 @@ html,body{touch-action:pan-x pan-y}
 
 /* sem isso a grade encolhia para a altura da tela e o menu lateral rolava junto com a página */
 .admin{flex:none}
+
+/* ===== Dieta: abas internas, refeições por horário e tela do aluno ===== */
+.dietatabs{margin-bottom:16px}.dietatabs .chip{display:inline-flex;align-items:center;text-decoration:none}.dietatabs .chip.on{background:var(--red);color:#fff}
+.meals{display:flex;flex-direction:column;gap:12px;margin-bottom:10px}
+.meal{display:flex;flex-direction:column;gap:10px;padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--bg)}.meal.new,.frow.new{animation:rowin .5s var(--ease)}
+.meal .ii{display:block;min-width:0}.meal .ii span{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+.meal input,.meal select{width:100%;min-width:0;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:0 10px;font:500 14px var(--b);color:var(--fg)}
+.mrtop{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:10px;align-items:end}.mrtop .ibtns{display:flex;gap:6px}
+.mrtop .ibtns button{width:44px;height:44px;border-radius:12px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.foods{display:flex;flex-direction:column;gap:8px}
+.frow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr) 92px 112px 44px;gap:8px;align-items:end;padding:10px;border-radius:14px;background:var(--card);border:1px solid var(--line)}
+.frow input,.frow select{background:var(--bg)}.frow .pdel{align-self:end}.frow .fk{grid-column:1/-1;margin:0;font:500 12.5px var(--b);color:var(--muted)}.frow .fk:empty{display:none}
+.mfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.mfoot .btn{width:auto;padding:0 18px}.mtot{font:700 13px var(--b);color:var(--red)}
+.dtot{margin:10px 0 0;padding:12px 14px;border-radius:14px;background:var(--bg);font:500 14px var(--b)}.dtot:empty{display:none}
+@media (max-width:700px){.mrtop{grid-template-columns:110px minmax(0,1fr)}.mrtop .ibtns{grid-column:1/-1}.frow{grid-template-columns:1fr 1fr}.frow .fa{grid-column:1/-1}.frow .pdel{grid-column:2;justify-self:end}}
+.dieta{display:flex;flex-direction:column;gap:14px}.dieta .nut-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+.dmeals{display:flex;flex-direction:column;gap:10px}
+.dmeal{display:flex;gap:12px;background:var(--card);border-radius:20px;padding:14px;box-shadow:var(--shadow)}
+.dhora{flex:none;width:64px;height:64px;border-radius:18px;background:rgba(217,30,38,.12);color:var(--red);display:flex;align-items:center;justify-content:center}.dhora b{font:700 18px var(--d)}
+.dcont{flex:1;min-width:0}.dcont h3{margin:0 0 6px;font:700 17px var(--d)}.dcont ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dcont li{display:flex;justify-content:space-between;gap:10px;font:600 14px var(--b)}.dcont li small{font:400 12.5px var(--b);color:var(--muted);text-align:right}
+.dmt{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font:600 12.5px var(--b);color:var(--red)}
+.dieta .nut-tiles>div{background:var(--card);box-shadow:var(--shadow)}.dieta .nut-tiles .nt-k{background:var(--solid)}

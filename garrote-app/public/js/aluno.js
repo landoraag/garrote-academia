@@ -1,5 +1,6 @@
 /* Telas do aluno (celular). O dono e o treinador também abrem estas telas em modo visualização. */
 import { api } from './api.js';
+import { n1, macTxt, macRef, macDieta, qtdTxt, tilesHTML } from './dieta.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { perLabel, situ, ptDate, precoTxt } from './plano.js';
 import { pagamentoAtivo, abrirPagamento } from './pagamento.js';
@@ -95,6 +96,7 @@ export async function home() {
     ${hoje ? `<a class="card tcard" href="#/treino/${hoje.id}"><div style="flex:1"><div class="k">Treino de hoje</div><div class="t">${esc(hoje.nome)}</div>
       <div class="m">${(hoje.itens || []).length} exercícios</div></div><span class="go">${ic('arrow')}</span></a>`
     : `<a class="card tcard" href="#/treinos"><div style="flex:1"><div class="k">Treino de hoje</div><div class="t">Sem treino para hoje</div><div class="m">${treinos.length ? 'Veja todos os seus treinos' : 'Fale com seu professor para receber um treino'}</div></div><span class="go">${ic('arrow')}</span></a>`}
+    <a class="card tcard" href="#/dieta"><div style="flex:1"><div class="k">Nutrição</div><div class="t">Minha dieta</div><div class="m">Refeições, horários e macros do seu professor</div></div><span class="go">${ic('arrow')}</span></a>
     <a class="card tcard" href="#/loja"><div style="flex:1"><div class="k">Vitrine</div><div class="t">Marmitas, bebidas e mais</div><div class="m">Peça pelo app e retire na recepção</div></div><span class="go">${ic('arrow')}</span></a>
   </div><div style="height:16px;flex:none"></div>${nav('home')}`,
   after(el) {
@@ -629,4 +631,18 @@ export async function perfil() {
     ${planoCard}${perfilHTML()}<button class="btn dark span2" id="out">Sair da conta</button></div><div style="height:16px;flex:none"></div>${nav('user')}`,
   after(el) { $('#out', el).onclick = () => api.logout(); bindPerfil(el, () => dispatchEvent(new Event('hashchange')));
     const pg = $('#pagar', el); if (pg) pg.onclick = () => abrirPagamento({ plano, aluno: mine, onPago: () => setTimeout(() => dispatchEvent(new Event('hashchange')), 2500) }); } };
+}
+
+/* ---------------- Minha dieta ---------------- */
+export async function dieta() {
+  const uid = sid(), [dietas, al] = await Promise.all([api.list('dietas', [['alunoIds', 'array-contains', uid]]).catch(() => []), api.list('alimentos').catch(() => [])]);
+  dietas.sort((a, b) => String(a.nome).localeCompare(String(b.nome), 'pt-BR'));
+  const bloco = d => { const tot = macDieta(d, al);
+    return `<section class="dieta"><div class="dhead"><h2 class="h2">${esc(d.nome)}</h2>${d.obs ? `<p class="muted" style="margin:4px 0 0;font-size:14px;line-height:1.45;white-space:pre-line">${esc(d.obs)}</p>` : ''}</div>${tilesHTML(tot)}
+      <div class="dmeals">${(d.refeicoes || []).map(m => `<article class="dmeal"><div class="dhora"><b>${esc(fmtHora(m.hora))}</b></div><div class="dcont"><h3>${esc(m.nome)}</h3>
+        <ul>${(m.itens || []).map(i => { const a = al.find(x => x.id === i.alId); return `<li><span>${esc(a ? a.nome : 'Alimento removido')}</span><small>${esc(qtdTxt(a, i.qtd, i.un))}</small></li>`; }).join('')}</ul><p class="dmt">${esc(macTxt(macRef(m, al)))}</p></div></article>`).join('')}</div></section>`; };
+  return { depth: 2, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
+    <div class="body"><div><h1 class="h1">Minha dieta</h1><p class="muted" style="margin-top:4px;font-size:14px">Montada pelo seu professor. Valores médios.</p></div>
+    ${dietas.length ? dietas.map(bloco).join('') : '<p class="empty">Você ainda não tem dieta. Fale com seu professor.</p>'}</div><div style="height:16px;flex:none"></div>${nav('home')}`,
+  after() {} };
 }

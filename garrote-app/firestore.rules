@@ -34,6 +34,13 @@ service cloud.firestore {
     // Calculadora de macros: alimentos cadastrados pela academia (valem no lugar da lista padrão do app)
     match /alimentos/{id} { allow read: if hasProfile(); allow write: if isStaff(); }
 
+    // Dietas: o treinador cria e edita as dele; o aluno lê só as dietas em que está incluído
+    match /dietas/{id} {
+      allow read: if isStaff() || (hasProfile() && request.auth.uid in resource.data.alunoIds);
+      allow create: if isTrainer() && request.resource.data.criadoPor == request.auth.uid;
+      allow update, delete: if isTrainer() && resource.data.criadoPor == request.auth.uid;
+    }
+
     // Cobranças do Mercado Pago: só o servidor de pagamentos (conta de serviço) lê e grava.
     match /cobrancas/{id} { allow read, write: if false; }
     match /pixAbertos/{id} { allow read, write: if false; }

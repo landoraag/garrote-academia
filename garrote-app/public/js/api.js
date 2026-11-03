@@ -121,7 +121,7 @@ function makeDemo() {
     const produtos = { 'pr-marmita': { nome: 'Marmita fit (frango e batata doce)', categoria: 'Marmitas', preco: 24.9, estoque: 12, estoqueMin: 4, ativo: 'sim', foto: '', descricao: '400 g, congelada' },
       'pr-energetico': { nome: 'Energético 269 ml', categoria: 'Bebidas e energéticos', preco: 9.5, estoque: 30, estoqueMin: 10, ativo: 'sim', foto: '', descricao: '' },
       'pr-camiseta': { nome: 'Camiseta Garrote', categoria: 'Roupas e acessórios', preco: 59.9, estoque: 3, estoqueMin: 5, ativo: 'sim', foto: '', descricao: 'Dry fit, tamanhos P, M e G' } };
-    return { cols: { users, modalidades, categorias, exercicios, treinos, checkins, execucoes, agendamentos, planos, pagamentos, produtos, pedidos: {}, alimentos: {}, config: { setup: { donoUid: 'u-dono' } } }, accounts, session: null };
+    return { cols: { users, modalidades, categorias, exercicios, treinos, checkins, execucoes, agendamentos, planos, pagamentos, produtos, pedidos: {}, alimentos: {}, dietas: {}, config: { setup: { donoUid: 'u-dono' } } }, accounts, session: null };
   };
   let db; try { db = JSON.parse(localStorage.getItem(KEY)); } catch {} if (!db) db = seed();
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));
