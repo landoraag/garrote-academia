@@ -16,7 +16,7 @@ async function makeFirebase() {
   const wr = p => { p.catch(e => console.error('gravação', e)); return Promise.race([p, new Promise(r => setTimeout(r, 10000))]); };
   /* cache de listas na memória (30 s): trocar de tela fica instantâneo; qualquer gravação limpa a coleção */
   const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); };
-  const CATALOGO = new Set(['users', 'modalidades', 'categorias', 'exercicios', 'treinos', 'planos']), STALE = 600000;   // só listas completas do painel; check-ins, pagamentos etc. sempre frescos
+  const CATALOGO = new Set(['users', 'modalidades', 'categorias', 'exercicios', 'treinos', 'planos', 'alimentos']), STALE = 600000;   // só listas completas do painel; check-ins, pagamentos etc. sempre frescos
   const fetchList = (k, c, filters) => {
     const e = { t: Date.now(), p: F.getDocs(F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)))).then(s => s.docs.map(withId)) };
     cache.set(k, e); e.p.catch(() => { if (cache.get(k) === e) cache.delete(k); }); return e;
@@ -49,8 +49,8 @@ async function makeFirebase() {
       await b.commit(); drop('users'); drop('config');
     },
     async get(c, id) { const s = await F.getDoc(F.doc(db, c, id)); return s.exists() ? withId(s) : null; },
-    async list(c, filters = []) {
-      const k = c + '|' + JSON.stringify(filters), hit = cache.get(k), age = hit ? Date.now() - hit.t : Infinity;
+    async list(c, filters = [], opt = {}) {   // opt.fresh: ignora o cache (usado para ver pedidos novos na hora)
+      const k = c + '|' + JSON.stringify(filters), hit = opt.fresh ? null : cache.get(k), age = hit ? Date.now() - hit.t : Infinity;
       if (hit && (age < TTL || (age < STALE && !filters.length && CATALOGO.has(c)))) {   // recente: usa; cadastro um pouco velho: usa agora e atualiza por trás
         if (age >= TTL) fetchList(k, c, filters);
         return [...await hit.p];
@@ -65,7 +65,7 @@ async function makeFirebase() {
 }
 
 function makeDemo() {
-  const KEY = 'garrote:demo:v4', clone = x => JSON.parse(JSON.stringify(x));
+  const KEY = 'garrote:demo:v5', clone = x => JSON.parse(JSON.stringify(x));
   const day = n => { const d = new Date(); d.setDate(d.getDate() - n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
   const seed = () => {
     const u = (id, nome, email, role, extra = {}) => [id, { nome, email, role, ativo: 'sim', telefone: '(19) 99999-0000', criadoEm: Date.now(), ...extra }];
@@ -118,7 +118,10 @@ function makeDemo() {
         valores: { flexao: [v(0, 15), v(0, 14), v(0, 12)], 'supino-maquina': [v(30, 12), v(30, 12), v(30, 10)], 'supino-reto': [v(40, 10), v(40, 10), v(40, 8), v(40, 8)], 'supino-inclinado': [v(16, 12), v(16, 12), v(16, 10), v(16, 10)],
           crucifixo: [v(35, 12), v(35, 12), v(35, 12)], 'triceps-corda': [v(25, 12), v(25, 12), v(25, 12), v(25, 10)], 'triceps-testa': [v(20, 10), v(20, 10), v(20, 8)], prancha: [{ seg: 30 }, { seg: 28 }, { seg: 25 }] } } };
     const agendamentos = { [`u-pedro_muay-thai_${day(4)}`]: { uid: 'u-pedro', modId: 'muay-thai', slotKey: day(4), hora: '19h', ts: Date.now() }, [`u-carla_danca_${day(-2)}`]: { uid: 'u-carla', modId: 'danca', slotKey: day(-2), hora: '18h30', ts: Date.now() } };
-    return { cols: { users, modalidades, categorias, exercicios, treinos, checkins, execucoes, agendamentos, planos, pagamentos, config: { setup: { donoUid: 'u-dono' } } }, accounts, session: null };
+    const produtos = { 'pr-marmita': { nome: 'Marmita fit (frango e batata doce)', categoria: 'Marmitas', preco: 24.9, estoque: 12, estoqueMin: 4, ativo: 'sim', foto: '', descricao: '400 g, congelada' },
+      'pr-energetico': { nome: 'Energético 269 ml', categoria: 'Bebidas e energéticos', preco: 9.5, estoque: 30, estoqueMin: 10, ativo: 'sim', foto: '', descricao: '' },
+      'pr-camiseta': { nome: 'Camiseta Garrote', categoria: 'Roupas e acessórios', preco: 59.9, estoque: 3, estoqueMin: 5, ativo: 'sim', foto: '', descricao: 'Dry fit, tamanhos P, M e G' } };
+    return { cols: { users, modalidades, categorias, exercicios, treinos, checkins, execucoes, agendamentos, planos, pagamentos, produtos, pedidos: {}, alimentos: {}, config: { setup: { donoUid: 'u-dono' } } }, accounts, session: null };
   };
   let db; try { db = JSON.parse(localStorage.getItem(KEY)); } catch {} if (!db) db = seed();
   const save = () => localStorage.setItem(KEY, JSON.stringify(db));
@@ -142,7 +145,7 @@ function makeDemo() {
     async changePassword(cur, next) { const a = db.accounts[(cur_() || {}).email]; if (!a || a.pass !== cur) throw err('auth/wrong-password'); a.pass = next; save(); },
     async setup() {},
     async get(c, id) { const d = col(c)[id]; return d ? { id, ...clone(d) } : null; },
-    async list(c, filters = []) {
+    async list(c, filters = [], opt = {}) {
       return Object.entries(col(c)).map(([id, d]) => ({ id, ...clone(d) }))
         .filter(d => filters.every(([f, o, v]) => o === '==' ? d[f] === v : o === 'array-contains' ? (d[f] || []).includes(v) : true));
     },

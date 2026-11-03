@@ -14,6 +14,16 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 - **Histórico** (em Treino): médias e evolução dos treinos passados, lista do mais recente ao mais antigo com o resumo de cada dia, busca por treino, grupo muscular ou data (ex.: peito, 12/10) e busca avançada por treino, grupo e período.
 - Faz check-in (ao iniciar um treino, o check-in do dia é feito automaticamente), vê as modalidades, agenda aula experimental e edita o próprio perfil (foto, nome e senha).
 
+**Novidades (lista de melhorias)**
+- **Cardio no treino**: se o treino tem cardio, aparece o cartão "Fazer cardio junto ao treino" (abre um cronômetro, como o da prancha) ou "Marcar como feito" com o tempo, agora ou depois. Conta no mesmo dia do treino e **nunca é obrigatório** para finalizar.
+- **Técnicas avançadas**: biset, triset, dropset, rest-pause, cluster e outras, por exercício (em todas as séries ou só na última). Biset/triset agrupam este exercício com os próximos e dispensam o descanso entre eles.
+- **Dados do treino anterior**: carga e repetições vêm primeiro do último treino feito; só sem histórico entra a recomendação do treinador.
+- **Treinador externo** (dono, menu Treinadores externos): usa o app como os internos e paga mensalidade ao João; o dono registra pagamentos e o vencimento avança um mês.
+- **Calculadora de macros** (aluno): alimento por porção ou gramas, com "Minha refeição". Valores médios aproximados; o dono/treinador cadastra os próprios em **Alimentos**, que valem no lugar do padrão.
+- **Professores das modalidades**: cada modalidade lista professores, dias e horários, e a tela do aluno mostra quem dá aula em cada horário.
+- **Sem zoom**: pinça e toque duplo bloqueados (viewport, eventos de gesto e `touch-action`).
+- **Vitrine de produtos**: o aluno monta o pedido (pagamento na retirada); o painel do dono avisa na hora (som, vibração e título; consulta a cada 20 s) para a recepção separar. O dono cadastra produtos e estoque (baixa ao marcar "separado"), vê pedidos e faturamento.
+
 **Treinador**
 - Painel com visão geral, alunos, treinos, exercícios e categorias.
 - Categorias com subcategorias (ex.: Peito > Peito superior, Peito medial, Peito inferior), com botões separados para criar cada uma; a lista mostra as categorias fechadas e abre as subcategorias ao tocar.
@@ -62,6 +72,9 @@ garrote-app/
       painel.js          painel do dono e do treinador
       perfil.js          tela de perfil
       plano.js           planos, descontos, parcelas e pagamentos
+      loja.js            vitrine de produtos, pedidos e aviso para a recepção
+      nutri.js           calculadora de macros
+      semzoom.js         bloqueio de zoom por gestos
       notif.js           avisos do treino (fim do descanso, treino em andamento)
       firebase-config.js configuração do seu projeto Firebase
   email/

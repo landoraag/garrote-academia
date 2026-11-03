@@ -21,7 +21,7 @@
   else if(instalado||/[?&](mode|oobCode)=/.test(q))location.replace('/login'+q);
 })();
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Garrote Academia</title>
 <meta name="description" content="Garrote Academia, Piraju-SP. Equipamentos Cimerian, musculação, boxe e dança num só lugar.">
 <meta name="theme-color" content="#0B0B0C">
@@ -518,6 +518,8 @@ footer{border-top:1px solid var(--line);background:linear-gradient(180deg,var(--
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;background:#fff;color:#0C0C0C;font:600 14px var(--body);padding:12px 18px;border-radius:999px;transition:all .3s var(--ease);z-index:70;pointer-events:none;max-width:calc(100% - 32px)}
 .toast.on{opacity:1;transform:translate(-50%,0)}
 </style>
+<style>html,body{touch-action:pan-x pan-y;-webkit-text-size-adjust:100%}</style>
+<script>(function(){['gesturestart','gesturechange','gestureend'].forEach(function(t){document.addEventListener(t,function(e){e.preventDefault()},{passive:false})});document.addEventListener('touchmove',function(e){if(e.touches&&e.touches.length>1)e.preventDefault()},{passive:false});})();</script>
 </head>
 <body>
 <div id="splash" aria-hidden="true"><img src="site/assets/logo.png" alt=""></div>

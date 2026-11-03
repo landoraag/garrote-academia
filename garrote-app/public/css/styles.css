@@ -767,3 +767,81 @@ body.loading::before{opacity:1;animation:loadbar 1.4s var(--ease) infinite}
 .psr input{height:46px;border:1px solid var(--line);border-radius:14px;background:var(--bg);padding:0 14px;font:500 16px var(--b);width:100%}
 .psr input:focus{border-color:var(--red);outline:0;box-shadow:0 0 0 3px rgba(217,30,38,.15)}
 .tools .btn{white-space:nowrap}
+
+/* ===== sem zoom (pinça e toque duplo) ===== */
+html,body{touch-action:pan-x pan-y}
+
+/* ===== técnicas avançadas no formulário do treino ===== */
+.items .irow .ibody{flex-wrap:wrap}
+.irow .itec{flex:1 1 100%;grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 2fr;gap:8px;align-items:end;padding-top:10px;border-top:1px dashed var(--line)}
+.irow .itec .ii{display:block;min-width:0}.irow .itec .ii span{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+.irow .itec .gnote{display:none;grid-column:1/-1;margin:0;font:500 12px var(--b);color:var(--muted)}
+.irow .itec.grp .gnote{display:block}.irow .itec.grp .tecs,.irow .itec.off .tecs,.irow .itec.off .tecn,.irow .itec.off .gnote{display:none}
+@media (max-width:700px){.irow .itec{grid-template-columns:1fr 1fr}.irow .itec .tecn{grid-column:1/-1}}
+
+/* ===== cardio no formulário do treino ===== */
+.cardio-f .chk{margin:6px 0}
+.cardio-body{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}.cardio-body[hidden]{display:none!important}
+.cardio-body .ii span{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+.cardio-body select,.cardio-body input{height:42px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:0 10px;font:500 14px var(--b);width:100%;min-width:0}
+
+/* ===== professores da modalidade (formulário e tela do aluno) ===== */
+.profs{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.prow{display:flex;flex-direction:column;gap:10px;padding:12px;border:1px solid var(--line);border-radius:16px;background:var(--bg)}.prow.new{animation:rowin .5s var(--ease)}
+.prow .ii{display:block;min-width:0}.prow .ii span,.prow legend{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+.prow input:not([type=checkbox]),.prow textarea{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);font:500 14px var(--b);min-width:0}
+.prow input:not([type=checkbox]){height:42px;padding:0 10px}.prow textarea{padding:10px}.prow fieldset{border:0;padding:0;margin:0}
+.prh{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}.prt{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pdel{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--line);color:var(--muted)}
+.profl{display:flex;flex-direction:column;gap:10px}.profc{display:flex;gap:12px;background:var(--card);border-radius:18px;padding:12px;box-shadow:var(--shadow)}
+.profimg{width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none}.profx{min-width:0}.profx b{display:block;font:700 16px var(--b)}
+.profx small{display:block;font:500 12px var(--b);color:var(--muted);margin-top:2px}.profx p{margin:6px 0 0;font:400 13.5px/1.45 var(--b)}
+
+/* ===== treino do aluno: cardio, técnica avançada e dados do último treino ===== */
+.tag.tec{background:rgba(255,184,0,.16);color:#FFC24A}
+.cardio{display:flex;flex-direction:column;gap:12px;background:var(--s1);border:1.5px solid var(--s3);border-radius:20px;padding:14px 16px}.cardio.ok{border-color:rgba(31,138,76,.7)}
+.cardio-h{display:flex;gap:12px;align-items:center}.cardio-h svg{flex:none}.cardio-h small{display:block;font:600 10px var(--b);letter-spacing:1.5px;color:var(--dim)}
+.cardio-h b{display:block;font:600 15px var(--b)}.cardio-h em{display:block;font:400 12px var(--b);color:var(--dim);font-style:normal;margin-top:2px}
+.cardio-b{display:flex;flex-direction:column;gap:8px}
+.prevnote{display:flex;gap:8px;align-items:flex-start;margin:0;padding:10px 12px;border-radius:14px;background:var(--s1);font:400 12.5px/1.4 var(--b);color:var(--dim)}.prevnote svg{flex:none;margin-top:2px}
+.tecbox{background:rgba(255,184,0,.09);border:1px solid rgba(255,184,0,.3);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tecbox .tag{margin-left:0;background:rgba(255,184,0,.2);color:#FFC24A}.tech{display:flex;align-items:center;gap:8px}.tech small{font:500 12px var(--b);color:var(--dim)}
+.tecbox p{margin:0;font:400 13.5px/1.45 var(--b)}.tecbox .tnota{color:#FFC24A;font-weight:600}
+.tecgo{display:flex;flex-direction:column;gap:6px;margin-top:4px}.tecgo a{display:block;padding:10px 12px;border-radius:12px;background:var(--s2);font:600 13px var(--b)}
+.set.tec{box-shadow:inset 3px 0 0 #FFC24A}
+
+/* ===== vitrine de produtos ===== */
+.vit-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}.vit-chips .chip{flex:none}
+.vit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}@media (min-width:760px){.vit-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.vit-card{background:var(--card);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}.vit-card.out{opacity:.55}
+.vit-img{aspect-ratio:4/3;background:var(--line) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.vit-info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}.vit-info b{font:700 14px/1.25 var(--b)}.vit-info small{font:400 12px/1.3 var(--b);color:var(--muted)}
+.vit-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:6px}.vit-pr{font:700 17px var(--d)}
+.vit-out{font:600 12px var(--b);color:var(--muted)}.vit-info .vit-low{color:var(--red);font-weight:600}
+.stp{display:flex;align-items:center;gap:4px;background:var(--bg);border-radius:99px;padding:3px}
+.stp button{width:32px;height:32px;border-radius:50%;background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.12);font:700 18px var(--b);line-height:1}.stp b{min-width:18px;text-align:center;font:700 14px var(--b)}
+.cartbar{flex:none;margin:0 16px 8px;height:54px;border-radius:18px;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font:700 15px var(--b);box-shadow:0 12px 24px rgba(217,30,38,.32)}
+.cartbar[hidden]{display:none}.cartbar span{display:flex;align-items:center;gap:8px}
+.vit-peds{display:flex;flex-direction:column;gap:8px}.vit-ped{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border-radius:16px;padding:12px 14px}
+.vit-ped>div{flex:1;min-width:140px}.vit-ped b{display:block;font:600 14px/1.3 var(--b)}.vit-ped small{font:400 12px var(--b);color:var(--muted)}
+.vit-sum .vs{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);font:500 14px var(--b)}.vit-sum .vs.tot{border:0;font:700 16px var(--b)}
+.pedpop{display:flex;flex-direction:column;gap:10px;max-height:50vh;overflow:auto}.pedc{background:var(--bg);border-radius:14px;padding:12px}
+.pedh{display:flex;justify-content:space-between;gap:8px}.pedh b{font:700 16px var(--b)}.pedh small{color:var(--muted)}
+.pedc ul{margin:8px 0;padding:0;list-style:none;font:500 14px var(--b)}.pedt{margin:0;font:700 14px var(--b)}
+
+/* ===== calculadora de macros ===== */
+.nut-q{display:flex;align-items:center;gap:8px}
+.nut-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+.nut-it{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:10px 14px;border-radius:14px;background:var(--card);border:1.5px solid transparent}
+.nut-it.on{border-color:var(--red)}.nut-it b{font:600 14px var(--b)}.nut-it small{font:400 12px var(--b);color:var(--muted)}
+.nut-calc{display:flex;flex-direction:column;gap:12px}.nut-calc[hidden],#nref[hidden]{display:none}
+.nut-hd b{display:block;font:700 18px var(--b)}.nut-hd small{font:400 13px var(--b);color:var(--muted)}
+.nut-in{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.nut-modo{display:flex;background:var(--bg);border-radius:99px;padding:3px}.nut-modo button{padding:8px 14px;border-radius:99px;font:600 13px var(--b);color:var(--muted)}.nut-modo button.on{background:var(--red);color:#fff}
+.nut-qtd{flex:1;min-width:120px;display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:14px;padding:0 14px;height:46px}
+.nut-qtd input{flex:1;min-width:0;background:transparent;border:0;font:700 18px var(--b);height:100%}.nut-qtd em{font:500 13px var(--b);color:var(--muted);font-style:normal}
+.nut-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.nut-tiles>div{background:var(--bg);border-radius:14px;padding:10px 12px}
+.nut-tiles .nt-k{grid-column:1/-1;background:var(--solid);color:#fff}.nut-tiles small{display:block;font:600 11px var(--b);color:var(--muted)}.nut-tiles .nt-k small{color:rgba(255,255,255,.7)}
+.nut-tiles b{font:700 22px var(--d)}.nut-tiles b span{font:500 12px var(--b);color:var(--muted)}.nut-tiles .nt-k b span{color:rgba(255,255,255,.7)}
+.nut-r{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.nut-r>div{flex:1;min-width:0}.nut-r b{display:block;font:600 14px var(--b)}.nut-r small{font:400 12px var(--b);color:var(--muted)}
+.nut-x{width:34px;height:34px;background:var(--bg);color:var(--muted)}#ntot{margin-top:12px}

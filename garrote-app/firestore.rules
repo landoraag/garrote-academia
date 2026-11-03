@@ -19,6 +19,21 @@ service cloud.firestore {
       allow write: if isOwner();
     }
 
+    // Vitrine de produtos: o dono cadastra; o aluno vê os produtos, faz o pedido e pode cancelar o próprio pedido enquanto ele é novo.
+    // O estoque só baixa quando o dono separa o pedido (o aluno nunca altera o estoque).
+    match /produtos/{id} { allow read: if hasProfile(); allow write: if isOwner(); }
+    match /pedidos/{id} {
+      allow read: if isOwner() || (hasProfile() && resource.data.uid == request.auth.uid);
+      allow create: if hasProfile() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'novo';
+      allow update: if isOwner()
+                    || (hasProfile() && resource.data.uid == request.auth.uid && resource.data.status == 'novo'
+                        && request.resource.data.status == 'cancelado' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']));
+      allow delete: if isOwner();
+    }
+
+    // Calculadora de macros: alimentos cadastrados pela academia (valem no lugar da lista padrão do app)
+    match /alimentos/{id} { allow read: if hasProfile(); allow write: if isStaff(); }
+
     // Cobranças do Mercado Pago: só o servidor de pagamentos (conta de serviço) lê e grava.
     match /cobrancas/{id} { allow read, write: if false; }
     match /pixAbertos/{id} { allow read, write: if false; }

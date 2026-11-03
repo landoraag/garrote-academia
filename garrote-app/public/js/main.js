@@ -2,6 +2,9 @@
 import { api, mode } from './api.js';
 import * as A from './aluno.js';
 import { painel } from './painel.js';
+import { loja } from './loja.js';
+import { macros } from './nutri.js';
+import './semzoom.js';
 import { privacidade, termos, avisoPrivacidade, linksLegais } from './legal.js';
 import { freioLogin, freioReset, ehCredencialErrada } from './freio.js';
 import { $, $$, esc, toast, ic, logo, SESSION, go, rota, friendly, fail, reduce, dkey, pwEyes } from './ui.js';
@@ -99,7 +102,7 @@ const SCREENS = {
     return { depth: 0, dark: true, html: `<div class="login-top">${logo(52)}</div><div class="sheet"><h1 class="h1">Acesso ainda não liberado</h1><p class="muted" style="font-size:15px;line-height:1.5">Seu e-mail entrou, mas ainda não tem um perfil na academia. Peça para o dono ou seu professor liberar o seu acesso.</p><button class="btn dark" id="out">Sair</button></div>`, after(el) { $('#out', el).onclick = () => api.logout(); } };
   },
   privacidade, termos,
-  home: A.home, treinos: A.treinos, treino: A.treino, exercicio: A.exercicio, resumo: A.resumo, modalidades: A.modalidades, modalidade: A.modalidade, perfil: A.perfil, painel
+  home: A.home, treinos: A.treinos, treino: A.treino, exercicio: A.exercicio, resumo: A.resumo, modalidades: A.modalidades, modalidade: A.modalidade, perfil: A.perfil, cardio: A.cardio, loja, macros, painel
 };
 
 /* ---------- chegada: os itens da primeira tela entram em sequência ----------

@@ -1,6 +1,7 @@
 /* Painel do dono e do treinador (tela larga). Cadastros genéricos guiados por "schema". */
 import { api, mode } from './api.js';
-import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora } from './ui.js';
+import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora, TECNICAS, segTxt } from './ui.js';
+import { produtosSchema, pedidosHTML, bindPedidos, iniciarAvisoPedidos } from './loja.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
 
@@ -11,14 +12,17 @@ const byName = (a, b) => String(a.nome || '').localeCompare(String(b.nome || '')
 const genPass = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)]; return s; };
 /* Dono: pessoas, modalidades e financeiro. Treinador: alunos, treinos, exercícios e categorias. */
 const MENU = {
-  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro']],
-  treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias']]
+  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['externos', 'Treinadores externos'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['produtos', 'Produtos'], ['pedidos', 'Pedidos'], ['alimentos', 'Alimentos']],
+  treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['alimentos', 'Alimentos']]
 };
 /* atalhos fixos na parte de baixo do celular (5 ícones, o do meio é sempre a visão geral) */
 const BNAV = {
   dono: [['treinadores', 'i-treinador', 'Treinadores'], ['alunos', 'i-alunos', 'Alunos'], ['visao', 'i-visao', 'Visão geral'], ['planos', 'i-planos', 'Planos'], ['financeiro', 'i-cifrao', 'Financeiro']],
   treinador: [['alunos', 'i-alunos', 'Meus alunos'], ['treinos', 'db', 'Treinos'], ['visao', 'i-visao', 'Visão geral'], ['exercicios', 'bolt', 'Exercícios'], ['categorias', 'tag', 'Categorias']]
 };
+const CARDIOS = ['Esteira', 'Bicicleta', 'Elíptico', 'Corda', 'Escada', 'Remo', 'Caminhada', 'Outro'];
+/* treinador externo: paga uma mensalidade à academia; [classe, texto] */
+const situExt = t => t.ativo === 'nao' ? ['inativo', 'Inativo'] : !(+t.mensalidade > 0) ? ['semplano', 'Sem mensalidade'] : !t.vencimento ? ['pendente', 'Pendente'] : t.vencimento < dkey(new Date()) ? ['atrasado', 'Em atraso'] : ['emdia', 'Em dia'];
 const eff = () => SESSION.me.role === 'treinador' ? { mode: 'treinador', tid: SESSION.user.uid } : { mode: 'dono', tid: null };
 
 async function load(tab) {
@@ -27,13 +31,16 @@ async function load(tab) {
   const D = { users: users.sort(byName), modalidades: modalidades.sort(byName), categorias: categorias.sort(byName), exercicios: exercicios.sort(byName), treinos: treinos.sort(byName) };
   D.planos = SESSION.me.role === 'dono' ? (await api.list('planos')).sort(byName) : [];
   if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos');
+  if (tab === 'alimentos') D.alimentos = (await api.list('alimentos')).sort(byName);
+  if (tab === 'produtos' || tab === 'pedidos') D.produtos = (await api.list('produtos')).sort(byName);
+  if (tab === 'pedidos') D.pedidos = (await api.list('pedidos', [], { fresh: true })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   if (tab === 'visao') [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', dkey(new Date())]]), api.list('agendamentos')]);
   return D;
 }
 
 /* ---------- definição de cada cadastro ---------- */
 function schema(tab, D, E) {
-  const trs = D.users.filter(u => u.role === 'treinador'), als = D.users.filter(u => u.role === 'aluno' && (!E.tid || u.treinadorId === E.tid));
+  const trsAll = D.users.filter(u => u.role === 'treinador'), trs = trsAll.filter(u => !u.externo), exts = trsAll.filter(u => u.externo), als = D.users.filter(u => u.role === 'aluno' && (!E.tid || u.treinadorId === E.tid));
   const mods = D.modalidades.map(m => [m.id, m.nome]), T = catTree(D.categorias);
   const exDe = c => D.exercicios.filter(e => T.isSub(c) ? e.categoriaId === c.id : T.top(e.categoriaId) === c.id).length;
   const planoOpts = (D.planos || []).map(p => [p.id, `${p.nome} · ${brl(precoFinal(p))}${nParc(p) > 1 ? ` (${parcTxt(p)})` : ''}`]), planoDe = id => (D.planos || []).find(p => p.id === id);
@@ -46,15 +53,20 @@ function schema(tab, D, E) {
     treinadores: { col: 'users', title: 'Treinadores', one: 'treinador', user: 'treinador', rows: trs,
       fields: [pessoa, ...acesso, { k: 'telefone', l: 'Telefone', type: 'tel', ph: '(19) 90000-0000' }, { k: 'ativo', l: 'Situação', type: 'select', opts: () => ATIVO, def: () => 'sim' }],
       cols: [['Nome', r => r.nome], ['E-mail', r => r.email], ['Telefone', r => r.telefone || '—'], ['Alunos', r => D.users.filter(u => u.treinadorId === r.id).length], ['Situação', r => r.ativo === 'nao' ? 'Inativo' : 'Ativo']] },
+    externos: { col: 'users', title: 'Treinadores externos', one: 'treinador externo', user: 'treinador', externo: 1, rows: exts, pay: 1,
+      fields: [pessoa, ...acesso, { k: 'telefone', l: 'Telefone', type: 'tel', ph: '(19) 90000-0000' },
+        { k: 'mensalidade', l: 'Mensalidade paga à academia (R$)', type: 'money', req: 1, ph: 'Ex.: 150,00' }, { k: 'vencimento', l: 'Próximo vencimento', type: 'date' },
+        { k: 'ativo', l: 'Situação', type: 'select', opts: () => ATIVO, def: () => 'sim' }],
+      cols: [['Nome', r => r.nome], ['E-mail', r => r.email], ['Alunos', r => D.users.filter(u => u.treinadorId === r.id).length], ['Mensalidade', r => brl(+r.mensalidade || 0)], ['Vencimento', r => ptDate(r.vencimento)], ['Situação', r => situExt(r)[1]]] },
     alunos: { col: 'users', title: E.tid ? 'Meus alunos' : 'Alunos', one: 'aluno', user: 'aluno', rows: als,
       fields: [pessoa, ...acesso, { k: 'telefone', l: 'Telefone', type: 'tel', ph: '(19) 90000-0000' },
-        { k: 'treinadorId', l: 'Treinador responsável', type: 'select', req: 1, opts: () => trs.map(t => [t.id, t.nome]), hide: !!E.tid },
+        { k: 'treinadorId', l: 'Treinador responsável', type: 'select', req: 1, opts: () => trsAll.map(t => [t.id, t.nome + (t.externo ? ' (externo)' : '')]), hide: !!E.tid },
         { k: 'modalidades', l: 'Modalidades', type: 'multi', opts: () => mods },
         { k: 'planoId', l: 'Plano', type: 'select', blank: 1, opts: () => planoOpts, hide: !!E.tid },
         { k: 'familiaId', l: 'Grupo familiar (só plano família)', ph: 'Ex.: Família Lima', hide: !!E.tid },
         { k: 'vencimento', l: 'Próximo vencimento', type: 'date', hide: !!E.tid },
         { k: 'ativo', l: 'Situação', type: 'select', opts: () => ATIVO, def: () => 'sim' }],
-      cols: [['Nome', r => r.nome], ['E-mail', r => r.email], ['Treinador', r => nm(trs, r.treinadorId)], ['Modalidades', r => (r.modalidades || []).map(id => nm(D.modalidades, id)).join(', ') || '—'],
+      cols: [['Nome', r => r.nome], ['E-mail', r => r.email], ['Treinador', r => nm(trsAll, r.treinadorId)], ['Modalidades', r => (r.modalidades || []).map(id => nm(D.modalidades, id)).join(', ') || '—'],
         ...(E.tid ? [['Situação', r => r.ativo === 'nao' ? 'Inativo' : 'Ativo']] : [['Plano', r => (planoDe(r.planoId) || {}).nome || '—'], ['Pagamento', r => situ(r, planoDe(r.planoId))[1]]])] },
     modalidades: { col: 'modalidades', title: 'Modalidades', one: 'modalidade', rows: D.modalidades,
       fields: [{ k: 'nome', l: 'Nome', req: 1, ph: 'Ex.: Muay Thai' }, { k: 'icone', l: 'Ícone', type: 'select', opts: () => ICONES, def: () => 'db' },
@@ -62,7 +74,8 @@ function schema(tab, D, E) {
           get: r => r.profIds || trs.filter(t => r.prof && semAc(r.prof).includes(semAc(firstName(t.nome)))).map(t => t.id) },   // cadastro antigo (texto): marca quem tem o nome lá
         { k: 'dias', l: 'Dias da semana', type: 'days', req: 1, full: 1 }, { k: 'ini', l: 'Início', type: 'time', req: 1 }, { k: 'fim', l: 'Fim', type: 'time' }, { k: 'duracao', l: 'Duração', ph: '60 min' },
         { k: 'vagas', l: 'Vagas (texto)', ph: '6 vagas' }, { k: 'nivel', l: 'Nível', def: () => 'Todos os níveis' },
-        { k: 'descricao', l: 'Descrição', type: 'textarea', full: 1 }, { k: 'foto', l: 'Foto (link da imagem)', type: 'url', full: 1, ph: 'https://...' }, { k: 'video', l: 'Vídeo (link do YouTube ou .mp4)', type: 'url', full: 1, ph: 'https://...' }],
+        { k: 'descricao', l: 'Descrição', type: 'textarea', full: 1 }, { k: 'professores', l: 'Professores e horários (aparecem para o aluno)', type: 'profs', full: 1, names: () => trs.map(t => t.nome) },
+        { k: 'foto', l: 'Foto (link da imagem)', type: 'url', full: 1, ph: 'https://...' }, { k: 'video', l: 'Vídeo (link do YouTube ou .mp4)', type: 'url', full: 1, ph: 'https://...' }],
       /* vários treinadores por modalidade: o nome deles também fica gravado em "prof" (o aluno lê só a modalidade) */
       before: d => ({ ...d, prof: d.profIds.map(id => nm(trs, id)).filter(n => n !== '—').join(', ') }),
       cols: [['Nome', r => r.nome], ['Treinadores', profsDe], ['Dias', dias], ['Horário', r => `${fmtHora(r.ini)}${r.fim ? ' – ' + fmtHora(r.fim) : ''}`]] },
@@ -104,12 +117,19 @@ function schema(tab, D, E) {
         { k: 'equip', l: 'Equipamento', ph: 'Barra' }, { k: 'video', l: 'Vídeo de como fazer (link do YouTube ou .mp4)', type: 'url', full: 1, ph: 'https://...' }, { k: 'descricao', l: 'Observações', type: 'textarea', full: 1 }],
       catFilter: 1,
       cols: [['Nome', r => r.nome], ['Categoria', r => T.nome(T.top(r.categoriaId)) || '—'], ['Subcategoria', r => T.nome(T.sub(r.categoriaId)) || '—'], ['Equipamento', r => r.equip || '—'], ['Vídeo', r => r.video ? 'Sim' : 'Não']] },
+    alimentos: { col: 'alimentos', title: 'Alimentos', one: 'alimento', rows: D.alimentos || [],
+      fields: [{ k: 'nome', l: 'Nome do alimento', req: 1, full: 1, ph: 'Ex.: Pão francês' }, { k: 'porcao', l: 'Porção (como o aluno vai ver)', req: 1, full: 1, ph: 'Ex.: 1 unidade (50 g)' },
+        { k: 'g', l: 'Peso da porção (g)', type: 'money', req: 1, ph: '50' }, { k: 'kcal', l: 'Calorias (kcal)', type: 'money', req: 1, ph: '150' },
+        { k: 'carb', l: 'Carboidratos (g)', type: 'money', ph: '29' }, { k: 'prot', l: 'Proteínas (g)', type: 'money', ph: '4' }, { k: 'gord', l: 'Gorduras (g)', type: 'money', ph: '1,5' },
+        { k: '_dica', type: 'hint', txt: 'Os valores são da porção inteira. Alimento com o mesmo nome de um da lista padrão substitui o padrão na calculadora do aluno.' }],
+      cols: [['Nome', r => r.nome], ['Porção', r => r.porcao], ['Calorias', r => (+r.kcal || 0) + ' kcal'], ['Carboidratos', r => (+r.carb || 0) + ' g'], ['Proteínas', r => (+r.prot || 0) + ' g'], ['Gorduras', r => (+r.gord || 0) + ' g']] },
+    produtos: produtosSchema(D, { ATIVO }),
     treinos: { col: 'treinos', title: 'Treinos', one: 'treino', rows: D.treinos.filter(t => !E.tid || t.criadoPor === E.tid), wide: 1,
       fields: [{ k: 'nome', l: 'Nome do treino', req: 1, full: 1, ph: 'Ex.: Peito e Tríceps' }, { k: 'modalidadeId', l: 'Modalidade', type: 'select', blank: 1, full: 1, opts: () => mods },
         { k: 'dias', l: 'Dias da semana', type: 'days', full: 1 }, { k: 'alunoIds', l: 'Alunos que fazem este treino', type: 'multi', opts: () => als.map(a => [a.id, a.nome]) },
-        { k: 'itens', l: 'Exercícios do treino', type: 'items', req: 1 }],
+        { k: 'cardio', l: 'Cardio do treino (opcional)', type: 'cardio', full: 1 }, { k: 'itens', l: 'Exercícios do treino', type: 'items', req: 1 }],
       cols: [['Nome', r => r.nome], ['Alunos', r => (r.alunoIds || []).map(id => nm(D.users, id).split(' ')[0]).join(', ') || '—'], ['Exercícios', r => (r.itens || []).length], ['Dias', dias]],
-      extra: r => [['Lista de exercícios', (r.itens || []).map((i, n) => `${n + 1}. ${nm(D.exercicios, i.exId)} · ${itemTxt(i)} · ${i.descanso}s de descanso`).join('\n') || '—']] }
+      extra: r => [...(r.cardio && r.cardio.min ? [['Cardio', `${r.cardio.nome || 'Cardio'} · meta ${r.cardio.min} min (opcional para o aluno)`]] : []), ['Lista de exercícios', (r.itens || []).map((i, n) => `${n + 1}. ${nm(D.exercicios, i.exId)} · ${itemTxt(i)} · ${i.descanso}s de descanso`).join('\n') || '—']] }
   };
   return S[tab];
 }
@@ -142,7 +162,8 @@ const exsel = (D, it) => { const T = catTree(D.categorias), e = D.exercicios.fin
 /* cada exercício fica fechado (categoria, exercício e botões); o botão de detalhes abre séries, carga e descanso, e só um fica aberto por vez */
 const isum = r => { const tm = $('[name=un]', r).value === 's', s = +$('[name=series]', r).value || 1, v = +$('[name=val]', r).value || 0, d = +$('[name=desc]', r).value || 0;
   const reps = r.classList.contains('ps') ? getSets(r).join('/') + (tm ? ' s' : '') : tm ? v + 's' : (+$('[name=reps]', r).value || 1);
-  return `${s} × ${reps}${tm ? '' : ' · ' + (v ? v.toLocaleString('pt-BR') + ' kg' : 'Corpo')} · ${d}s descanso`; };
+  const tc = $('[name=tec]', r), tn = tc && tc.value && TECNICAS[tc.value] ? ' · ' + TECNICAS[tc.value][0] : '';
+  return `${s} × ${reps}${tm ? '' : ' · ' + (v ? v.toLocaleString('pt-BR') + ' kg' : 'Corpo')} · ${d}s descanso${tn}`; };
 const irow = (D, it = {}, open = false) => { const tm = isTempo(it), ps = it.sets && it.sets.length, n = Math.max(1, Math.min(12, it.series ?? 3));
   const sets = ps ? Array.from({ length: n }, (_, k) => tm ? segAlvo(it, k) : (it.sets[k] && it.sets[k].reps) || it.reps || 10) : [];
   return `<div class="irow${ps ? ' ps' : ''}${tm ? ' tm' : ''}${open ? ' open' : ''}" data-sets='${JSON.stringify(sets)}'><div class="itop">${exsel(D, it)}
@@ -150,12 +171,33 @@ const irow = (D, it = {}, open = false) => { const tm = isTempo(it), ps = it.set
   <div class="ibody"><label class="ii"><span>Medida</span><select name="un" aria-label="Medida"><option value="kg">Carga (kg)</option><option value="s" ${tm ? 'selected' : ''}>Tempo (segundos)</option></select></label>
   <label class="ii"><span>Séries</span><input name="series" type="number" min="1" max="12" value="${n}" aria-label="Séries"></label><label class="ii rp"><span>Repetições</span><input name="reps" type="number" min="1" max="100" value="${it.reps ?? 10}" aria-label="Repetições"></label>
   <label class="ii"><span class="vl">${tm ? 'Tempo (s)' : 'Carga (kg)'}</span><input name="val" type="number" min="0" step="${tm ? 5 : 0.5}" value="${tm ? it.seg ?? 30 : it.kg ?? 0}" aria-label="Carga ou tempo"></label><label class="ii"><span>Descanso (s)</span><input name="desc" type="number" min="0" step="5" value="${it.descanso ?? 60}" aria-label="Descanso em segundos"></label>
-  <div class="ii psw"><span>Cada série</span><button type="button" class="psbtn${ps ? ' on' : ''}" data-ps aria-pressed="${!!ps}">Personalizar séries</button></div></div></div>`; };
+  <div class="ii psw"><span>Cada série</span><button type="button" class="psbtn${ps ? ' on' : ''}" data-ps aria-pressed="${!!ps}">Personalizar séries</button></div>
+  <div class="itec${it.tec ? '' : ' off'}${it.tec === 'biset' || it.tec === 'triset' ? ' grp' : ''}"><label class="ii"><span>Técnica avançada</span><select name="tec" aria-label="Técnica avançada"><option value="">Normal</option>${Object.entries(TECNICAS).map(([k, [n]]) => `<option value="${k}" ${it.tec === k ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+  <label class="ii tecs"><span>Em quais séries</span><select name="tecs" aria-label="Em quais séries"><option value="todas">Todas as séries</option><option value="ultima" ${it.tecSeries === 'ultima' ? 'selected' : ''}>Só na última série</option></select></label>
+  <label class="ii tecn"><span>Orientação para o aluno (opcional)</span><input name="tecn" type="text" maxlength="140" value="${esc(it.tecNota || '')}" placeholder="Ex.: 2 reduções de 20% da carga"></label>
+  <p class="gnote">Biset junta este exercício com o próximo da lista; triset, com os dois próximos. O aluno descansa só depois do grupo.</p></div></div></div>`; };
+const prow = (p = {}) => `<div class="prow"><div class="prh"><label class="ii"><span>Nome do professor</span><input name="pn" list="dlprofs" value="${esc(p.nome || '')}" placeholder="Ex.: Camila" autocomplete="off"></label>
+  <button type="button" class="pdel" data-rmprof aria-label="Remover professor">${ic('close', 18, 'currentColor', 2.4)}</button></div>
+  <fieldset class="multi"><legend>Dias em que dá aula</legend><div class="checks">${[1, 2, 3, 4, 5, 6, 7].map(n => `<label class="chk day"><input type="checkbox" name="pd" value="${n}" ${(p.dias || []).includes(n) ? 'checked' : ''}><span>${DIAS[n]}</span></label>`).join('')}</div></fieldset>
+  <div class="prt"><label class="ii"><span>Início</span><input name="pi" type="time" step="300" value="${esc(fmtHora(p.ini))}"></label><label class="ii"><span>Fim</span><input name="pf" type="time" step="300" value="${esc(fmtHora(p.fim))}"></label></div>
+  <label class="ii"><span>Sobre o professor</span><textarea name="ps" rows="3" maxlength="400" placeholder="Formação, experiência, estilo de aula...">${esc(p.sobre || '')}</textarea></label>
+  <label class="ii"><span>Foto (link da imagem, opcional)</span><input name="pfoto" type="url" value="${esc(p.foto || '')}" placeholder="https://..."></label></div>`;
+function bindProfs(form) {
+  const box = $('.profs', form); if (!box) return;
+  $('[data-addprof]', form).onclick = () => { box.insertAdjacentHTML('beforeend', prow()); const r = box.lastElementChild; r.classList.add('new'); $('[name=pn]', r).focus(); };
+  box.onclick = e => { const b = e.target.closest('[data-rmprof]'); if (b) b.closest('.prow').remove(); };
+}
 function fieldHTML(f, v, D) {
   const cls = `field ${f.full ? 'full' : ''}`;
   if (f.type === 'select') return `<label class="${cls}">${f.l}<select name="${f.k}">${f.blank ? `<option value="">${esc(f.blankL || 'Nenhuma')}</option>` : ''}${f.opts().map(([o, l]) => `<option value="${esc(o)}" ${String(o) === String(v) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>`;
   if (f.type === 'catsel') { const T = catTree(D.categorias), op = (id, l) => `<option value="${esc(id)}" ${id === v ? 'selected' : ''}>${esc(l)}</option>`;
     return `<label class="${cls}">${f.l}<select name="${f.k}"><option value="">Escolha</option>${T.tops.map(t => `<optgroup label="${esc(t.nome)}">${op(t.id, t.nome + ' (geral)')}${T.subs(t.id).map(s => op(s.id, s.nome)).join('')}</optgroup>`).join('')}</select>${T.tops.length ? '' : '<small class="muted">Cadastre as categorias antes, em Categorias.</small>'}</label>`; }
+  if (f.type === 'cardio') { const c = v || {}, on = !!c.min;
+    return `<div class="field full cardio-f"><span>${f.l}</span><label class="chk"><input type="checkbox" name="cardioOn" ${on ? 'checked' : ''}><span>Este treino tem cardio (o aluno escolhe se faz, não é obrigatório)</span></label>
+      <div class="cardio-body" ${on ? '' : 'hidden'}><label class="ii"><span>Tipo</span><select name="cardioTipo">${CARDIOS.map(t => `<option ${t === c.nome ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
+      <label class="ii"><span>Meta (minutos)</span><input name="cardioMin" type="number" min="1" max="240" value="${c.min || 20}"></label></div></div>`; }
+  if (f.type === 'profs') return `<div class="field full"><span>${f.l}</span><div class="profs">${(v || []).map(prow).join('')}</div><button type="button" class="btn ghost" data-addprof style="height:44px">+ Adicionar professor</button>
+    <datalist id="dlprofs">${(f.names ? f.names() : []).map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>`;
   if (f.type === 'calc') return `<p class="note full calc" data-calc aria-live="polite"></p>`;
   if (f.type === 'hint') return `<p class="muted full" style="font-size:13px;margin:-4px 0 0">${esc(f.txt)}</p>`;
   if (f.type === 'multi') { const o = f.opts(); return `<fieldset class="${cls} multi"><legend>${f.l}</legend>${o.length ? `<div class="checks">${o.map(([id, l]) => `<label class="chk"><input type="checkbox" name="${f.k}" value="${esc(id)}" ${(v || []).includes(id) ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</div>` : '<p class="muted" style="font-size:13px;margin:0">Nada cadastrado ainda.</p>'}</fieldset>`; }
@@ -174,9 +216,15 @@ function collect(form, sc, isNew, D) {
     else if (f.type === 'items') out[f.k] = $$('.irow', form).map((r, n) => {
       const exId = $('[name=ex]', r).value; if (!exId) fail(`Escolha o exercício da linha ${n + 1}.`);
       const tm = $('[name=un]', r).value === 's', val = Math.max(0, +$('[name=val]', r).value || 0);
+      const tec = $('[name=tec]', r).value, nota = ($('[name=tecn]', r).value || '').trim().slice(0, 140), grp = tec === 'biset' || tec === 'triset';
       return itemOut(r, { exId, series: Math.max(1, +$('[name=series]', r).value || 1), reps: tm ? 1 : Math.max(1, +$('[name=reps]', r).value || 1), kg: tm ? 0 : val,
-        descanso: Math.max(0, +$('[name=desc]', r).value || 0), ...(tm ? { un: 's', seg: Math.max(1, Math.round(val) || 30) } : {}) });
+        descanso: Math.max(0, +$('[name=desc]', r).value || 0), ...(tm ? { un: 's', seg: Math.max(1, Math.round(val) || 30) } : {}),
+        ...(tec && TECNICAS[tec] ? { tec, tecSeries: grp ? 'todas' : $('[name=tecs]', r).value, ...(nota ? { tecNota: nota } : {}) } : {}) });
     });
+    else if (f.type === 'cardio') out[f.k] = form.elements.cardioOn && form.elements.cardioOn.checked ? { nome: form.elements.cardioTipo.value, min: Math.max(1, Math.min(240, Math.round(+form.elements.cardioMin.value) || 20)) } : null;
+    else if (f.type === 'profs') out[f.k] = $$('.prow', form).map(r => { const nome = $('[name=pn]', r).value.trim(), sobre = $('[name=ps]', r).value.trim().slice(0, 400), dias = $$('[name=pd]:checked', r).map(i => +i.value);
+      if (!nome && (sobre || dias.length)) fail('Informe o nome do professor que você começou a preencher.');
+      return { nome, sobre, dias, ini: $('[name=pi]', r).value, fim: $('[name=pf]', r).value, foto: $('[name=pfoto]', r).value.trim() }; }).filter(x => x.nome);
     else out[f.k] = (form.elements[f.k].value || '').trim();
     const v = out[f.k], empty = Array.isArray(v) ? !v.length : !v;
     if (f.req && empty) fail(f.type === 'items' ? 'Adicione pelo menos um exercício.' : f.type === 'days' ? 'Escolha pelo menos um dia.' : `Preencha: ${f.l.toLowerCase()}.`);
@@ -217,6 +265,7 @@ function bindItems(form, D) {
       sb.innerHTML = subOpts(T, cat, ''); sb.disabled = !hasSub; ex.disabled = !cat; ex.innerHTML = exOpts(D, T, cat, '', '');
       if (cat) picker(hasSub ? sb : ex); }
     else if (e.target.name === 'sub') { ex.innerHTML = exOpts(D, T, cat, e.target.value, ''); picker(ex); }
+    else if (e.target.name === 'tec') { const t = e.target.value, bx = $('.itec', r); bx.classList.toggle('off', !t); bx.classList.toggle('grp', t === 'biset' || t === 'triset'); }
     else if (e.target.name === 'un') { const tm = e.target.value === 's', v = $('[name=val]', r);
       r.classList.toggle('tm', tm); $('.vl', r).textContent = tm ? 'Tempo (s)' : 'Carga (kg)'; v.value = tm ? 30 : 0; v.step = tm ? 5 : 0.5; if (r.classList.contains('ps')) { fitSets(r, true); psPaint(r); } } };
   box.addEventListener('change', e => { const r = e.target.closest('.irow'); if (r) sum(r); });
@@ -238,9 +287,10 @@ function showCreds(email, pass, nome) {
 }
 async function saveRow(sc, data, row, E) {
   if (sc.user) {
-    if (row) { const p = { nome: data.nome, telefone: data.telefone || '', ativo: data.ativo || 'sim' }; if (sc.user === 'aluno') { p.modalidades = data.modalidades || []; if (!E.tid) { p.treinadorId = data.treinadorId; p.planoId = data.planoId || ''; p.familiaId = data.familiaId || ''; p.vencimento = data.vencimento || ''; } } return api.update('users', row.id, p); }
+    if (row) { const p = { nome: data.nome, telefone: data.telefone || '', ativo: data.ativo || 'sim' }; if (sc.externo) { p.mensalidade = data.mensalidade || 0; p.vencimento = data.vencimento || ''; } if (sc.user === 'aluno') { p.modalidades = data.modalidades || []; if (!E.tid) { p.treinadorId = data.treinadorId; p.planoId = data.planoId || ''; p.familiaId = data.familiaId || ''; p.vencimento = data.vencimento || ''; } } return api.update('users', row.id, p); }
     const email = data.email.toLowerCase(), uid = await api.createAccount(email, data.senha);
     const p = { nome: data.nome, email, telefone: data.telefone || '', role: sc.user, ativo: data.ativo || 'sim', criadoPor: SESSION.user.uid, criadoEm: Date.now() };
+    if (sc.externo) { p.externo = true; p.mensalidade = data.mensalidade || 0; p.vencimento = data.vencimento || ''; }
     if (sc.user === 'aluno') { p.treinadorId = E.tid || data.treinadorId; p.modalidades = data.modalidades || []; if (!E.tid) { p.planoId = data.planoId || ''; p.familiaId = data.familiaId || ''; p.vencimento = data.vencimento || ''; } }
     await api.set('users', uid, p); setTimeout(() => showCreds(email, data.senha, data.nome), 280); return;
   }
@@ -254,7 +304,8 @@ function openForm(sc, D, E, row, done) {
   const html = `<div class="form">${fs.map(f => fieldHTML(f, row ? (f.get ? f.get(row) : row[f.k]) : f.def ? f.def() : f.type === 'items' || f.type === 'multi' || f.type === 'days' ? [] : '', D)).join('')}</div>`;
   const m = openModal({ title: `${isNew ? 'Novo' : 'Editar'} ${sc.one}`, html, wide: !!sc.wide, submit: isNew ? 'Criar' : 'Salvar',
     onSubmit: async form => { const data = collect(form, sc, isNew, D); await saveRow(sc, data, row, E); await Promise.race([done(), new Promise(r => setTimeout(r, 8000))]); toast(isNew ? 'Cadastro criado.' : 'Alterações salvas.'); } });
-  bindItems(m.form, D);
+  bindItems(m.form, D); bindProfs(m.form);
+  { const co = $('[name=cardioOn]', m.form); if (co) co.onchange = () => { $('.cardio-body', m.form).hidden = !co.checked; }; }
   if (sc.calc) { const out = $('[data-calc]', m.form), upd = () => { out.textContent = sc.calc(m.form); }; m.form.addEventListener('input', upd); m.form.addEventListener('change', upd); upd(); }
 }
 const cap = s => s[0].toUpperCase() + s.slice(1);
@@ -304,7 +355,7 @@ function pager(el, getTotal, paint) {
 const scDe = (sc, row) => sc.sub && row && sc.tree.isSub(row) ? { ...sc, ...sc.sub } : sc;   // subcategoria tem formulário próprio
 const nomeCell = (sc, r, sub, aberto) => !sc.tree ? esc(sc.cols[0][1](r)) : sub ? `<span class="cnm sub">↳ ${esc(r.nome)}</span>`
   : `<button type="button" class="cnm" data-xp aria-expanded="${!!aberto}" ${sc.tree.subs(r.id).length ? '' : 'disabled'}>${sc.tree.subs(r.id).length ? ic('chev', 16, 'currentColor', 2.4, 'cxp') : '<i class="cxp0"></i>'}${esc(r.nome)}${sc.tree.subs(r.id).length ? `<small>${sc.tree.subs(r.id).length}</small>` : ''}</button>`;
-const rowHTML = (sc, r, sub = false, aberto = false) => `<tr data-id="${esc(r.id)}" class="${sub ? 'subr' : aberto ? 'aberta' : ''}">${sc.cols.map((c, i) => `<td>${i ? esc(c[1](r)) : nomeCell(sc, r, sub, aberto)}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button><button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`;
+const rowHTML = (sc, r, sub = false, aberto = false) => `<tr data-id="${esc(r.id)}" class="${sub ? 'subr' : aberto ? 'aberta' : ''}">${sc.cols.map((c, i) => `<td>${i ? esc(c[1](r)) : nomeCell(sc, r, sub, aberto)}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button>${sc.pay ? '<button data-xpay>Mensalidade</button>' : ''}<button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`;
 function tableHTML(sc, D, E) {
   const rows = sc.rows;
   const head = `<div class="head"><div><h1 class="h1">${sc.title}</h1><p class="muted" style="margin-top:4px;font-size:14px">${rows.length} ${rows.length === 1 ? 'cadastro' : 'cadastros'}</p></div>
@@ -320,7 +371,8 @@ function tableHTML(sc, D, E) {
 const detHTML = items => `<div class="det-list">${items.map(([l, v]) => `<div class="det-i"><small>${esc(l)}</small><b>${esc(v)}</b></div>`).join('')}</div>`;
 function openDet(sc, D, E, row, repaint) {
   const items = [...sc.cols.map(c => [c[0], c[1](row)]), ...(sc.extra ? sc.extra(row) : [])];
-  const m = openModal({ title: row.nome || 'Detalhes', html: detHTML(items), foot: '<button type="button" class="btn dark" data-edit>Editar</button><button type="button" class="btn ghost del" data-del>Excluir</button>' });
+  const m = openModal({ title: row.nome || 'Detalhes', html: detHTML(items), foot: `${sc.pay ? '<button type="button" class="btn dark" data-xpay>Mensalidade</button>' : ''}<button type="button" class="btn ${sc.pay ? 'ghost' : 'dark'}" data-edit>Editar</button><button type="button" class="btn ghost del" data-del>Excluir</button>` });
+  const xp = $('[data-xpay]', m.form); if (xp) xp.onclick = () => { m.close(); openExt(row, D, repaint); };
   $('[data-edit]', m.form).onclick = () => { m.close(); openForm(scDe(sc, row), D, E, row, repaint); };
   $('[data-del]', m.form).onclick = () => { m.close(); delRow(sc, row, repaint); };
 }
@@ -393,6 +445,31 @@ async function openHist(a, D) {
   const list = (await api.list('pagamentos', [['alunoIds', 'array-contains', a.id]])).sort((x, y) => (y.data || '').localeCompare(x.data || ''));
   openModal({ title: `Histórico de ${firstName(a.nome)}`, html: list.length ? `<div class="hist">${list.map(p => `<div class="person"><div class="nm"><b>${brl(p.valor)}</b><small>${ptDate(p.data)} · ${esc(p.forma || '')} · ${esc((D.planos.find(x => x.id === p.planoId) || {}).nome || 'Plano')}</small></div><span class="rl">${perLabel(p.meses)}</span></div>`).join('')}</div>` : '<p class="empty">Nenhum pagamento registrado ainda.</p>' });
 }
+/* treinador externo: situação da mensalidade, histórico e registro de pagamento */
+function openExt(t, D, repaint) {
+  const [stc, stl] = situExt(t);
+  const m = openModal({ title: `Mensalidade de ${firstName(t.nome)}`, html: `<p style="font:400 14px/1.5 var(--b);margin:0 0 10px"><b>${esc(t.nome)}</b> usa o app como os treinadores da casa e paga <b>${brl(+t.mensalidade || 0)}</b> por mês à academia.<br>
+      <span class="st-chip ${stc}">${stl}</span> <span class="muted">Vencimento: ${ptDate(t.vencimento)}</span></p><div class="hist" id="xh"><p class="muted" style="font-size:13px">Carregando pagamentos...</p></div>`,
+    foot: '<button type="button" class="btn dark" data-xnew>Registrar pagamento</button>' });
+  api.list('pagamentos', [['treinadorId', '==', t.id]], { fresh: true }).then(l => { const box = $('#xh', m.form); if (!box) return;
+    l = l.sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+    box.innerHTML = l.length ? l.map(p => `<div class="person"><div class="nm"><b>${brl(p.valor)}</b><small>${ptDate(p.data)} · ${esc(p.forma || '')}</small></div><span class="rl">Mensal</span></div>`).join('') : '<p class="empty">Nenhum pagamento registrado ainda.</p>'; })
+    .catch(() => { const box = $('#xh', m.form); if (box) box.innerHTML = '<p class="empty">Não foi possível carregar os pagamentos.</p>'; });
+  $('[data-xnew]', m.form).onclick = () => { m.close(); openPayExt(t, repaint); };
+}
+function openPayExt(t, done) {
+  openModal({ title: 'Registrar mensalidade', submit: 'Registrar', html: `<p style="font:400 14px/1.5 var(--b);margin:0 0 12px"><b>${esc(t.nome)}</b> · treinador externo</p>
+    <div class="form"><label class="field">Valor pago (R$)<input name="valor" value="${String(+t.mensalidade || '').replace('.', ',')}" inputmode="decimal"></label><label class="field">Data<input name="data" type="date" value="${dkey(new Date())}"></label>
+    <label class="field full">Forma de pagamento<select name="forma"><option>Pix</option><option>Dinheiro</option><option>Cartão</option><option>Boleto</option><option>Outro</option></select></label></div>`,
+    onSubmit: async f => {
+      const valor = parseMoney(f.valor.value), data = f.data.value;
+      if (!(valor > 0) || !isFinite(valor)) fail('Digite um valor válido.'); if (!data) fail('Informe a data do pagamento.');
+      const base = t.vencimento && t.vencimento >= data ? t.vencimento : data, venc = addMonths(base, 1);
+      await api.add('pagamentos', { alunoIds: [], treinadorId: t.id, tipo: 'treinador', planoId: '', valor: Math.round(valor * 100) / 100, data, meses: 1, forma: f.forma.value, registradoPor: SESSION.user.uid });
+      await api.update('users', t.id, { vencimento: venc, ultimoPagamento: data });
+      await done(); toast(`Mensalidade registrada. Próximo vencimento: ${ptDate(venc)}.`);
+    } });
+}
 function bindFin(el, D, repaint) {
   let fs = 'todos', term = '', fotos = {};
   const C = finCalc(D), tb = $('tbody', el);
@@ -415,7 +492,7 @@ function build(tab, D, E) {
     <div class="thmline"><span>Aparência</span>${temaBtn()}</div>
     <div class="who"><a class="whou" href="#/painel/perfil" aria-label="Abrir meu perfil"${tab === 'perfil' ? ' aria-current="page"' : ''}>${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div></a>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
-  const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D)
+  const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D) : tab === 'pedidos' ? pedidosHTML(D)
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
     : tableHTML(schema(tab, D, E), D, E);
   const mbar = `<header class="mtop"><button type="button" class="iconbtn" id="mn" aria-label="Abrir menu" aria-expanded="false" aria-controls="menu">${ic('menu', 22)}</button>${logo(30)}${temaBtn()}</header><div class="scrim" id="scrim"></div>`;
@@ -426,12 +503,14 @@ function bind(el, tab, D, E) {
   const repaint = async () => { const E2 = eff(), D2 = await load(tab); el.innerHTML = build(tab, D2, E2); bind(el, tab, D2, E2); };
   $$('[data-n]', el).forEach(n => countUp(n, 0, +n.dataset.n, 800));
   $('#out', el).onclick = () => api.logout();
+  if (SESSION.me && SESSION.me.role === 'dono') iniciarAvisoPedidos(() => { if (/^\/painel\/pedidos/.test(location.pathname)) repaint(); });   // aviso de pedido novo em qualquer tela do painel
   const ad = $('.admin', el), mn = $('#mn', el), setMenu = on => { ad.classList.toggle('menu-open', on); mn.setAttribute('aria-expanded', on); };
   mn.onclick = () => setMenu(true); $('#mx', el).onclick = () => setMenu(false); $('#scrim', el).onclick = () => setMenu(false);
   $$('.side a', el).forEach(a => a.addEventListener('click', () => setMenu(false)));
   if (tab === 'visao') { const h = $('#hexp', el); if (h) h.onclick = () => openExpHist(D, E); return; }
   if (tab === 'perfil') return bindPerfil(el, repaint);
   if (tab === 'financeiro') return bindFin(el, D, repaint);
+  if (tab === 'pedidos') return bindPedidos(el, D, repaint);
   const sc = schema(tab, D, E); if (!sc) return;
   const create = () => openForm(sc, D, E, null, repaint);
   const nb = $('#new', el); if (nb) nb.onclick = create;
@@ -468,7 +547,8 @@ function bind(el, tab, D, E) {
       if (sc.tree && !tr.classList.contains('subr') && (e.target.closest('[data-xp]') || !e.target.closest('button'))) {   // tocar na categoria abre/fecha as subcategorias
         if (!T.subs(row.id).length) return;
         aberto.has(row.id) ? aberto.delete(row.id) : aberto.add(row.id); return apply(true); }
-      if (e.target.closest('[data-det]')) openDet(scDe(sc, row), D, E, row, repaint);
+      if (e.target.closest('[data-xpay]')) openExt(row, D, repaint);
+      else if (e.target.closest('[data-det]')) openDet(scDe(sc, row), D, E, row, repaint);
       else if (e.target.closest('[data-edit]')) openForm(scDe(sc, row), D, E, row, repaint);
       else if (e.target.closest('[data-del]')) delRow(scDe(sc, row), row, repaint);
     };
