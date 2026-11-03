@@ -15,18 +15,27 @@ async function makeFirebase() {
      Se passar de 10 s sem resposta, libera a tela (o envio continua em segundo plano) */
   const wr = p => { p.catch(e => console.error('gravação', e)); return Promise.race([p, new Promise(r => setTimeout(r, 10000))]); };
   /* cache de listas na memória (30 s): trocar de tela fica instantâneo; qualquer gravação limpa a coleção */
-  const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); };
+  /* cache no aparelho (localStorage, separado por usuário): a segunda abertura já mostra a lista salva na hora e atualiza por trás.
+     Só para cadastros que mudam pouco; check-ins, execuções, pedidos e pagamentos nunca ficam salvos. Apagado ao sair da conta. */
+  const PK = 'garrote:c:', MAXIDADE = 3 * 86400000, uidAtual = () => auth.currentUser && auth.currentUser.uid;
+  const pget = k => { try { const u = uidAtual(); if (!u) return null; const v = JSON.parse(localStorage.getItem(PK + u + '|' + k)); return v && Date.now() - v.t < MAXIDADE ? v.d : null; } catch { return null; } };
+  const pset = (k, d) => { try { const u = uidAtual(); if (!u) return; const t = JSON.stringify({ t: Date.now(), d }); if (t.length > 1500000) return; localStorage.setItem(PK + u + '|' + k, t); }
+    catch { try { Object.keys(localStorage).filter(x => x.startsWith(PK)).forEach(x => localStorage.removeItem(x)); } catch {} } };
+  const pdrop = c => { try { const u = uidAtual(), pre = PK + u + '|' + c + '|'; Object.keys(localStorage).filter(x => x.startsWith(pre)).forEach(x => localStorage.removeItem(x)); } catch {} };
+  const pclear = () => { try { Object.keys(localStorage).filter(x => x.startsWith(PK)).forEach(x => localStorage.removeItem(x)); } catch {} };
+  const cache = new Map(), TTL = 30000, drop = c => { for (const k of [...cache.keys()]) if (k.startsWith(c + '|')) cache.delete(k); pdrop(c); };
   const CATALOGO = new Set(['users', 'modalidades', 'categorias', 'exercicios', 'treinos', 'planos', 'alimentos']), STALE = 600000;   // só listas completas do painel; check-ins, pagamentos etc. sempre frescos
+  const PERSIST = new Set([...CATALOGO, 'produtos', 'dietas']);
   const fetchList = (k, c, filters) => {
-    const e = { t: Date.now(), p: F.getDocs(F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)))).then(s => s.docs.map(withId)) };
+    const e = { t: Date.now(), p: F.getDocs(F.query(F.collection(db, c), ...filters.map(([f, o, v]) => F.where(f, o, v)))).then(s => { const d = s.docs.map(withId); if (PERSIST.has(c)) pset(k, d); return d; }) };
     cache.set(k, e); e.p.catch(() => { if (cache.get(k) === e) cache.delete(k); }); return e;
   };
   return {
     mode: 'firebase',
     idToken: () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null),   // login conferido pelo servidor de pagamentos
-    onAuth: cb => A.onAuthStateChanged(auth, u => { cache.clear(); cb(u ? { uid: u.uid, email: u.email } : null); }),
+    onAuth: cb => A.onAuthStateChanged(auth, u => { cache.clear(); if (!u) pclear(); cb(u ? { uid: u.uid, email: u.email } : null); }),
     login: (e, p) => A.signInWithEmailAndPassword(auth, e, p),
-    logout: () => A.signOut(auth),
+    logout: () => { pclear(); return A.signOut(auth); },
     /* o link do e-mail volta para o próprio app (tela "Criar nova senha"); depois de salvar, o botão leva ao login */
     reset: e => A.sendPasswordResetEmail(auth, e, { url: location.origin + '/login' }),
     checkReset: code => A.verifyPasswordResetCode(auth, code),          // devolve o e-mail da conta
@@ -55,6 +64,8 @@ async function makeFirebase() {
         if (age >= TTL) fetchList(k, c, filters);
         return [...await hit.p];
       }
+      const salvo = !hit && !opt.fresh && PERSIST.has(c) ? pget(k) : null;
+      if (salvo) { fetchList(k, c, filters).p.catch(() => {}); return salvo; }   // lista salva no aparelho: mostra já e atualiza por trás
       return [...await fetchList(k, c, filters).p];
     },
     async set(c, id, d) { await wr(F.setDoc(F.doc(db, c, id), clean(d))); drop(c); },
