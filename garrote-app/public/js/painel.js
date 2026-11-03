@@ -1,6 +1,7 @@
 /* Painel do dono e do treinador (tela larga). Cadastros genéricos guiados por "schema". */
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora, TECNICAS, segTxt } from './ui.js';
+import { dashHTML, bindDash } from './dash.js';
 import { macrosHTML, bindMacros } from './nutri.js';
 import { produtosSchema, pedidosHTML, bindPedidos, iniciarAvisoPedidos } from './loja.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
@@ -35,7 +36,14 @@ async function load(tab) {
   if (tab === 'alimentos' || tab === 'macros') D.alimentos = (await api.list('alimentos')).sort(byName);
   if (tab === 'produtos' || tab === 'pedidos') D.produtos = (await api.list('produtos')).sort(byName);
   if (tab === 'pedidos') D.pedidos = (await api.list('pedidos', [], { fresh: true })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  if (tab === 'visao') [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', dkey(new Date())]]), api.list('agendamentos')]);
+  if (tab === 'visao') {
+    [D.checkins, D.agend] = await Promise.all([api.list('checkins', [['data', '==', dkey(new Date())]]), api.list('agendamentos')]);
+    if (SESSION.me.role === 'dono') {   // indicadores e gráficos do dono
+      const d90 = new Date(); d90.setDate(d90.getDate() - 89);
+      [D.ck90, D.pagamentos, D.pedidos, D.produtos] = await Promise.all([api.list('checkins', [['data', '>=', dkey(d90)]]).catch(() => []), api.list('pagamentos').catch(() => []),
+        api.list('pedidos').catch(() => []), api.list('produtos').catch(() => [])]);
+    }
+  }
   return D;
 }
 
@@ -339,7 +347,8 @@ function visaoHTML(D, E) {
   const kpi = (l, n, s) => `<div class="card"><small>${l}</small><b data-n="${n}">0</b><em>${s}</em></div>`;
   const treinos = D.treinos.filter(t => !E.tid || t.criadoPor === E.tid).length;
   return `<div class="head"><div><h1 class="h1">Visão geral</h1><p class="muted" style="margin-top:4px;font-size:14px">${E.tid ? 'Seus alunos e treinos' : 'A academia hoje'}</p></div></div>
-  <div class="kpis">${kpi('Alunos', als.length, 'cadastrados')}${E.tid ? kpi('Exercícios', D.exercicios.length, 'na biblioteca') : kpi('Treinadores', D.users.filter(u => u.role === 'treinador').length, 'com acesso')}${kpi('Treinos', treinos, 'montados')}${kpi('Check-ins hoje', ck.length, 'alunos presentes')}</div>
+  ${E.tid ? '' : dashHTML(D, finCalc(D))}
+  <div class="kpis"${E.tid ? '' : ' hidden'}>${kpi('Alunos', als.length, 'cadastrados')}${E.tid ? kpi('Exercícios', D.exercicios.length, 'na biblioteca') : kpi('Treinadores', D.users.filter(u => u.role === 'treinador').length, 'com acesso')}${kpi('Treinos', treinos, 'montados')}${kpi('Check-ins hoje', ck.length, 'alunos presentes')}</div>
   <div class="two"><section class="card"><h2 class="h2" style="margin-bottom:8px">Check-ins de hoje</h2>${ck.length ? ck.map(c => personRow(user(c.uid).nome, 'às ' + new Date(c.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), '', '')).join('') : '<p class="empty">Ninguém fez check-in ainda hoje.</p>'}</section>
   <section class="card"><div class="row" style="justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px"><h2 class="h2">Aulas experimentais agendadas</h2><button type="button" class="lnk" id="hexp">Histórico${passadas ? ` (${passadas})` : ''}</button></div>${ag.length ? ag.map(a => personRow(user(a.uid).nome, expSub(D, a), a.slotKey === hoje ? 'Hoje' : 'Experimental', a.slotKey === hoje ? 'hj' : '')).join('') : '<p class="empty">Nenhuma aula experimental agendada.</p>'}</section></div>`;
 }
@@ -526,7 +535,7 @@ function bind(el, tab, D, E) {
   const ad = $('.admin', el), mn = $('#mn', el), setMenu = on => { ad.classList.toggle('menu-open', on); mn.setAttribute('aria-expanded', on); };
   mn.onclick = () => setMenu(true); $('#mx', el).onclick = () => setMenu(false); $('#scrim', el).onclick = () => setMenu(false);
   $$('.side a', el).forEach(a => a.addEventListener('click', () => setMenu(false)));
-  if (tab === 'visao') { const h = $('#hexp', el); if (h) h.onclick = () => openExpHist(D, E); return; }
+  if (tab === 'visao') { const h = $('#hexp', el); if (h) h.onclick = () => openExpHist(D, E); if (!E.tid) bindDash(el, D, finCalc(D)); return; }
   if (tab === 'perfil') return bindPerfil(el, repaint);
   if (tab === 'financeiro') return bindFin(el, D, repaint);
   if (tab === 'pedidos') return bindPedidos(el, D, repaint);

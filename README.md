@@ -24,6 +24,8 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 - **Sem zoom**: pinça e toque duplo bloqueados (viewport, eventos de gesto e `touch-action`).
 - **Vitrine de produtos**: o aluno monta o pedido (pagamento na retirada); o painel do dono avisa na hora (som, vibração e título; consulta a cada 20 s) para a recepção separar. O dono cadastra produtos e estoque (baixa ao marcar "separado"), vê pedidos e faturamento.
 
+- **Painel inicial do dono**: indicadores clicáveis (alunos, recebido no mês com variação, receita prevista, atrasos, check-ins de hoje, loja), gráfico de frequência (7/30/90 dias, com dia da semana e horário de pico), receita por mês (mensalidades ou loja), situação dos alunos, vencimentos da semana, alunos sem treinar há 14 dias e estoque baixo da loja.
+
 **Treinador**
 - Painel com visão geral, alunos, treinos, exercícios e categorias.
 - Categorias com subcategorias (ex.: Peito > Peito superior, Peito medial, Peito inferior), com botões separados para criar cada uma; a lista mostra as categorias fechadas e abre as subcategorias ao tocar.
@@ -74,6 +76,7 @@ garrote-app/
       plano.js           planos, descontos, parcelas e pagamentos
       loja.js            vitrine de produtos, pedidos e aviso para a recepção
       nutri.js           calculadora de macros
+      dash.js            indicadores e gráficos do painel inicial do dono
       semzoom.js         bloqueio de zoom por gestos
       notif.js           avisos do treino (fim do descanso, treino em andamento)
       firebase-config.js configuração do seu projeto Firebase
