@@ -850,3 +850,15 @@ html,body{touch-action:pan-x pan-y}
 .mcard .foot{flex-wrap:wrap;gap:10px 12px}
 .mcard .foot b,.tm b{white-space:nowrap}
 .mcard .foot .dias{flex:0 1 auto;min-width:0}
+
+/* ===== ajustes: busca de alimentos, barra do carrinho e envio de imagem ===== */
+.nut-list{max-height:none;overflow:visible;gap:0;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:4px 0}
+.nut-it{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:1px;align-items:center;width:100%;border:0;border-radius:0;background:transparent;padding:10px 16px;border-bottom:1px solid var(--line)}
+.nut-it:last-child{border-bottom:0}.nut-it b{grid-column:1;font:600 15px var(--b)}.nut-it small{grid-column:1;grid-row:2}
+.nut-it em{grid-column:2;grid-row:1/3;font:700 13px var(--b);font-style:normal;color:var(--muted);white-space:nowrap}
+.nut-it.on{background:rgba(217,30,38,.12);border-color:var(--line);box-shadow:inset 3px 0 0 var(--red)}.nut-it.on em{color:var(--red)}
+.nut-q{height:46px}.nut-q input{flex:1;min-width:0;background:transparent;border:0;outline:0;font:500 15px var(--b);color:inherit;height:100%}
+.cartbar{align-self:center;width:calc(100% - 32px);max-width:400px;height:46px;border-radius:16px;font-size:14px;padding:0 16px;box-shadow:0 8px 18px rgba(217,30,38,.28)}
+.imgf-r{display:flex;gap:12px;align-items:flex-start}.imgf-p{flex:none;width:84px;height:84px;border-radius:14px;background:var(--line) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.imgf-c{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}.imgf-b{display:flex;gap:8px;flex-wrap:wrap}.imgf-b .btn{padding:0 16px}
+.imgf-c input[type=text]{height:42px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:0 10px;font:500 14px var(--b);width:100%;min-width:0}

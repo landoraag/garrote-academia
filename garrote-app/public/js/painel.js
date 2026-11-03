@@ -182,6 +182,20 @@ const prow = (p = {}) => `<div class="prow"><div class="prh"><label class="ii"><
   <div class="prt"><label class="ii"><span>Início</span><input name="pi" type="time" step="300" value="${esc(fmtHora(p.ini))}"></label><label class="ii"><span>Fim</span><input name="pf" type="time" step="300" value="${esc(fmtHora(p.fim))}"></label></div>
   <label class="ii"><span>Sobre o professor</span><textarea name="ps" rows="3" maxlength="400" placeholder="Formação, experiência, estilo de aula...">${esc(p.sobre || '')}</textarea></label>
   <label class="ii"><span>Foto (link da imagem, opcional)</span><input name="pfoto" type="url" value="${esc(p.foto || '')}" placeholder="https://..."></label></div>`;
+function imgResize(file, max = 640) {
+  return new Promise((res, rej) => { const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); res(c.toDataURL('image/jpeg', .8)); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(Object.assign(new Error('Escolha um arquivo de imagem.'), { user: true })); }; img.src = url; });
+}
+function bindImgs(form) {
+  $$('.imgf', form).forEach(box => { const hid = $('input[type=hidden]', box), pv = $('[data-ip]', box), link = $('[data-ilink]', box), rm = $('[data-irm]', box), fi = $('[data-ifile]', box);
+    const paint = () => { pv.style.backgroundImage = hid.value ? `url('${hid.value.replace(/'/g, '%27')}')` : ''; pv.classList.toggle('has', !!hid.value); rm.hidden = !hid.value; };
+    $('[data-iup]', box).onclick = () => fi.click();
+    fi.onchange = async () => { const f = fi.files[0]; if (!f) return; try { hid.value = await imgResize(f); link.value = ''; paint(); } catch (err) { toast(err.message || 'Não foi possível usar essa imagem.'); } fi.value = ''; };
+    link.oninput = () => { hid.value = link.value.trim(); paint(); };
+    rm.onclick = () => { hid.value = ''; link.value = ''; paint(); }; paint(); });
+}
 function bindProfs(form) {
   const box = $('.profs', form); if (!box) return;
   $('[data-addprof]', form).onclick = () => { box.insertAdjacentHTML('beforeend', prow()); const r = box.lastElementChild; r.classList.add('new'); $('[name=pn]', r).focus(); };
@@ -198,6 +212,10 @@ function fieldHTML(f, v, D) {
       <label class="ii"><span>Meta (minutos)</span><input name="cardioMin" type="number" min="1" max="240" value="${c.min || 20}"></label></div></div>`; }
   if (f.type === 'profs') return `<div class="field full"><span>${f.l}</span><div class="profs">${(v || []).map(prow).join('')}</div><button type="button" class="btn ghost" data-addprof style="height:44px">+ Adicionar professor</button>
     <datalist id="dlprofs">${(f.names ? f.names() : []).map(n => `<option value="${esc(n)}">`).join('')}</datalist></div>`;
+  if (f.type === 'img') { const dado = String(v || '').startsWith('data:'); return `<div class="field full imgf"><span>${f.l}</span><div class="imgf-r"><div class="imgf-p" data-ip ${v ? `style="background-image:url('${esc(v)}')"` : ''}>${v ? '' : ic('cart', 26)}</div>
+    <div class="imgf-c"><input type="hidden" name="${f.k}" value="${esc(v)}"><input type="file" accept="image/*" data-ifile hidden>
+      <div class="imgf-b"><button type="button" class="btn ghost" data-iup style="height:42px">Enviar imagem</button><button type="button" class="btn link" data-irm style="height:42px" ${v ? '' : 'hidden'}>Remover</button></div>
+      <input type="text" data-ilink inputmode="url" placeholder="ou cole o link da imagem (https://...)" value="${dado ? '' : esc(v)}" aria-label="Link da imagem"></div></div></div>`; }
   if (f.type === 'calc') return `<p class="note full calc" data-calc aria-live="polite"></p>`;
   if (f.type === 'hint') return `<p class="muted full" style="font-size:13px;margin:-4px 0 0">${esc(f.txt)}</p>`;
   if (f.type === 'multi') { const o = f.opts(); return `<fieldset class="${cls} multi"><legend>${f.l}</legend>${o.length ? `<div class="checks">${o.map(([id, l]) => `<label class="chk"><input type="checkbox" name="${f.k}" value="${esc(id)}" ${(v || []).includes(id) ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</div>` : '<p class="muted" style="font-size:13px;margin:0">Nada cadastrado ainda.</p>'}</fieldset>`; }
@@ -304,7 +322,7 @@ function openForm(sc, D, E, row, done) {
   const html = `<div class="form">${fs.map(f => fieldHTML(f, row ? (f.get ? f.get(row) : row[f.k]) : f.def ? f.def() : f.type === 'items' || f.type === 'multi' || f.type === 'days' ? [] : '', D)).join('')}</div>`;
   const m = openModal({ title: `${isNew ? 'Novo' : 'Editar'} ${sc.one}`, html, wide: !!sc.wide, submit: isNew ? 'Criar' : 'Salvar',
     onSubmit: async form => { const data = collect(form, sc, isNew, D); await saveRow(sc, data, row, E); await Promise.race([done(), new Promise(r => setTimeout(r, 8000))]); toast(isNew ? 'Cadastro criado.' : 'Alterações salvas.'); } });
-  bindItems(m.form, D); bindProfs(m.form);
+  bindItems(m.form, D); bindProfs(m.form); bindImgs(m.form);
   { const co = $('[name=cardioOn]', m.form); if (co) co.onchange = () => { $('.cardio-body', m.form).hidden = !co.checked; }; }
   if (sc.calc) { const out = $('[data-calc]', m.form), upd = () => { out.textContent = sc.calc(m.form); }; m.form.addEventListener('input', upd); m.form.addEventListener('change', upd); upd(); }
 }

@@ -50,8 +50,8 @@ export async function macros() {
   after(el) {
     let sel = null, modo = 'p', ref = lsGet();
     const num = () => { const v = parseFloat(String($('#nqtd', el).value).replace(',', '.')); return isFinite(v) && v > 0 ? v : 0; };
-    const lista = () => { const q = sa($('#nq', el).value.trim()), l = todos.filter(a => !q || q.split(/\s+/).every(w => sa(a.nome).includes(w))).slice(0, q ? 12 : 8);
-      $('#nlist', el).innerHTML = l.map(a => `<button type="button" class="nut-it ${sel && sel.nome === a.nome ? 'on' : ''}" role="option" data-n="${esc(a.nome)}"><b>${esc(a.nome)}</b><small>${esc(a.porcao)} · ${n1(a.kcal)} kcal</small></button>`).join('') || '<p class="empty" style="padding:12px 4px">Nada encontrado. A academia pode cadastrar esse alimento.</p>'; };
+    const lista = () => { const q = sa($('#nq', el).value.trim()), l = todos.filter(a => !q || q.split(/\s+/).every(w => sa(a.nome).includes(w))).slice(0, 6);
+      $('#nlist', el).innerHTML = l.map(a => `<button type="button" class="nut-it ${sel && sel.nome === a.nome ? 'on' : ''}" role="option" data-n="${esc(a.nome)}"><b>${esc(a.nome)}</b><em>${n1(a.kcal)} kcal</em><small>${esc(a.porcao)}</small></button>`).join('') || '<p class="empty" style="padding:12px 4px">Nada encontrado. A academia pode cadastrar esse alimento.</p>'; };
     const calc = () => { if (!sel) return; const q = num(); $('#nres', el).innerHTML = q ? tiles(mac(sel, fator(sel, q, modo))) : '<p class="muted" style="font-size:13px;margin:8px 0 0">Digite uma quantidade maior que zero.</p>'; };
     const refresh = () => { const box = $('#nref', el); box.hidden = !ref.length; if (!ref.length) return;
       $('#nitens', el).innerHTML = ref.map((r, i) => `<div class="nut-r"><div><b>${esc(r.nome)}</b><small>${esc(r.desc)} · ${n1(r.kcal)} kcal</small></div><button type="button" class="iconbtn nut-x" data-i="${i}" aria-label="Remover ${esc(r.nome)}">${ic('close', 16, 'currentColor', 2.4)}</button></div>`).join('');

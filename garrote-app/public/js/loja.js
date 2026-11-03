@@ -20,7 +20,7 @@ export const produtosSchema = (D) => ({ col: 'produtos', title: 'Produtos', one:
     { k: 'estoque', l: 'Estoque (unidades)', type: 'number', num: 1, req: 1, ph: '10' },
     { k: 'estoqueMin', l: 'Avisar quando restar (unidades)', type: 'number', num: 1, ph: '3', def: () => 3 },
     { k: 'ativo', l: 'Mostrar na vitrine do aluno', type: 'select', opts: () => [['sim', 'Sim'], ['nao', 'Não']], def: () => 'sim' },
-    { k: 'foto', l: 'Foto (link da imagem)', type: 'url', full: 1, ph: 'https://...' },
+    { k: 'foto', l: 'Foto do produto', type: 'img' },
     { k: 'descricao', l: 'Descrição', type: 'textarea', full: 1 }],
   before: d => ({ ...d, estoque: Math.max(0, Math.round(d.estoque)), estoqueMin: Math.max(0, Math.round(d.estoqueMin)) }),
   cols: [['Nome', r => r.nome], ['Categoria', r => r.categoria || '—'], ['Preço', r => brl(+r.preco || 0)],
