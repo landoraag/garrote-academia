@@ -122,7 +122,7 @@ export async function loja() {
   const card = p => { const est = Math.max(0, +p.estoque || 0), q = Math.min(CARRINHO[p.id] || 0, est);
     return `<div class="vit-card ${est ? '' : 'out'}" data-id="${esc(p.id)}" tabindex="0" role="button" aria-label="Ver detalhes de ${esc(p.nome)}"><div class="vit-img" ${p.foto ? `style="background-image:url('${esc(p.foto)}')"` : ''}>${p.foto ? '' : ic('cart', 30)}</div>
       <div class="vit-info"><b>${esc(p.nome)}</b><small>${esc(p.descricao || p.categoria || '')}</small>
-        <div class="vit-row"><span class="vit-pr">${brl(p.preco)}</span>${est ? `<div class="stp"><button type="button" data-m aria-label="Tirar um">−</button><b data-q>${q}</b><button type="button" data-p aria-label="Adicionar um">+</button></div>` : '<span class="vit-out">Esgotado</span>'}</div>
+        <div class="vit-row"><span class="vit-pr">${brl(p.preco)}</span>${est ? `<button type="button" class="vit-add ${q ? 'has' : ''}" data-p aria-label="Adicionar ${esc(p.nome)} ao pedido"><span class="vpl">+</span><b class="bdg" data-q>${q}</b></button>` : '<span class="vit-out">Esgotado</span>'}</div>
         ${est && est <= 3 ? `<small class="vit-low">Restam ${est}</small>` : ''}</div></div>`; };
   const pedido = p => { const [l, c] = ST_ALUNO[p.status] || ST_ALUNO.novo;
     return `<div class="vit-ped" data-id="${esc(p.id)}"><div><b>${esc(resumoItens(p))}</b><small>${hora(p.ts)} · ${brl(p.total)}</small></div><span class="st-chip ${c}">${l}</span>${p.status === 'novo' && !ro() ? '<button type="button" class="btn link" data-cancel style="height:34px">Cancelar</button>' : ''}</div>`; };
@@ -145,7 +145,13 @@ export async function loja() {
       const q = CARRINHO[p.id] || 0, nq = mais ? Math.min(est(p), q + 1) : Math.max(0, q - 1);
       if (mais && q >= est(p)) toast(`Só tem ${est(p)} em estoque.`);
       if (nq) CARRINHO[p.id] = nq; else delete CARRINHO[p.id];
-      const c = $(`.vit-card[data-id="${CSS.escape(p.id)}"] [data-q]`, el); if (c) c.textContent = nq; bar(); return nq; };
+      const c = $(`.vit-card[data-id="${CSS.escape(p.id)}"] [data-q]`, el); if (c) { c.textContent = nq; c.closest('.vit-add').classList.toggle('has', nq > 0); } bar(); return nq; };
+    /* animação ao adicionar: o botão dá um pulo, uma bolinha voa até a barra do pedido e a barra balança */
+    const voa = btn => { const cb = $('#cb', el); btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop'); cb.classList.remove('bump'); void cb.offsetWidth; cb.classList.add('bump');
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches || !btn.animate || cb.hidden) return; const a = btn.getBoundingClientRect(), b = cb.getBoundingClientRect(), d = document.createElement('i'); d.className = 'vit-fly';
+      d.style.cssText = `left:${a.left + a.width / 2 - 9}px;top:${a.top + a.height / 2 - 9}px`; document.body.appendChild(d);
+      const dx = b.left + 38 - (a.left + a.width / 2), dy = b.top + b.height / 2 - (a.top + a.height / 2);
+      d.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { transform: `translate(${dx * .5}px,${dy * .5 - 50}px) scale(1.15)`, opacity: 1, offset: .45 }, { transform: `translate(${dx}px,${dy}px) scale(.4)`, opacity: .2 }], { duration: 650, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => d.remove(); };
     const detalhe = p => { const e = est(p);
       const m = openModal({ title: p.nome, html: `<div class="vit-det"><div class="vit-big" ${p.foto ? `style="background-image:url('${esc(p.foto)}')"` : ''}>${p.foto ? '' : ic('cart', 44)}</div>
         <div class="vit-dt"><span class="vit-cat">${esc(p.categoria || 'Outros')}</span><p class="vit-desc">${p.descricao ? esc(p.descricao) : 'Sem descrição.'}</p>
@@ -154,8 +160,8 @@ export async function loja() {
       const f = m.form, q = () => $('[data-dq]', f); if (!q()) return;
       $('[data-dm]', f).onclick = () => { q().textContent = ajusta(p, false); }; $('[data-dp]', f).onclick = () => { q().textContent = ajusta(p, true); };; };
     const abrir = c => { const p = prod(c.dataset.id); if (p) detalhe(p); };
-    $('#vgrid', el).onclick = e => { const b = e.target.closest('[data-m],[data-p]');
-      if (b) { ajusta(prod(b.closest('.vit-card').dataset.id), b.hasAttribute('data-p')); return; }
+    $('#vgrid', el).onclick = e => { const b = e.target.closest('[data-p]');
+      if (b) { ajusta(prod(b.closest('.vit-card').dataset.id), true); voa(b); return; }
       const c = e.target.closest('.vit-card'); if (c) abrir(c); };
     $('#vgrid', el).onkeydown = e => { if (e.key !== 'Enter' || e.target.closest('button') || !e.target.classList.contains('vit-card')) return; abrir(e.target); };
     $('#cb', el).onclick = () => {
