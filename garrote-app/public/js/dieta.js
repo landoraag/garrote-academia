@@ -38,6 +38,42 @@ export const qtdTxt = (a, q, un) => un === 'g' ? `${n1(q)} g` : `${n1(q)} × ${a
 export const macRef = (r, al) => soma((r.itens || []).map(i => { const a = al.find(x => x.id === i.alId); return a ? mac(a, fator(a, +i.qtd || 0, i.un)) : mac({}, 0); }));
 export const macDieta = (d, al) => soma((d.refeicoes || []).map(r => macRef(r, al)));
 
+/* ---------- calculadora: macros do dia, gasto diário (TMB × atividade) e saldo ---------- */
+export const ATIV = [[1.2, 'Sedentário (pouco ou nenhum exercício)'], [1.375, 'Leve (1 a 3 treinos por semana)'], [1.55, 'Moderado (3 a 5 treinos por semana)'], [1.725, 'Intenso (6 a 7 treinos por semana)'], [1.9, 'Muito intenso (treino 2x ao dia ou trabalho pesado)']];
+/* TMB pela equação de Mifflin-St Jeor; gasto total = TMB × fator de atividade */
+export const gasto = p => { if (!p || !(+p.peso > 0) || !(+p.altura > 0) || !(+p.idade > 0)) return null;
+  const tmb = 10 * +p.peso + 6.25 * +p.altura - 5 * +p.idade + (p.sexo === 'f' ? -161 : 5); return { tmb, total: tmb * (+p.ativ || 1.2) }; };
+export const dcalcField = (f, v) => { const p = v || {};
+  return `<div class="field full dcalc"><span>${f.l}</span><p class="muted" style="margin:0 0 8px;font-size:13px">Preencha os dados da pessoa para ver quanto ela gasta por dia e o saldo da dieta (ganho ou perda).</p>
+  <div class="pfg"><label class="ii"><span>Sexo</span><select name="pf_sexo"><option value="m">Masculino</option><option value="f" ${p.sexo === 'f' ? 'selected' : ''}>Feminino</option></select></label>
+  <label class="ii"><span>Idade (anos)</span><input name="pf_idade" type="number" min="10" max="100" step="1" value="${p.idade ?? ''}" placeholder="30"></label>
+  <label class="ii"><span>Peso (kg)</span><input name="pf_peso" type="number" min="20" max="300" step="0.1" value="${p.peso ?? ''}" placeholder="75"></label>
+  <label class="ii"><span>Altura (cm)</span><input name="pf_altura" type="number" min="100" max="230" step="1" value="${p.altura ?? ''}" placeholder="175"></label>
+  <label class="ii pfa"><span>Nível de atividade</span><select name="pf_ativ">${ATIV.map(([k, l]) => `<option value="${k}" ${+p.ativ === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label></div>
+  <div class="dres" id="dres" aria-live="polite"></div></div>`; };
+export function collectPerfil(form) { const g = n => $(`[name=pf_${n}]`, form); if (!g('peso')) return null;
+  const o = { sexo: g('sexo').value === 'f' ? 'f' : 'm', idade: +g('idade').value || 0, peso: +g('peso').value || 0, altura: +g('altura').value || 0, ativ: +g('ativ').value || 1.2 };
+  return o.peso || o.idade || o.altura ? o : null; }
+const num = v => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+export function resultadoCalc(box, dia, perfil) {
+  const kcal = dia.kcal, kc = dia.carb * 4, kp = dia.prot * 4, kg = dia.gord * 9, tot = Math.max(1, kc + kp + kg), pc = x => Math.round(x / tot * 100);
+  let h = `<div class="dtiles"><div class="dt-k"><small>Calorias do dia</small><b>${num(kcal)}<span> kcal</span></b></div><div><small>Carboidratos</small><b>${n1(dia.carb)}<span> g · ${pc(kc)}%</span></b></div><div><small>Proteínas</small><b>${n1(dia.prot)}<span> g · ${pc(kp)}%</span></b></div><div><small>Gorduras</small><b>${n1(dia.gord)}<span> g · ${pc(kg)}%</span></b></div></div>
+    <div class="msplit" aria-hidden="true"><i class="c" style="width:${pc(kc)}%"></i><i class="p" style="width:${pc(kp)}%"></i><i class="g" style="width:${pc(kg)}%"></i></div>`;
+  const G = gasto(perfil);
+  if (!G) h += '<p class="dnote">Informe sexo, idade, peso e altura para calcular o gasto diário (TMB) e o saldo da dieta.</p>';
+  else { const saldo = kcal - G.total, sem = saldo * 7 / 7700, tipo = Math.abs(saldo) < 100 ? 'manutenção' : saldo < 0 ? 'déficit (emagrece)' : 'superávit (ganha peso)';
+    h += `<div class="dtiles"><div><small>Taxa metabólica basal</small><b>${num(G.tmb)}<span> kcal</span></b></div><div><small>Gasto total por dia</small><b>${num(G.total)}<span> kcal</span></b></div>
+      <div class="${Math.abs(saldo) < 100 ? '' : saldo < 0 ? 'dt-ok' : 'dt-up'}"><small>Saldo por dia · ${tipo}</small><b>${saldo > 0 ? '+' : ''}${num(saldo)}<span> kcal</span></b></div>
+      <div><small>Estimativa por semana</small><b>${sem > 0 ? '+' : ''}${n1(sem)}<span> kg</span></b></div></div>
+      <p class="dnote">≈ ${n1(Math.abs(sem) * 4.3)} kg ${saldo < 0 ? 'a menos' : 'a mais'} em 30 dias (1 kg ≈ 7.700 kcal). Proteína: ${n1(dia.prot / +perfil.peso)} g por kg. Para emagrecer ≈ 0,5 kg por semana, mire em ${num(G.total - 550)} kcal; para ganhar ≈ 0,25 kg por semana, ${num(G.total + 275)} kcal.</p>`; }
+  box.innerHTML = h; }
+
+/* alimentos padrão: ids fixos, então importar duas vezes não duplica */
+export async function importarPadrao(api, existentes, uid) {
+  const tem = new Set(existentes.map(a => sa(a.nome))), novos = PADRAO.filter(p => !tem.has(sa(p.nome)));
+  for (let i = 0; i < novos.length; i += 10) await Promise.all(novos.slice(i, i + 10).map(p => api.set('alimentos', 'pad-' + sa(p.nome).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), { ...p, criadoPor: uid, criadoEm: Date.now() })));
+  return novos.length; }
+
 /* ---------- formulário: refeições por horário (como os exercícios do treino, mas com horas no lugar dos dias) ---------- */
 const grupoOpts = (al, sel) => `<option value="">Todos os grupos</option>` + [...new Set(al.map(a => a.grupo || 'Outros'))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(g => `<option ${g === sel ? 'selected' : ''}>${esc(g)}</option>`).join('');
 const foodOpts = (al, g, sel) => `<option value="">Escolha o alimento</option>` + al.filter(a => !g || (a.grupo || 'Outros') === g).map(a => `<option value="${esc(a.id)}" ${a.id === sel ? 'selected' : ''}>${esc(a.nome)}</option>`).join('');
@@ -63,9 +99,9 @@ export function bindMeals(form, D) {
   const fk = r => { const a = D.alimentos.find(x => x.id === $('[name=fa]', r).value), q = +$('[name=fq]', r).value || 0; return a ? mac(a, fator(a, q, $('[name=fu]', r).value)) : null; };
   const paint = () => { let dia = []; $$('.meal', box).forEach(mr => { const ms = $$('.frow', mr).map(r => { const m = fk(r); $('.fk', r).textContent = m ? macTxt(m) : ''; return m; }).filter(Boolean), t = soma(ms); dia.push(t);
       $('.mtot', mr).textContent = ms.length ? macTxt(t) : ''; });
-    $('#dtot', form).innerHTML = dia.length ? `<b>Total do dia:</b> ${macTxt(soma(dia))}` : ''; };
+    const tot = soma(dia); $('#dtot', form).innerHTML = dia.length ? `<b>Total do dia:</b> ${macTxt(tot)}` : ''; const rb = $('#dres', form); if (rb) resultadoCalc(rb, tot, collectPerfil(form)); };
   box.onchange = e => { const r = e.target.closest('.frow'); if (r && e.target.name === 'fg') { $('[name=fa]', r).innerHTML = foodOpts(D.alimentos, e.target.value, ''); $('[name=fa]', r).focus(); } paint(); };
-  box.oninput = paint;
+  box.oninput = paint; form.addEventListener('input', e => { if (/^pf_/.test(e.target.name || '')) paint(); }); form.addEventListener('change', e => { if (/^pf_/.test(e.target.name || '')) paint(); });
   box.onclick = e => { const mr = e.target.closest('.meal'); if (!mr) return;
     if (e.target.closest('[data-addfood]')) { $('.foods', mr).insertAdjacentHTML('beforeend', frow(D, {})); const r = $('.foods', mr).lastElementChild; r.classList.add('new'); $('[name=fg]', r).focus(); return paint(); }
     if (e.target.closest('[data-rmfood]')) { const r = e.target.closest('.frow'); if ($$('.frow', mr).length > 1) r.remove(); else { $('[name=fa]', r).value = ''; } return paint(); }

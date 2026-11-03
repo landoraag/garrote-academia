@@ -2,8 +2,7 @@
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora, TECNICAS, segTxt } from './ui.js';
 import { dashHTML, bindDash } from './dash.js';
-import { macrosHTML, bindMacros } from './nutri.js';
-import { mealsField, bindMeals, collectMeals, GRUPOS, PADRAO, macDieta, macRef, macTxt, qtdTxt, n1 } from './dieta.js';
+import { mealsField, bindMeals, collectMeals, dcalcField, collectPerfil, gasto, importarPadrao, GRUPOS, macDieta, macRef, macTxt, qtdTxt, n1 } from './dieta.js';
 import { produtosSchema, pedidosHTML, bindPedidos, iniciarAvisoPedidos } from './loja.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
@@ -19,8 +18,8 @@ const MENU = {
   treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['dieta', 'Dieta']]
 };
 /* atalhos fixos na parte de baixo do celular (5 ícones, o do meio é sempre a visão geral) */
-const subDieta = tab => `<div class="chips dietatabs" role="tablist" aria-label="Dieta">${[['dieta', 'Dietas'], ['alimentos', 'Alimentos'], ['macros', 'Calculadora']].map(([k, l]) => `<a class="chip ${tab === k ? 'on' : ''}" href="#/painel/${k}" role="tab" aria-selected="${tab === k}">${l}</a>`).join('')}</div>`;
-const SUBDIETA = ['alimentos', 'macros'];   // abas internas de Dieta: Dietas (dieta), Alimentos e Calculadora
+const subDieta = tab => `<div class="chips dietatabs" role="tablist" aria-label="Dieta">${[['dieta', 'Dietas'], ['alimentos', 'Alimentos']].map(([k, l]) => `<a class="chip ${tab === k ? 'on' : ''}" href="#/painel/${k}" role="tab" aria-selected="${tab === k}">${l}</a>`).join('')}</div>`;
+const SUBDIETA = ['alimentos'];   // abas internas de Dieta: Dietas (dieta) e Alimentos; a calculadora fica dentro da criação da dieta
 const BNAV = {
   dono: [['treinadores', 'i-treinador', 'Treinadores'], ['alunos', 'i-alunos', 'Alunos'], ['visao', 'i-visao', 'Visão geral'], ['planos', 'i-planos', 'Planos'], ['financeiro', 'i-cifrao', 'Financeiro']],
   treinador: [['alunos', 'i-alunos', 'Meus alunos'], ['treinos', 'db', 'Treinos'], ['visao', 'i-visao', 'Visão geral'], ['exercicios', 'bolt', 'Exercícios'], ['categorias', 'tag', 'Categorias']]
@@ -36,7 +35,10 @@ async function load(tab) {
   const D = { users: users.sort(byName), modalidades: modalidades.sort(byName), categorias: categorias.sort(byName), exercicios: exercicios.sort(byName), treinos: treinos.sort(byName) };
   D.planos = SESSION.me.role === 'dono' ? (await api.list('planos')).sort(byName) : [];
   if (tab === 'financeiro') D.pagamentos = await api.list('pagamentos', [], { ttl: 600000 });
-  if (tab === 'dieta' || tab === 'alimentos' || tab === 'macros') D.alimentos = (await api.list('alimentos')).sort(byName);
+  if (tab === 'dieta' || tab === 'alimentos') {
+    D.alimentos = await api.list('alimentos');
+    if (!D.alimentos.length && SESSION.me.role === 'treinador') { try { await importarPadrao(api, [], SESSION.user.uid); D.alimentos = await api.list('alimentos', [], { fresh: true }); } catch (e) { console.error('alimentos padrão', e); } }   // primeira vez: já cadastra a lista padrão
+    D.alimentos.sort(byName); }
   if (tab === 'dieta') D.dietas = (await api.list('dietas')).sort(byName);
   if (tab === 'produtos' || tab === 'pedidos') D.produtos = (await api.list('produtos')).sort(byName);
   if (tab === 'pedidos') D.pedidos = (await api.list('pedidos', [['ts', '>=', Date.now() - 60 * 86400000]], { fresh: true })).sort((a, b) => (b.ts || 0) - (a.ts || 0));
@@ -139,9 +141,9 @@ function schema(tab, D, E) {
       cols: [['Nome', r => r.nome], ['Grupo', r => r.grupo || 'Outros'], ['Porção', r => r.porcao], ['Calorias', r => n1(r.kcal) + ' kcal'], ['Carboidratos', r => n1(r.carb) + ' g'], ['Proteínas', r => n1(r.prot) + ' g'], ['Gorduras', r => n1(r.gord) + ' g']] },
     dieta: { col: 'dietas', title: 'Dietas', one: 'dieta', rows: (D.dietas || []).filter(t => !E.tid || t.criadoPor === E.tid), wide: 1,
       fields: [{ k: 'nome', l: 'Nome da dieta', req: 1, full: 1, ph: 'Ex.: Cutting, 2.000 kcal' }, { k: 'alunoIds', l: 'Alunos que seguem esta dieta', type: 'multi', opts: () => als.map(a => [a.id, a.nome]) },
-        { k: 'obs', l: 'Orientações gerais (opcional)', type: 'textarea', full: 1 }, { k: 'refeicoes', l: 'Refeições e horários', type: 'meals', req: 1, full: 1 }],
+        { k: 'obs', l: 'Orientações gerais (opcional)', type: 'textarea', full: 1 }, { k: 'refeicoes', l: 'Refeições e horários', type: 'meals', req: 1, full: 1 }, { k: 'perfil', l: 'Calculadora: gasto diário e saldo da dieta', type: 'dcalc', full: 1 }],
       cols: [['Nome', r => r.nome], ['Alunos', r => (r.alunoIds || []).map(id => nm(D.users, id).split(' ')[0]).join(', ') || '—'], ['Refeições', r => (r.refeicoes || []).length], ['Calorias/dia', r => n1(macDieta(r, D.alimentos).kcal) + ' kcal']],
-      extra: r => [['Orientações', r.obs || '—'], ['Total do dia', macTxt(macDieta(r, D.alimentos))], ...(r.refeicoes || []).map(m => [`${fmtHora(m.hora)} · ${m.nome}`, (m.itens || []).map(i => { const a = D.alimentos.find(x => x.id === i.alId); return `${a ? a.nome : 'Alimento removido'} · ${qtdTxt(a, i.qtd, i.un)}`; }).join('\n') + `\n${macTxt(macRef(m, D.alimentos))}`])] },
+      extra: r => [['Orientações', r.obs || '—'], ['Total do dia', macTxt(macDieta(r, D.alimentos))], ...(gasto(r.perfil) ? (g => [['Gasto diário (TMB × atividade)', `${n1(g.total)} kcal (TMB ${n1(g.tmb)})`], ['Saldo por dia', `${n1(macDieta(r, D.alimentos).kcal - g.total)} kcal`]])(gasto(r.perfil)) : []), ...(r.refeicoes || []).map(m => [`${fmtHora(m.hora)} · ${m.nome}`, (m.itens || []).map(i => { const a = D.alimentos.find(x => x.id === i.alId); return `${a ? a.nome : 'Alimento removido'} · ${qtdTxt(a, i.qtd, i.un)}`; }).join('\n') + `\n${macTxt(macRef(m, D.alimentos))}`])] },
     produtos: produtosSchema(D, { ATIVO }),
     treinos: { col: 'treinos', title: 'Treinos', one: 'treino', rows: D.treinos.filter(t => !E.tid || t.criadoPor === E.tid), wide: 1,
       fields: [{ k: 'nome', l: 'Nome do treino', req: 1, full: 1, ph: 'Ex.: Peito e Tríceps' }, { k: 'modalidadeId', l: 'Modalidade', type: 'select', blank: 1, full: 1, opts: () => mods },
@@ -236,6 +238,7 @@ function fieldHTML(f, v, D) {
       <div class="imgf-b"><button type="button" class="btn ghost" data-iup style="height:42px">Enviar imagem</button><button type="button" class="btn link" data-irm style="height:42px" ${v ? '' : 'hidden'}>Remover</button></div>
       <input type="text" data-ilink inputmode="url" placeholder="ou cole o link da imagem (https://...)" value="${dado ? '' : esc(v)}" aria-label="Link da imagem"></div></div></div>`; }
   if (f.type === 'meals') return mealsField(f, v, D);
+  if (f.type === 'dcalc') return dcalcField(f, v);
   if (f.type === 'calc') return `<p class="note full calc" data-calc aria-live="polite"></p>`;
   if (f.type === 'hint') return `<p class="muted full" style="font-size:13px;margin:-4px 0 0">${esc(f.txt)}</p>`;
   if (f.type === 'multi') { const o = f.opts(); return `<fieldset class="${cls} multi"><legend>${f.l}</legend>${o.length ? `<div class="checks">${o.map(([id, l]) => `<label class="chk"><input type="checkbox" name="${f.k}" value="${esc(id)}" ${(v || []).includes(id) ? 'checked' : ''}><span>${esc(l)}</span></label>`).join('')}</div>` : '<p class="muted" style="font-size:13px;margin:0">Nada cadastrado ainda.</p>'}</fieldset>`; }
@@ -260,6 +263,7 @@ function collect(form, sc, isNew, D) {
         ...(tec && TECNICAS[tec] ? { tec, tecSeries: grp ? 'todas' : $('[name=tecs]', r).value, ...(nota ? { tecNota: nota } : {}) } : {}) });
     });
     else if (f.type === 'meals') out[f.k] = D.alimentos.length ? collectMeals(form) : [];
+    else if (f.type === 'dcalc') out[f.k] = collectPerfil(form);
     else if (f.type === 'cardio') out[f.k] = form.elements.cardioOn && form.elements.cardioOn.checked ? { nome: form.elements.cardioTipo.value, min: Math.max(1, Math.min(240, Math.round(+form.elements.cardioMin.value) || 20)) } : null;
     else if (f.type === 'profs') out[f.k] = $$('.prow', form).map(r => { const nome = $('[name=pn]', r).value.trim(), sobre = $('[name=ps]', r).value.trim().slice(0, 400), dias = $$('[name=pd]:checked', r).map(i => +i.value);
       if (!nome && (sobre || dias.length)) fail('Informe o nome do professor que você começou a preencher.');
@@ -533,7 +537,7 @@ function build(tab, D, E) {
     <div class="thmline"><span>Aparência</span>${temaBtn()}</div>
     <div class="who"><a class="whou" href="#/painel/perfil" aria-label="Abrir meu perfil"${tab === 'perfil' ? ' aria-current="page"' : ''}>${avatar(me, 36)}<div style="flex:1;min-width:0"><b style="display:block;font-size:13px">${esc(firstName(me.nome))}</b><small style="color:var(--dim);font-size:11px">${me.role === 'dono' ? 'Dono' : 'Treinador'}${mode === 'demo' ? ' · demonstração' : ''}</small></div></a>
       <button id="out" class="iconbtn" style="width:36px;height:36px;background:var(--s2)" aria-label="Sair">${ic('logout', 18)}</button></div></aside>`;
-  const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D) : tab === 'pedidos' ? pedidosHTML(D) : tab === 'macros' ? subDieta(tab) + macrosHTML(D)
+  const body = tab === 'visao' ? visaoHTML(D, E) : tab === 'financeiro' ? finHTML(D) : tab === 'pedidos' ? pedidosHTML(D)
     : tab === 'perfil' ? `<div class="head"><div><h1 class="h1">Meu perfil</h1><p class="muted" style="margin-top:4px;font-size:14px">Foto, nome e senha</p></div></div><div class="pgrid">${perfilHTML()}</div>`
     : tab === 'dieta' || tab === 'alimentos' ? subDieta(tab) + tableHTML(schema(tab, D, E), D, E)
     : tableHTML(schema(tab, D, E), D, E);
@@ -553,16 +557,12 @@ function bind(el, tab, D, E) {
   if (tab === 'perfil') return bindPerfil(el, repaint);
   if (tab === 'financeiro') return bindFin(el, D, repaint);
   if (tab === 'pedidos') return bindPedidos(el, D, repaint);
-  if (tab === 'macros') return bindMacros(el, D);
   const sc = schema(tab, D, E); if (!sc) return;
   const create = () => openForm(sc, D, E, null, repaint);
   const nb = $('#new', el); if (nb) nb.onclick = create;
   const ns = $('#newsub', el); if (ns) ns.onclick = () => sc.rows.length ? openForm({ ...sc, ...sc.sub }, D, E, null, repaint) : toast('Crie uma categoria antes da subcategoria.');
-  const bi = $('#imp', el); if (bi) bi.onclick = async () => {
-    const tem = new Set((D.alimentos || []).map(a => String(a.nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase())), novos = PADRAO.filter(p => !tem.has(p.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()));
-    if (!novos.length) return toast('A lista padrão já está cadastrada.');
-    bi.disabled = true; bi.textContent = 'Importando...';
-    try { for (let i = 0; i < novos.length; i += 10) await Promise.all(novos.slice(i, i + 10).map(p => api.add('alimentos', { ...p, criadoPor: SESSION.user.uid, criadoEm: Date.now() }))); toast(`${novos.length} alimentos importados.`); await repaint(); }
+  const bi = $('#imp', el); if (bi) bi.onclick = async () => { bi.disabled = true; bi.textContent = 'Importando...';
+    try { const n = await importarPadrao(api, D.alimentos || [], SESSION.user.uid); toast(n ? `${n} alimentos importados.` : 'A lista padrão já está cadastrada.'); if (n) await repaint(); else { bi.disabled = false; bi.textContent = 'Importar lista padrão'; } }
     catch (err) { bi.disabled = false; bi.textContent = 'Importar lista padrão'; toast(err.message || 'Não foi possível importar agora.'); } };
   const q = $('#q', el), tb = $('tbody', el), T = catTree(D.categorias), all = sc.all || sc.rows;
   if (tb) {

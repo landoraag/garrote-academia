@@ -19,7 +19,7 @@ App web (PWA) para a gestão de uma academia: o **dono** cuida da academia, o **
 - **Técnicas avançadas**: biset, triset, dropset, rest-pause, cluster e outras, por exercício (em todas as séries ou só na última). Biset/triset agrupam este exercício com os próximos e dispensam o descanso entre eles.
 - **Dados do treino anterior**: carga e repetições vêm primeiro do último treino feito; só sem histórico entra a recomendação do treinador.
 - **Treinador externo** (dono, menu Treinadores externos): usa o app como os internos e paga mensalidade ao João; o dono registra pagamentos e o vencimento avança um mês.
-- **Dieta** (menu do treinador, com abas Dietas, Alimentos e Calculadora): o treinador monta dietas por **horário** (refeições com alimentos, quantidade em porções ou gramas e macros por refeição e por dia) e escolhe os alunos que a seguem; o aluno vê a dele em "Minha dieta". Alimentos têm grupo, porção e macros, com busca e busca avançada por grupo e o botão "Importar lista padrão" (~40 alimentos comuns, valores médios). A calculadora é uma tabela de alimentos com busca; ao tocar em Calcular, converte porções ou gramas em calorias e macros.
+- **Dieta** (menu do treinador, com abas Dietas e Alimentos): **Alimentos** é a base (grupo, porção e macros; a lista padrão de ~40 alimentos é cadastrada sozinha na primeira abertura, e dá para editar, excluir e acrescentar). Em **Dietas** o treinador monta as refeições por **horário**, escolhendo grupo e alimento, quantidade em porções ou gramas, e os alunos que a seguem. Dentro da criação da dieta fica a **calculadora**: macros e calorias de cada alimento, de cada refeição e do dia (com a divisão entre carboidrato, proteína e gordura), e, com sexo, idade, peso, altura e nível de atividade, a **TMB** (Mifflin-St Jeor), o gasto diário, o saldo da dieta e a estimativa de ganho ou perda por semana e em 30 dias. O aluno vê a dieta em "Minha dieta".
 - **Professores das modalidades**: cada modalidade lista professores, dias e horários, e a tela do aluno mostra quem dá aula em cada horário.
 - **Sem zoom**: pinça e toque duplo bloqueados (viewport, eventos de gesto e `touch-action`).
 - **Vitrine de produtos**: o aluno monta o pedido (pagamento na retirada); o painel do dono avisa na hora (som, vibração e título; consulta a cada 20 s) para a recepção separar. O dono cadastra produtos e estoque (baixa ao marcar "separado"), vê pedidos e faturamento.
@@ -79,7 +79,6 @@ garrote-app/
       perfil.js          tela de perfil
       plano.js           planos, descontos, parcelas e pagamentos
       loja.js            vitrine de produtos, pedidos e aviso para a recepção
-      nutri.js           calculadora de macros (aba Dieta)
       dieta.js           alimentos, macros e montagem das refeições por horário
       dash.js            indicadores e gráficos do painel inicial do dono
       semzoom.js         bloqueio de zoom por gestos

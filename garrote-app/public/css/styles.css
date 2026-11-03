@@ -1009,3 +1009,18 @@ html,body{touch-action:pan-x pan-y}
 .cartbar{margin-top:16px}.cartbar.bump{animation:vitBump .4s var(--ease)}
 .vit-fly{position:fixed;z-index:60;width:18px;height:18px;border-radius:50%;background:var(--red);box-shadow:0 0 0 4px rgba(217,30,38,.25);pointer-events:none}
 @media (prefers-reduced-motion:reduce){.vit-add.pop,.vit-add.pop .bdg,.cartbar.bump{animation:none}}
+
+/* calculadora dentro da criação da dieta: macros do dia, TMB, gasto e saldo */
+.dcalc .pfg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.dcalc .pfg .pfa{grid-column:1/-1}
+.dcalc .ii{display:block;min-width:0}.dcalc .ii span{display:block;font:600 11px var(--b);color:var(--muted);margin-bottom:4px}
+.dcalc input,.dcalc select{width:100%;min-width:0;height:44px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:0 10px;font:500 14px var(--b);color:var(--fg)}
+.dres{display:flex;flex-direction:column;gap:10px;margin-top:12px;padding:14px;border-radius:18px;background:var(--bg)}
+.dtiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.dtiles>div{background:var(--card);border-radius:14px;padding:10px 12px;min-width:0;border:1px solid var(--line)}
+.dtiles small{display:block;font:600 11px var(--b);color:var(--muted)}.dtiles b{font:700 20px/1.2 var(--d)}.dtiles b span{font:500 11px var(--b);color:var(--muted)}
+.dtiles .dt-k{background:var(--solid);border-color:transparent}.dtiles .dt-k small,.dtiles .dt-k b span{color:rgba(255,255,255,.72)}.dtiles .dt-k b{color:#fff}
+.dtiles .dt-ok{border-color:rgba(31,138,76,.6);background:rgba(31,138,76,.08)}.dtiles .dt-ok b{color:var(--ok)}
+.dtiles .dt-up{border-color:rgba(232,163,23,.7);background:rgba(232,163,23,.1)}.dtiles .dt-up b{color:#C98A0B}
+.msplit{display:flex;height:10px;border-radius:99px;overflow:hidden;background:var(--line)}.msplit i{display:block;height:100%;transition:width .3s var(--ease)}
+.msplit .c{background:#E8A317}.msplit .p{background:#D91E26}.msplit .g{background:#3B82F6}
+.dres .dnote{margin:0}
+@media (max-width:700px){.dcalc .pfg{grid-template-columns:1fr 1fr}.dtiles{grid-template-columns:1fr 1fr}}
