@@ -14,7 +14,7 @@ const byName = (a, b) => String(a.nome || '').localeCompare(String(b.nome || '')
 const genPass = () => { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; for (let i = 0; i < 8; i++) s += a[Math.floor(Math.random() * a.length)]; return s; };
 /* Dono: pessoas, modalidades e financeiro. Treinador: alunos, treinos, exercícios e categorias. */
 const MENU = {
-  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['externos', 'Treinadores externos'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['produtos', 'Produtos'], ['pedidos', 'Pedidos'], ['alimentos', 'Alimentos'], ['macros', 'Calculadora de macros']],
+  dono: [['visao', 'Visão geral'], ['treinadores', 'Treinadores'], ['externos', 'Treinadores externos'], ['alunos', 'Alunos'], ['modalidades', 'Modalidades'], ['planos', 'Planos'], ['financeiro', 'Financeiro'], ['produtos', 'Produtos'], ['pedidos', 'Pedidos'], ['alimentos', 'Alimentos']],
   treinador: [['visao', 'Visão geral'], ['alunos', 'Meus alunos'], ['treinos', 'Treinos'], ['exercicios', 'Exercícios'], ['categorias', 'Categorias'], ['alimentos', 'Alimentos'], ['macros', 'Calculadora de macros']]
 };
 /* atalhos fixos na parte de baixo do celular (5 ícones, o do meio é sempre a visão geral) */
