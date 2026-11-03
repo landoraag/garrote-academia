@@ -64,11 +64,19 @@ export async function importarPadrao(api, existentes, uid) {
 export const baseDesatualizada = al => !al.length || al.some(a => String(a.id).startsWith('pad-') && a.v !== VERSAO_BASE);
 
 /* ---------- formulário: refeições por horário (como os exercícios do treino, mas com horas no lugar dos dias) ---------- */
+/* escolha em passos: Grupo → Alimento (digitando, ex.: "arroz", "frango") → Preparo/tipo (ex.: "peito, sem pele, grelhado") */
+const baseDe = a => String(a.nome).split(',')[0].trim();
+const varDe = a => String(a.nome).split(',').slice(1).map(x => x.trim()).filter(Boolean).join(', ') || 'Padrão';
+const basesDe = (al, g) => { const m = new Map(); al.filter(a => !g || (a.grupo || 'Outros') === g).forEach(a => { const b = baseDe(a); if (!m.has(b)) m.set(b, []); m.get(b).push(a); }); return [...m.entries()].sort((x, y) => x[0].localeCompare(y[0], 'pt-BR')); };
 const grupoOpts = (al, sel) => `<option value="">Todos os grupos</option>` + [...new Set(al.map(a => a.grupo || 'Outros'))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(g => `<option ${g === sel ? 'selected' : ''}>${esc(g)}</option>`).join('');
-const foodOpts = (al, g, sel) => `<option value="">Escolha o alimento</option>` + al.filter(a => !g || (a.grupo || 'Outros') === g).map(a => `<option value="${esc(a.id)}" ${a.id === sel ? 'selected' : ''}>${esc(a.nome)}</option>`).join('');
-const frow = (D, it = {}) => { const a = D.alimentos.find(x => x.id === it.alId), g = a ? a.grupo || 'Outros' : '';
-  return `<div class="frow"><label class="ii"><span>Grupo</span><select name="fg" aria-label="Grupo">${grupoOpts(D.alimentos, g)}</select></label>
-  <label class="ii fa"><span>Alimento</span><select name="fa" aria-label="Alimento">${foodOpts(D.alimentos, g, it.alId)}</select></label>
+const baseOpts = (al, g) => basesDe(al, g).map(([b, l]) => `<option value="${esc(b)}" label="${l.length > 1 ? l.length + ' opções' : ''}"></option>`).join('');
+const acha = (al, g, b) => (basesDe(al, g).find(x => sa(x[0]) === sa(b)) || [0, []])[1];
+const varOpts = (al, g, b, sel) => { const l = acha(al, g, b).slice().sort((x, y) => varDe(x).localeCompare(varDe(y), 'pt-BR')); return `<option value="">${l.length ? (l.length > 1 ? 'Escolha o preparo / tipo' : '') : 'Escolha o alimento antes'}</option>` + l.map(a => `<option value="${esc(a.id)}" ${a.id === sel ? 'selected' : ''}>${esc(varDe(a))}</option>`).join(''); };
+let FU = 0;
+const frow = (D, it = {}) => { const a = D.alimentos.find(x => x.id === it.alId), g = a ? a.grupo || 'Outros' : '', id = 'dlb' + (++FU);
+  return `<div class="frow"><label class="ii fg"><span>Grupo</span><select name="fg" aria-label="Grupo">${grupoOpts(D.alimentos, g)}</select></label>
+  <label class="ii fb"><span>Alimento</span><input name="fb" list="${id}" autocomplete="off" placeholder="Digite: arroz, frango, ovo…" value="${a ? esc(baseDe(a)) : ''}" aria-label="Alimento"><datalist id="${id}">${baseOpts(D.alimentos, g)}</datalist></label>
+  <label class="ii fv"><span>Preparo / tipo</span><select name="fv" aria-label="Preparo ou tipo">${varOpts(D.alimentos, g, a ? baseDe(a) : '', it.alId)}</select></label><input type="hidden" name="fa" value="${esc(it.alId || '')}">
   <label class="ii fq"><span>Quantidade</span><input name="fq" type="number" min="0.25" step="0.25" value="${it.qtd ?? 100}" aria-label="Quantidade"></label>
   <label class="ii fu"><span>Medida</span><select name="fu" aria-label="Medida"><option value="p" ${it.un === 'p' ? 'selected' : ''}>Porção</option><option value="g" ${it.un !== 'p' ? 'selected' : ''}>Gramas</option></select></label>
   <button type="button" class="pdel" data-rmfood aria-label="Remover alimento">${ic('close', 18, 'currentColor', 2.4)}</button><p class="fk"></p></div>`; };
@@ -89,11 +97,16 @@ export function bindMeals(form, D) {
   const paint = () => { let dia = []; $$('.meal', box).forEach(mr => { const ms = $$('.frow', mr).map(r => { const m = fk(r); $('.fk', r).textContent = m ? macTxt(m) : ''; return m; }).filter(Boolean), t = soma(ms); dia.push(t);
       $('.mtot', mr).textContent = ms.length ? macTxt(t) : ''; });
     const tot = soma(dia); $('#dtot', form).innerHTML = dia.length ? `<b>Total do dia:</b> ${macTxt(tot)}` : ''; const rb = $('#dres', form); if (rb) resultadoCalc(rb, tot, collectPerfil(form)); };
-  box.onchange = e => { const r = e.target.closest('.frow'); if (r && e.target.name === 'fg') { $('[name=fa]', r).innerHTML = foodOpts(D.alimentos, e.target.value, ''); $('[name=fa]', r).focus(); } paint(); };
-  box.oninput = paint; form.addEventListener('input', e => { if (/^pf_/.test(e.target.name || '')) paint(); }); form.addEventListener('change', e => { if (/^pf_/.test(e.target.name || '')) paint(); });
+  const setVar = r => { const g = $('[name=fg]', r).value, b = $('[name=fb]', r).value.trim(), l = acha(D.alimentos, g, b), fv = $('[name=fv]', r);
+    fv.innerHTML = varOpts(D.alimentos, g, b, ''); if (l.length === 1) fv.value = l[0].id; $('[name=fa]', r).value = fv.value; fv.disabled = !l.length; };
+  box.onchange = e => { const r = e.target.closest('.frow'); if (r) { const n = e.target.name;
+      if (n === 'fg') { $('datalist', r).innerHTML = baseOpts(D.alimentos, e.target.value); $('[name=fb]', r).value = ''; setVar(r); $('[name=fb]', r).focus(); }
+      else if (n === 'fb') setVar(r);
+      else if (n === 'fv') $('[name=fa]', r).value = e.target.value; } paint(); };
+  box.oninput = e => { if (e.target.name === 'fb') { const r = e.target.closest('.frow'), g = $('[name=fg]', r).value; if (acha(D.alimentos, g, e.target.value).length) setVar(r); } paint(); }; form.addEventListener('input', e => { if (/^pf_/.test(e.target.name || '')) paint(); }); form.addEventListener('change', e => { if (/^pf_/.test(e.target.name || '')) paint(); });
   box.onclick = e => { const mr = e.target.closest('.meal'); if (!mr) return;
     if (e.target.closest('[data-addfood]')) { $('.foods', mr).insertAdjacentHTML('beforeend', frow(D, {})); const r = $('.foods', mr).lastElementChild; r.classList.add('new'); $('[name=fg]', r).focus(); return paint(); }
-    if (e.target.closest('[data-rmfood]')) { const r = e.target.closest('.frow'); if ($$('.frow', mr).length > 1) r.remove(); else { $('[name=fa]', r).value = ''; } return paint(); }
+    if (e.target.closest('[data-rmfood]')) { const r = e.target.closest('.frow'); if ($$('.frow', mr).length > 1) r.remove(); else { $('[name=fa]', r).value = ''; $('[name=fb]', r).value = ''; setVar(r); } return paint(); }
     if (e.target.closest('[data-mrm]')) { mr.remove(); return paint(); }
     if (e.target.closest('[data-mup]')) { if (mr.previousElementSibling) box.insertBefore(mr, mr.previousElementSibling); return; }
     if (e.target.closest('[data-mdn]')) { if (mr.nextElementSibling) box.insertBefore(mr.nextElementSibling, mr); } };
