@@ -2,7 +2,7 @@
 import { api, mode } from './api.js';
 import { $, $$, reduce, esc, toast, countUp, ic, logo, LET, DIAS, dkey, initials, SESSION, go, openModal, confirmBox, fail, avatar, brl, firstName, catTree, isTempo, itemTxt, segAlvo, temaBtn, fmtHora, TECNICAS, segTxt } from './ui.js';
 import { dashHTML, bindDash } from './dash.js';
-import { mealsField, bindMeals, collectMeals, dcalcField, collectPerfil, gasto, importarPadrao, baseDesatualizada, GRUPOS, macDieta, macRef, macTxt, qtdTxt, n1 } from './dieta.js';
+import { mealsField, bindMeals, collectMeals, dcalcField, collectPerfil, gasto, importarPadrao, baseDesatualizada, GRUPOS, macDieta, macRef, macTxt, qtdTxt, n1, sa } from './dieta.js';
 import { produtosSchema, pedidosHTML, bindPedidos, iniciarAvisoPedidos } from './loja.js';
 import { perfilHTML, bindPerfil } from './perfil.js';
 import { PERIODOS, perLabel, mensalDe, ptDate, addMonths, situ, precoFinal, descTxt, parcTxt, precoTxt, nParc, pctPix, precoPix } from './plano.js';
@@ -400,14 +400,30 @@ const scDe = (sc, row) => sc.sub && row && sc.tree.isSub(row) ? { ...sc, ...sc.s
 const nomeCell = (sc, r, sub, aberto) => !sc.tree ? esc(sc.cols[0][1](r)) : sub ? `<span class="cnm sub">↳ ${esc(r.nome)}</span>`
   : `<button type="button" class="cnm" data-xp aria-expanded="${!!aberto}" ${sc.tree.subs(r.id).length ? '' : 'disabled'}>${sc.tree.subs(r.id).length ? ic('chev', 16, 'currentColor', 2.4, 'cxp') : '<i class="cxp0"></i>'}${esc(r.nome)}${sc.tree.subs(r.id).length ? `<small>${sc.tree.subs(r.id).length}</small>` : ''}</button>`;
 const rowHTML = (sc, r, sub = false, aberto = false) => `<tr data-id="${esc(r.id)}" class="${sub ? 'subr' : aberto ? 'aberta' : ''}">${sc.cols.map((c, i) => `<td>${i ? esc(c[1](r)) : nomeCell(sc, r, sub, aberto)}</td>`).join('')}<td class="act"><button class="det" data-det>Detalhes</button>${sc.pay ? '<button data-xpay>Mensalidade</button>' : ''}<button data-edit>Editar</button><button data-del>Excluir</button></td></tr>`;
+/* busca avançada dos alimentos: grupo, tipo (massas, frango…), preparo (grelhado, frito…) e faixas de calorias/carboidratos/proteínas/gorduras */
+const TIPOS = [['Massas', /macarr|lasanha|nhoque|massa|pizza|pastel/], ['Pães e bolos', /\bpao\b|\bbolo\b|biscoito|torrada/], ['Arroz', /arroz/], ['Feijões', /feij/], ['Frango', /frango|galinha, (coxa|peito|sobrecoxa)/], ['Carne bovina', /bovin|\bbife\b|carne, (boi|bovina)/], ['Porco', /porco|suino|bacon|lingui/], ['Peixes', /peixe|atum|sardinha|tilapia|salmao|merluza|pescada|bacalhau/], ['Leite e queijos', /leite|queijo|iogurte|requeij|ricota/], ['Ovos', /\bovo/], ['Doces', /doce|chocolate|sorvete|acucar|mel\b|goiabada|geleia/]];
+const PREPAROS = [['Cru', /\bcr[ua]s?\b/], ['Cozido', /cozid|fervid/], ['Grelhado', /grelhad/], ['Frito', /\bfrit/], ['Assado', /assad/], ['Refogado', /refogad/], ['Ensopado', /ensopad|guisad/]];
+const MACROS = [['kcal', 'Calorias', 'kcal'], ['carb', 'Carboidratos', 'g'], ['prot', 'Proteínas', 'g'], ['gord', 'Gorduras', 'g']];
+const ORDENS = [['', 'Nome (A–Z)'], ['prot-', 'Mais proteína'], ['carb-', 'Mais carboidrato'], ['gord-', 'Mais gordura'], ['kcal-', 'Mais calorias'], ['carb+', 'Menos carboidrato'], ['gord+', 'Menos gordura'], ['kcal+', 'Menos calorias']];
+const nA = r => sa(r.nome);
+function alimPanel(rows) {
+  const chips = (attr, lista, test) => lista.map(([n, re]) => { const c = rows.filter(r => re.test(nA(r))).length; return c ? `<button type="button" class="catb" data-${attr}="${esc(n)}">${esc(n)}<span>${c}</span></button>` : ''; }).join('');
+  const grupos = [...new Set(rows.map(r => r.grupo || 'Outros'))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(g => `<button type="button" class="catb" data-g="${esc(g)}">${esc(g)}<span>${rows.filter(r => (r.grupo || 'Outros') === g).length}</span></button>`).join('');
+  return `<section class="card advp" id="advp" hidden>
+    <small class="advt">Grupo</small><div class="catgrid" role="group" aria-label="Filtrar por grupo">${grupos}</div>
+    <small class="advt">Tipo de alimento</small><div class="catgrid" role="group" aria-label="Filtrar por tipo">${chips('t', TIPOS)}</div>
+    <small class="advt">Preparo</small><div class="catgrid" role="group" aria-label="Filtrar por preparo">${chips('p', PREPAROS)}</div>
+    <small class="advt">Nutrientes (valores por porção cadastrada, mín. e máx.)</small>
+    <div class="mfil">${MACROS.map(([k, l, u]) => `<div class="mf"><span>${l} (${u})</span><div><input type="number" min="0" step="any" inputmode="decimal" placeholder="mín" data-m="${k}" data-b="min" aria-label="${l} mínimo"><input type="number" min="0" step="any" inputmode="decimal" placeholder="máx" data-m="${k}" data-b="max" aria-label="${l} máximo"></div></div>`).join('')}</div>
+    <div class="mfil2"><label class="field">Ordenar por<select id="ord">${ORDENS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('')}</select></label><button type="button" class="btn dark" id="advclr" style="width:auto;height:46px;padding:0 20px;border-radius:14px;font-size:14px">Limpar filtros</button></div></section>`;
+}
 function tableHTML(sc, D, E) {
   const rows = sc.rows;
   const head = `<div class="head"><div><h1 class="h1">${sc.title}</h1><p class="muted" style="margin-top:4px;font-size:14px">${rows.length} ${rows.length === 1 ? 'cadastro' : 'cadastros'}</p></div>
     <div class="tools"><input id="q" type="search" placeholder="Buscar" aria-label="Buscar">${(sc.catFilter && catTree(D.categorias).tops.length) || (sc.groupFilter && rows.length) ? `<button type="button" class="advb" id="advb" aria-expanded="false" aria-controls="advp">${ic('sliders', 18)}<span>Busca avançada</span><em></em></button>` : ''}<button class="btn red" id="new" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ ${/a$/.test(sc.one) ? 'Nova' : 'Novo'} ${sc.one}</button>${sc.newSub ? '<button class="btn dark" id="newsub" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">+ Nova subcategoria</button>' : ''}${sc.imp ? '<button class="btn dark" id="imp" style="width:auto;height:46px;padding:0 22px;border-radius:14px;font-size:14px">Importar lista padrão</button>' : ''}</div></div>`;
   if (!rows.length) return head + `<section class="card"><p class="empty">Nenhum cadastro ainda. Clique em “+ ${/a$/.test(sc.one) ? 'Nova' : 'Novo'} ${sc.one}” para começar.</p></section>`;
   const T = catTree(D.categorias), cnt = id => rows.filter(r => T.top(r.categoriaId) === id).length;
-  const gf = sc.groupFilter ? `<section class="card advp" id="advp" hidden><small class="advt">Grupo</small><div class="catgrid" role="group" aria-label="Filtrar por grupo">${[...new Set(rows.map(r => r.grupo || 'Outros'))].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(g => `<button type="button" class="catb" data-g="${esc(g)}">${esc(g)}<span>${rows.filter(r => (r.grupo || 'Outros') === g).length}</span></button>`).join('')}</div></section>` : '';
-  const filt = gf || sc.catFilter && T.tops.length ? `<section class="card advp" id="advp" hidden><small class="advt">Categoria</small><div class="catgrid" role="group" aria-label="Filtrar por categoria">${T.tops.map(c => `<button type="button" class="catb" data-c="${esc(c.id)}">${esc(c.nome)}<span>${cnt(c.id)}</span></button>`).join('')}</div>
+  const filt = sc.groupFilter ? alimPanel(rows) : sc.catFilter && T.tops.length ? `<section class="card advp" id="advp" hidden><small class="advt">Categoria</small><div class="catgrid" role="group" aria-label="Filtrar por categoria">${T.tops.map(c => `<button type="button" class="catb" data-c="${esc(c.id)}">${esc(c.nome)}<span>${cnt(c.id)}</span></button>`).join('')}</div>
     <label class="field subsel" hidden>Subcategoria<select id="ssel"></select></label></section>` : '';
   return head + filt + `<section class="card tblcard"><table class="tbl"><thead><tr>${sc.cols.map(c => `<th>${c[0]}</th>`).join('')}<th></th></tr></thead><tbody>
     ${rows.slice(0, pageSize()).map(r => rowHTML(sc, r)).join('')}</tbody></table></section><div id="pager">${pagerHTML(1, Math.ceil(rows.length / pageSize()))}</div>`;
@@ -567,21 +583,27 @@ function bind(el, tab, D, E) {
   const q = $('#q', el), tb = $('tbody', el), T = catTree(D.categorias), all = sc.all || sc.rows;
   if (tb) {
     const hay = new Map(sc.rows.map(r => [r.id, [sc.cols.map(c => String(c[1](r))).join(' '), ...(sc.tree ? T.subs(r.id).map(x => x.nome) : [])].join(' ').toLowerCase()]));
-    let list = sc.rows, term = '', fc = '', fsub = '', fg = '';
+    let list = sc.rows, term = '', fc = '', fsub = '', fg = '', ft = '', fp = '', ord = '', fm = {};
     const aberto = new Set();   // categorias abertas (mostrando as subcategorias)
     const subsVis = r => !sc.tree ? [] : aberto.has(r.id) ? T.subs(r.id) : term ? T.subs(r.id).filter(x => x.nome.toLowerCase().includes(term)) : [];
     const render = pager(el, () => list.length, page => {
       tb.innerHTML = list.slice((page - 1) * pageSize(), page * pageSize()).map(r => { const sv = subsVis(r); return rowHTML(sc, r, false, sv.length > 0) + sv.map(x => rowHTML(sc, x, true)).join(''); }).join('')
         || `<tr><td colspan="${sc.cols.length + 1}" class="empty">Nenhum resultado${fc ? ' nesta categoria' : ' para a busca'}.</td></tr>`;
     });
-    const apply = (keep = false) => { list = sc.rows.filter(r => (!term || hay.get(r.id).includes(term)) && (!fc || T.top(r.categoriaId) === fc) && (!fsub || r.categoriaId === fsub) && (!fg || (r.grupo || 'Outros') === fg)); render(keep); };
+    const apply = (keep = false) => { list = sc.rows.filter(r => (!term || hay.get(r.id).includes(term)) && (!fc || T.top(r.categoriaId) === fc) && (!fsub || r.categoriaId === fsub) && (!fg || (r.grupo || 'Outros') === fg) && (!ft || TIPOS.find(x => x[0] === ft)[1].test(nA(r))) && (!fp || PREPAROS.find(x => x[0] === fp)[1].test(nA(r))) && Object.entries(fm).every(([k, v]) => (v.min == null || (+r[k] || 0) >= v.min) && (v.max == null || (+r[k] || 0) <= v.max)));
+      if (ord) { const k = ord.slice(0, -1), d = ord.endsWith('-') ? -1 : 1; list = [...list].sort((x, y) => d * ((+x[k] || 0) - (+y[k] || 0)) || x.nome.localeCompare(y.nome, 'pt-BR')); }
+      render(keep); };
     if (q) q.oninput = () => { term = q.value.trim().toLowerCase(); apply(); };
     /* busca avançada dos exercícios: categorias em grade (4 por linha); a escolhida fica vermelha e abre a lista de subcategorias */
     const ab = $('#advb', el), ap = $('#advp', el);
     if (ab && ap && sc.groupFilter) {
+      const marca = () => { $$('[data-g]', ap).forEach(c => c.classList.toggle('on', c.dataset.g === fg)); $$('[data-t]', ap).forEach(c => c.classList.toggle('on', c.dataset.t === ft)); $$('[data-p]', ap).forEach(c => c.classList.toggle('on', c.dataset.p === fp));
+        const n = [fg, ft, fp, ord].filter(Boolean).length + Object.keys(fm).length; ab.querySelector('em').textContent = n ? n + (n === 1 ? ' filtro' : ' filtros') : ''; };
       ab.onclick = () => { const on = ap.hidden; ap.hidden = !on; ab.classList.toggle('on', on); ab.setAttribute('aria-expanded', on); };
-      $('.catgrid', ap).onclick = e => { const b = e.target.closest('[data-g]'); if (!b) return; fg = b.dataset.g === fg ? '' : b.dataset.g;
-        $$('[data-g]', ap).forEach(c => c.classList.toggle('on', c.dataset.g === fg)); ab.querySelector('em').textContent = fg; apply(); };
+      ap.onclick = e => { const b = e.target.closest('[data-g],[data-t],[data-p]'); if (b) { if (b.dataset.g) fg = b.dataset.g === fg ? '' : b.dataset.g; if (b.dataset.t) ft = b.dataset.t === ft ? '' : b.dataset.t; if (b.dataset.p) fp = b.dataset.p === fp ? '' : b.dataset.p; marca(); apply(); return; }
+        if (e.target.closest('#advclr')) { fg = ft = fp = ord = ''; fm = {}; $$('[data-m]', ap).forEach(i => i.value = ''); $('#ord', ap).value = ''; marca(); apply(); } };
+      ap.oninput = e => { const i = e.target.closest('[data-m]'); if (!i) return; const k = i.dataset.m, v = i.value === '' ? null : Math.max(0, +i.value); fm[k] = { ...(fm[k] || {}), [i.dataset.b]: v }; if (fm[k].min == null && fm[k].max == null) delete fm[k]; marca(); apply(); };
+      $('#ord', ap).onchange = e => { ord = e.target.value; marca(); apply(); };
     } else if (ab && ap) {
       const ssel = $('#ssel', ap), sl = $('.subsel', ap);
       ab.onclick = () => { const on = ap.hidden; ap.hidden = !on; ab.classList.toggle('on', on); ab.setAttribute('aria-expanded', on); };

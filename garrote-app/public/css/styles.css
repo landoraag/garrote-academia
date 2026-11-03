@@ -1024,3 +1024,10 @@ html,body{touch-action:pan-x pan-y}
 .msplit .c{background:#E8A317}.msplit .p{background:#D91E26}.msplit .g{background:#3B82F6}
 .dres .dnote{margin:0}
 @media (max-width:700px){.dcalc .pfg{grid-template-columns:1fr 1fr}.dtiles{grid-template-columns:1fr 1fr}}
+/* busca avançada dos alimentos */
+.advp .advt{margin-top:4px}.advp .catgrid:empty{display:none}
+.mfil{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.mf span{display:block;font:600 12px/1.2 var(--b);opacity:.7;margin-bottom:6px}
+.mf div{display:flex;gap:6px}.mf input{width:100%;min-width:0;height:42px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit;font:500 14px var(--b)}
+.mfil2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}.mfil2 .field{flex:1 1 200px;margin:0}
+@media (max-width:700px){.mfil{grid-template-columns:repeat(2,minmax(0,1fr))}}
