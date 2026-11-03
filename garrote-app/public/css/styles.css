@@ -845,3 +845,8 @@ html,body{touch-action:pan-x pan-y}
 .nut-tiles b{font:700 22px var(--d)}.nut-tiles b span{font:500 12px var(--b);color:var(--muted)}.nut-tiles .nt-k b span{color:rgba(255,255,255,.7)}
 .nut-r{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}.nut-r>div{flex:1;min-width:0}.nut-r b{display:block;font:600 14px var(--b)}.nut-r small{font:400 12px var(--b);color:var(--muted)}
 .nut-x{width:34px;height:34px;background:var(--bg);color:var(--muted)}#ntot{margin-top:12px}
+
+/* horário da modalidade numa linha só (sem quebrar "20:00 – 21:00") */
+.mcard .foot{flex-wrap:wrap;gap:10px 12px}
+.mcard .foot b,.tm b{white-space:nowrap}
+.mcard .foot .dias{flex:0 1 auto;min-width:0}
