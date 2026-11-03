@@ -1031,3 +1031,9 @@ html,body{touch-action:pan-x pan-y}
 .mf div{display:flex;gap:6px}.mf input{width:100%;min-width:0;height:42px;padding:0 10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit;font:500 14px var(--b)}
 .mfil2{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}.mfil2 .field{flex:1 1 200px;margin:0}
 @media (max-width:700px){.mfil{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* pesquisa de alimento na refeição */
+.frow .fs{grid-column:1/-1;position:relative}
+.fres{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:30;max-height:280px;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 14px 32px rgba(0,0,0,.28);padding:4px}
+.fres[hidden]{display:none}
+.fres button{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:11px 12px;border-radius:10px;text-align:left;font:500 14px/1.3 var(--b);color:inherit;background:none}
+.fres button:hover,.fres button:focus-visible{background:var(--bg)}.fres small{opacity:.6;white-space:nowrap}.fres p{padding:12px;margin:0}

@@ -74,7 +74,7 @@ const acha = (al, g, b) => (basesDe(al, g).find(x => sa(x[0]) === sa(b)) || [0, 
 const varOpts = (al, g, b, sel) => { const l = acha(al, g, b).slice().sort((x, y) => varDe(x).localeCompare(varDe(y), 'pt-BR')); return `<option value="">${l.length ? (l.length > 1 ? 'Escolha o preparo / tipo' : '') : 'Escolha o alimento antes'}</option>` + l.map(a => `<option value="${esc(a.id)}" ${a.id === sel ? 'selected' : ''}>${esc(varDe(a))}</option>`).join(''); };
 let FU = 0;
 const frow = (D, it = {}) => { const a = D.alimentos.find(x => x.id === it.alId), g = a ? a.grupo || 'Outros' : '', id = 'dlb' + (++FU);
-  return `<div class="frow"><label class="ii fg"><span>Grupo</span><select name="fg" aria-label="Grupo">${grupoOpts(D.alimentos, g)}</select></label>
+  return `<div class="frow"><label class="ii fs"><span>Pesquisar</span><input name="fs" type="search" autocomplete="off" placeholder="Pesquisar alimento (ex.: frango grelhado, arroz, ovo)" aria-label="Pesquisar alimento"><div class="fres" hidden></div></label><label class="ii fg"><span>Grupo</span><select name="fg" aria-label="Grupo">${grupoOpts(D.alimentos, g)}</select></label>
   <label class="ii fb"><span>Alimento</span><input name="fb" list="${id}" autocomplete="off" placeholder="Digite: arroz, frango, ovo…" value="${a ? esc(baseDe(a)) : ''}" aria-label="Alimento"><datalist id="${id}">${baseOpts(D.alimentos, g)}</datalist></label>
   <label class="ii fv"><span>Preparo / tipo</span><select name="fv" aria-label="Preparo ou tipo">${varOpts(D.alimentos, g, a ? baseDe(a) : '', it.alId)}</select></label><input type="hidden" name="fa" value="${esc(it.alId || '')}">
   <label class="ii fq"><span>Quantidade</span><input name="fq" type="number" min="0.25" step="0.25" value="${it.qtd ?? 100}" aria-label="Quantidade"></label>
@@ -99,12 +99,20 @@ export function bindMeals(form, D) {
     const tot = soma(dia); $('#dtot', form).innerHTML = dia.length ? `<b>Total do dia:</b> ${macTxt(tot)}` : ''; const rb = $('#dres', form); if (rb) resultadoCalc(rb, tot, collectPerfil(form)); };
   const setVar = r => { const g = $('[name=fg]', r).value, b = $('[name=fb]', r).value.trim(), l = acha(D.alimentos, g, b), fv = $('[name=fv]', r);
     fv.innerHTML = varOpts(D.alimentos, g, b, ''); if (l.length === 1) fv.value = l[0].id; $('[name=fa]', r).value = fv.value; fv.disabled = !l.length; };
+  const busca = (r, termo) => { const box2 = $('.fres', r), t = sa(termo).split(/\s+/).filter(Boolean);
+    if (!t.length) { box2.hidden = true; return; }
+    const l = D.alimentos.filter(a => { const n = sa(a.nome) + ' ' + sa(a.grupo); return t.every(x => n.includes(x)); }).sort((x, y) => sa(x.nome).indexOf(t[0]) - sa(y.nome).indexOf(t[0]) || x.nome.localeCompare(y.nome, 'pt-BR')).slice(0, 40);
+    box2.innerHTML = l.length ? l.map(a => `<button type="button" data-pick="${esc(a.id)}"><span>${esc(a.nome)}</span><small>${n1(a.kcal)} kcal</small></button>`).join('') : '<p class="muted">Nenhum alimento encontrado.</p>'; box2.hidden = false; };
+  const escolhe = (r, id) => { const a = D.alimentos.find(x => x.id === id); if (!a) return; const fg = $('[name=fg]', r); fg.value = a.grupo || 'Outros'; $('datalist', r).innerHTML = baseOpts(D.alimentos, fg.value);
+    $('[name=fb]', r).value = baseDe(a); setVar(r); $('[name=fv]', r).value = id; $('[name=fa]', r).value = id; $('[name=fs]', r).value = ''; $('.fres', r).hidden = true; paint(); };
+  document.addEventListener('click', e => { if (!e.target.closest('.fs')) $$('.fres', box).forEach(x => x.hidden = true); });
   box.onchange = e => { const r = e.target.closest('.frow'); if (r) { const n = e.target.name;
       if (n === 'fg') { $('datalist', r).innerHTML = baseOpts(D.alimentos, e.target.value); $('[name=fb]', r).value = ''; setVar(r); $('[name=fb]', r).focus(); }
       else if (n === 'fb') setVar(r);
       else if (n === 'fv') $('[name=fa]', r).value = e.target.value; } paint(); };
-  box.oninput = e => { if (e.target.name === 'fb') { const r = e.target.closest('.frow'), g = $('[name=fg]', r).value; if (acha(D.alimentos, g, e.target.value).length) setVar(r); } paint(); }; form.addEventListener('input', e => { if (/^pf_/.test(e.target.name || '')) paint(); }); form.addEventListener('change', e => { if (/^pf_/.test(e.target.name || '')) paint(); });
+  box.oninput = e => { if (e.target.name === 'fs') return busca(e.target.closest('.frow'), e.target.value); if (e.target.name === 'fb') { const r = e.target.closest('.frow'), g = $('[name=fg]', r).value; if (acha(D.alimentos, g, e.target.value).length) setVar(r); } paint(); }; form.addEventListener('input', e => { if (/^pf_/.test(e.target.name || '')) paint(); }); form.addEventListener('change', e => { if (/^pf_/.test(e.target.name || '')) paint(); });
   box.onclick = e => { const mr = e.target.closest('.meal'); if (!mr) return;
+    const pk = e.target.closest('[data-pick]'); if (pk) return escolhe(pk.closest('.frow'), pk.dataset.pick);
     if (e.target.closest('[data-addfood]')) { $('.foods', mr).insertAdjacentHTML('beforeend', frow(D, {})); const r = $('.foods', mr).lastElementChild; r.classList.add('new'); $('[name=fg]', r).focus(); return paint(); }
     if (e.target.closest('[data-rmfood]')) { const r = e.target.closest('.frow'); if ($$('.frow', mr).length > 1) r.remove(); else { $('[name=fa]', r).value = ''; $('[name=fb]', r).value = ''; setVar(r); } return paint(); }
     if (e.target.closest('[data-mrm]')) { mr.remove(); return paint(); }
