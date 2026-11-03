@@ -862,3 +862,10 @@ html,body{touch-action:pan-x pan-y}
 .imgf-r{display:flex;gap:12px;align-items:flex-start}.imgf-p{flex:none;width:84px;height:84px;border-radius:14px;background:var(--line) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .imgf-c{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}.imgf-b{display:flex;gap:8px;flex-wrap:wrap}.imgf-b .btn{padding:0 16px}
 .imgf-c input[type=text]{height:42px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:0 10px;font:500 14px var(--b);width:100%;min-width:0}
+
+/* histórico sob demanda e busca no celular */
+.hbtn{width:100%;height:50px;display:flex;align-items:center;justify-content:center;gap:10px;margin-top:4px}
+.hbusca{align-items:stretch;min-width:0}.hbusca .hq{min-width:0}.hq input{text-overflow:ellipsis;min-width:0;width:100%}
+.hpf .field{min-width:0}.hpf .field input,.hpf .field select{width:100%;min-width:0;max-width:100%;-webkit-appearance:none;appearance:none;box-sizing:border-box}
+.hpf .field input[type=date]{display:block;text-align:left}
+@media (max-width:560px){.hpf{grid-template-columns:1fr}.hadv{padding:0 14px}.hadv span{display:none}.hq{padding:0 12px}}

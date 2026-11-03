@@ -120,17 +120,27 @@ export async function home() {
 
 /* ---------------- Meus treinos ---------------- */
 export async function treinos() {
-  const uid = sid(), [list, modl, exs, cats, execs] = await Promise.all([myTreinos(uid), api.list('modalidades'), api.list('exercicios'), api.list('categorias'),
-    api.list('execucoes', [['uid', '==', uid]]).catch(e => { console.error('histórico', e); return []; })]), mods = toMap(modl);
+  const uid = sid(), [list, modl] = await Promise.all([myTreinos(uid), api.list('modalidades')]), mods = toMap(modl);
   list.sort((a, b) => proxDia(a) - proxDia(b) || String(a.nome).localeCompare(String(b.nome), 'pt-BR'));   // na ordem da semana, a partir de hoje
   const cards = list.map(t => `<a class="card mcard tr" href="#/treino/${t.id}"><div class="top"><div class="mic">${ic('db', 26)}</div><div class="ttx"><h3>${esc(t.nome)}</h3><small>${esc((mods[t.modalidadeId] || {}).nome || 'Treino')} · ${(t.itens || []).length} exercícios</small>
     <p class="tdias">${diasTxt(t)}</p></div>${ic('chev', 20, '#B5B5BA')}</div></a>`).join('');
-  const H = histData(execs, list, exs, cats, mods);
   return { depth: 2, html: `<header class="hero compact"><div class="topbar">${logo(30)}${topIcon()}</div>${await viewing()}</header>
     <div class="body"><div><h1 class="h1">Meus treinos</h1><p class="muted" style="margin-top:4px;font-size:14px">Montados pelo seu professor</p></div>
     <div class="cards">${cards || '<p class="empty">Você ainda não tem treino. Fale com seu professor.</p>'}</div>
-    ${histHTML(H)}</div><div style="height:16px;flex:none"></div>${nav('db')}`,
-  after(el) { if (H.rows.length) bindHist(el, H); } };
+    <div id="hwrap"><button type="button" class="btn ghost hbtn" id="habrir" aria-expanded="false">${ic('list', 18)}<span>Histórico de treinos</span></button></div></div><div style="height:16px;flex:none"></div>${nav('db')}`,
+  after(el) {
+    // o histórico só é buscado (execuções, exercícios, categorias) quando a pessoa aperta o botão
+    const btn = $('#habrir', el); let aberto = false;
+    btn.onclick = async () => {
+      if (aberto) return; btn.disabled = true; btn.querySelector('span').textContent = 'Carregando...';
+      try {
+        const [exs, cats, execs] = await Promise.all([api.list('exercicios'), api.list('categorias'), api.list('execucoes', [['uid', '==', uid]])]);
+        const H = histData(execs, list, exs, cats, mods); aberto = true;
+        $('#hwrap', el).innerHTML = histHTML(H); if (H.rows.length) bindHist(el, H);
+        $('#hist', el) && $('#hist', el).scrollIntoView({ block: 'start', behavior: 'smooth' });
+      } catch (err) { console.error('histórico', err); btn.disabled = false; btn.querySelector('span').textContent = 'Histórico de treinos'; toast(friendly(err)); }
+    };
+  } };
 }
 
 /* ---------------- Histórico de treinos ---------------- */
